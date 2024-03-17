@@ -1,4 +1,4 @@
-# Education
+# EducAItion
 
 This project simulates a game where players can adopt different strategies. The strategies are:
 
