@@ -3,7 +3,6 @@ from multiprocessing import Pool
 import random
 from app import models
 from sqlalchemy.orm import Session
-import pdb
 
 def compute_payoffs(player1_choice, player2_choice):
     # Define the payoff matrix
@@ -43,48 +42,50 @@ def play_game(players, db: Session):
 
     # Generate all possible pairs of players
     player_pairs = list(combinations(players, 2))
-
-    for player1, player2 in player_pairs:
-        play_single_game(player1, player2, db, functions)
-
-def play_single_game(player1, player2, db: Session, functions):
-    # Create a new game
-    game = models.Game(home_player_id=player1.id, away_player_id=player2.id)
-    db.add(game)
-    db.commit()
     
-    # Initialize the game histories
-    game_history_player1 = []
-    game_history_player2 = []
+    for player1, player2 in player_pairs:
+        play_multiple_games(player1, player2, db, functions)
 
-    # For each round in the game
-    for round_number in range(1, 201):
-        # Get the players' choices
-        player1_choice = get_player_choice(player1.player_name, game_history_player1, functions)
-        player2_choice = get_player_choice(player2.player_name, game_history_player2, functions)
-
-        # Add the choices to the game histories
-        game_history_player1.append([player1_choice, player2_choice])
-        game_history_player2.append([player2_choice, player1_choice])
-
-        # Compute the payoffs
-        player1_score, player2_score = compute_payoffs(player1_choice, player2_choice)
-
-        # Update the players' scores
-        game.home_player_score += player1_score
-        game.away_player_score += player2_score
-
-        # Create a new round
-        round = models.Round(round_number=round_number, home_choice=player1_choice, away_choice=player2_choice, game_id=game.id)
-        db.add(round)
+def play_multiple_games(player1, player2, db, functions):
+    # Play the game 100 times
+    for _ in range(10):
+        # Create a new game
+        game = models.Game(home_player_id=player1.id, away_player_id=player2.id)
+        db.add(game)
         db.commit()
 
-        # Decide whether the game ends on this round with the probability of p = 0.005
-        if random.random() <= 0.005:
-            break
+        # Initialize the game histories
+        game_history_player1 = []
+        game_history_player2 = []
 
-    db.commit()
-        
+        # For each round in the game
+        for round_number in range(1, 51):
+            # Get the players' choices
+            player1_choice = get_player_choice(player1.player_name, game_history_player1, functions)
+            player2_choice = get_player_choice(player2.player_name, game_history_player2, functions)
+
+            # Add the choices to the game histories
+            game_history_player1.append([player1_choice, player2_choice])
+            game_history_player2.append([player2_choice, player1_choice])
+
+            # Compute the payoffs
+            player1_score, player2_score = compute_payoffs(player1_choice, player2_choice)
+
+            # Update the players' scores
+            game.home_player_score += player1_score
+            game.away_player_score += player2_score
+
+            # Create a new round
+            round = models.Round(round_number=round_number, home_choice=player1_choice, away_choice=player2_choice, game_id=game.id)
+            db.add(round)
+            db.commit()
+
+            # Decide whether the game ends on this round with the probability of p = 0.005
+            if random.random() <= 0.005:
+                break
+       
+        db.commit()
+
 def calculate_leaderboard(players, db: Session):
     # Initialize the leaderboard
     leaderboard = {}
