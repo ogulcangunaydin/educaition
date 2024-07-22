@@ -58,3 +58,29 @@ The results of the game simulations are as follows:
 | Adaptive    | 20923 |
 | Cooperative | 15030 |
 | Defective   | 12652 |
+
+## Setup and Installation
+
+To set up and run the project, follow these steps:
+
+1. Create a virtual environment:
+```
+python3.10 -m venv env
+```
+2. Activate the virtual environment:
+- On macOS/Linux:
+  ```
+  source env/bin/activate
+  ```
+- On Windows:
+  ```
+  .\env\Scripts\activate
+  ```
+3. Install the required dependencies (ensure you have a `requirements.txt` file):
+```
+pip install -r requirements.txt
+```
+4. Start the application with `uvicorn`:
+```
+uvicorn app.main:app --reload
+```
