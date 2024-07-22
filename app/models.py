@@ -1,5 +1,5 @@
 from sqlalchemy.orm import relationship
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Float
 from .database import Base
 
 class User(Base):
@@ -30,6 +30,11 @@ class Player(Base):
     player_tactic = Column(String)
     player_code = Column(String)
     room_id = Column(Integer, ForeignKey("rooms.id"))
+    extroversion = Column(Float)
+    agreeableness = Column(Float)
+    conscientiousness = Column(Float)
+    negative_emotionality = Column(Float)
+    open_mindedness = Column(Float)
 
     room = relationship("Room", back_populates="players")
     

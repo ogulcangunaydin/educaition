@@ -39,6 +39,11 @@ class PlayerBase(BaseModel):
     player_name: str
     player_tactic: Optional[str] = None
     player_code: Optional[str] = None
+    extroversion: Optional[float] = None
+    agreeableness: Optional[float] = None
+    conscientiousness: Optional[float] = None
+    negative_emotionality: Optional[float] = None
+    open_mindedness: Optional[float] = None
 
 class PlayerCreate(PlayerBase):
     room_id: int

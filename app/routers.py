@@ -1,6 +1,6 @@
 # routers.py
 
-from fastapi import APIRouter, Depends, Form
+from fastapi import APIRouter, Depends, Form, Body
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from starlette.requests import Request
@@ -51,19 +51,27 @@ def get_rooms(request: Request, skip: int = 0, limit: int = 100, db: Session = D
 def read_room(room_id: int, db: Session = Depends(db_operations.get_db)):
     return controllers.read_room(room_id, db)
 
-@router.post("/players/", response_model=schemas.Player)
+@router_without_auth.post("/players/", response_model=schemas.Player)
 def create_player(player_name: str = Form(...), room_id: int = Form(...), db: Session = Depends(db_operations.get_db)):
     player = schemas.PlayerCreate(player_name=player_name, room_id=room_id)
     return controllers.create_player(player, db)
 
-@router.get("/players/", response_model=List[schemas.Player])
-def get_players(skip: int = 0, limit: int = 100, db: Session = Depends(db_operations.get_db)):
-    return controllers.get_players(skip, limit, db)
+@router_without_auth.get("/players/{room_id}", response_model=List[schemas.Player])
+def get_players(room_id: int, skip: int = 0, limit: int = 100, db: Session = Depends(db_operations.get_db)):
+    return controllers.get_players(room_id, skip, limit, db)
 
-@router.post("/players/{player_id}/tactic", response_model=schemas.Player)
+@router_without_auth.post("/players/{player_id}/tactic", response_model=schemas.Player)
 def update_player_tactic(player_id: int, player_tactic: str = Form(...), db: Session = Depends(db_operations.get_db)):
     return controllers.update_player_tactic(player_id, player_tactic, db)
+
+@router_without_auth.post("/players/{player_id}/personality", response_model=schemas.Player)
+def update_player_personality_traits(player_id: int, answers: str = Form(...), db: Session = Depends(db_operations.get_db)):
+    return controllers.update_player_personality_traits(player_id, answers, db)
 
 @router.post("/rooms/{room_id}/ready", response_model=schemas.Room)
 def start_game(room_id: int, db: Session = Depends(db_operations.get_db)):
     return controllers.start_game(room_id, db)
+
+@router.get("/auth/", response_model=schemas.User)
+def authenticate_user(request: Request, db: Session = Depends(db_operations.get_db)):
+    return controllers.authenticate(request, db)

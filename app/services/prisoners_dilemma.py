@@ -86,19 +86,40 @@ def play_multiple_games(player1, player2, db, functions):
        
         db.commit()
 
-def calculate_leaderboard(players, db: Session):
-    # Initialize the leaderboard
-    leaderboard = {}
+def calculate_win_matrix(players, db: Session):
+    # Initialize the win matrix
+    win_matrix = {player.player_name: {opponent.player_name: 0 for opponent in players if opponent.id != player.id} for player in players}
 
     # For each player
     for player in players:
         # Get all games where the player was the home player
         home_games = db.query(models.Game).filter(models.Game.home_player_id == player.id).all()
-
         # Get all games where the player was the away player
         away_games = db.query(models.Game).filter(models.Game.away_player_id == player.id).all()
 
-        # Calculate the total score for the player
+        # Update the win matrix for each game
+        for game in home_games:
+            if game.home_player_score > game.away_player_score:
+                opponent_name = db.query(models.Player).filter(models.Player.id == game.away_player_id).first().player_name
+                win_matrix[player.player_name][opponent_name] += 1
+        for game in away_games:
+            if game.away_player_score > game.home_player_score:
+                opponent_name = db.query(models.Player).filter(models.Player.id == game.home_player_id).first().player_name
+                win_matrix[player.player_name][opponent_name] += 1
+
+    return win_matrix
+
+def calculate_leaderboard_and_matrix(players, db: Session):
+    # Initialize the leaderboard
+    leaderboard = {}
+
+    # Calculate the win matrix by calling the new function
+    win_matrix = calculate_win_matrix(players, db)
+
+    # For each player, calculate the total score
+    for player in players:
+        home_games = db.query(models.Game).filter(models.Game.home_player_id == player.id).all()
+        away_games = db.query(models.Game).filter(models.Game.away_player_id == player.id).all()
         total_score = sum(game.home_player_score for game in home_games) + sum(game.away_player_score for game in away_games)
 
         # Add the player and their total score to the leaderboard
@@ -107,4 +128,4 @@ def calculate_leaderboard(players, db: Session):
     # Sort the leaderboard by score in descending order
     leaderboard = dict(sorted(leaderboard.items(), key=lambda item: item[1], reverse=True))
 
-    return leaderboard
+    return leaderboard, win_matrix

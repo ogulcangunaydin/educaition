@@ -7,7 +7,9 @@ from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.responses import JSONResponse
 from datetime import timedelta
 from app.services.update_player_tactic_and_test_code import update_player_tactic_and_test_code
-from app.services.prisoners_dilemma import play_game, calculate_leaderboard
+from app.services.prisoners_dilemma import play_game, calculate_leaderboard_and_matrix
+from app.services.calculate_personality_traits import calculate_personality_traits
+from typing import List
 import os
 
 
@@ -71,15 +73,20 @@ def get_rooms(request: None, skip: int, limit: int, db: Session = None):
     user_id = request.session["current_user"]["id"]
     return db.query(models.Room).filter(models.Room.user_id == user_id).offset(skip).limit(limit).all()
 
-def get_players(skip: int, limit: int, db: Session):
-    return db.query(models.Player).offset(skip).limit(limit).all()
+def get_players(room_id: int, skip: int, limit: int, db: Session):
+    return db.query(models.Player).filter(models.Player.room_id == room_id).offset(skip).limit(limit).all()
 
 def create_player(player: schemas.PlayerCreate, db: Session):
-    player = models.Player(player_name=player.player_name, room_id=player.room_id)
-    db.add(player)
+    existing_player = db.query(models.Player).filter(models.Player.player_name == player.player_name, models.Player.room_id == player.room_id).first()
+    if existing_player:
+        raise HTTPException(status_code=400, detail="Player name already exists in the room.")
+    
+    # If the check passes, proceed to create a new player
+    new_player = models.Player(player_name=player.player_name, room_id=player.room_id)
+    db.add(new_player)
     db.commit()
-    db.refresh(player)
-    return player
+    db.refresh(new_player)
+    return new_player
 
 def update_player_tactic(player_id: int, player_tactic: str, db: Session):
     # Call the service to update the player's tactic and test the generated code
@@ -108,33 +115,110 @@ def update_player_tactic(player_id: int, player_tactic: str, db: Session):
         )
 
 def start_game(room_id: int, db: Session):
-    # Fetch the players in the room
-    players = db.query(models.Player).filter(models.Player.room_id == room_id).all()
+    # # Fetch the players in the room
+    # players = db.query(models.Player).filter(models.Player.room_id == room_id).all()
 
-    # Ensure there are at least two players
-    if len(players) < 2:
-        raise HTTPException(status_code=400, detail="At least two players are required to start a game")
+    # # Ensure there are at least two players
+    # if len(players) < 2:
+    #     raise HTTPException(status_code=400, detail="At least two players are required to start a game")
 
-    # Ensure all players are ready
-    for player in players:
-        if not player.is_ready:
-            raise HTTPException(status_code=400, detail="All players are not ready")
+    # # Ensure all players are ready
+    # for player in players:
+    #     if not player.is_ready:
+    #         raise HTTPException(status_code=400, detail="All players are not ready")
 
-    # Make the players play the game
-    play_game(players, db)
+    # # Make the players play the game
+    # play_game(players, db)
     
-    # Refresh the session
-    for player in players:
-        db.refresh(player)
+    # # Refresh the session
+    # for player in players:
+    #     db.refresh(player)
 
-    # Calculate the leaderboard
-    leaderboard = calculate_leaderboard(players, db)
-
-    # Return the leaderboard as a JSON response
+    # # Calculate the leaderboard
+    # leaderboard, matrix = calculate_leaderboard_and_matrix(players, db)
+    # # Return the leaderboard as a JSON response
+    # return JSONResponse(content={"leaderboard": leaderboard, "matrix": matrix})
+    
+    # Example response
+    leaderboard = {
+        "leaderboard": {
+            "player1": 42017,
+            "hebe": 40268,
+            "player3": 28079,
+            "player2": 25324,
+            "player4": 13245,
+            "ogi": 10335
+        },
+        "matrix": {
+            "player1": {
+                "player3": 60,
+                "player4": 60,
+                "player2": 0,
+                "hebe": 0,
+                "ogi": 40
+            },
+            "player3": {
+                "player1": 0,
+                "player4": 60,
+                "player2": 0,
+                "hebe": 0,
+                "ogi": 40
+            },
+            "player4": {
+                "player1": 0,
+                "player3": 0,
+                "player2": 0,
+                "hebe": 0,
+                "ogi": 0
+            },
+            "player2": {
+                "player1": 0,
+                "player3": 6,
+                "player4": 60,
+                "hebe": 0,
+                "ogi": 40
+            },
+            "hebe": {
+                "player1": 0,
+                "player3": 60,
+                "player4": 60,
+                "player2": 0,
+                "ogi": 40
+            },
+            "ogi": {
+                "player1": 0,
+                "player3": 0,
+                "player4": 0,
+                "player2": 0,
+                "hebe": 0
+            }
+        }
+    }
     return JSONResponse(content=leaderboard)
+
+def authenticate(request: None, db: Session):
+    user_id = request.session["current_user"]["id"]
+    return db.query(models.User).filter(models.User.id == user_id).first()
+
+def update_player_personality_traits(player_id: int, answers: str, db: Session):
+    # Retrieve the player from the database
+    player = db.query(models.Player).filter(models.Player.id == player_id).first()
     
-
+    if player is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Player not found",
+        )
     
-
-
-
+    # Calculate personality scores using the previously defined function
+    personality_scores = calculate_personality_traits(answers)
+    
+    # Update the player with the calculated personality traits
+    player.extroversion = personality_scores["extroversion"]
+    player.agreeableness = personality_scores["agreeableness"]
+    player.conscientiousness = personality_scores["conscientiousness"]
+    player.negative_emotionality = personality_scores["negative_emotionality"]
+    player.open_mindedness = personality_scores["open_mindedness"]
+    
+    db.commit()
+    return player
