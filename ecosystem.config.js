@@ -3,17 +3,17 @@ module.exports = {
     name: 'educaition',
     script: 'uvicorn',
     interpreter: '~/educaition/source/env/bin/python3.10',
-    args: 'app.main:app --port 80',
+    args: 'app.main:app --port 3000',
   }],
   deploy: {
     production: {
       user: 'ec2-user',
       host: 'ec2-54-173-57-250.compute-1.amazonaws.com',
-      key: '~/.ssh/id_rsa.pub',
+      key: '~/.ssh/educaition-key-pair.pem',
       ref: 'origin/main',
       repo: 'git@github.com:ogulcangunaydin/educaition.git',
-      path: '/home/ec2-user/educaition/source',
-      'post-deploy': 'python3.10 -m venv env && pip install -r requirements.txt && pm2 startOrRestart ecosystem.config.js'
+      path: '/home/ec2-user/',
+      'post-deploy': 'cd educaition && cd source && python3.10 -m venv env && source env/bin/activate && pip install -r requirements.txt && pm2 startOrRestart ecosystem.config.js'
     }
   }
 }

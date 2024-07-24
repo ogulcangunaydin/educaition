@@ -16,7 +16,8 @@ models.Base.metadata.create_all(bind=engine)
 app = FastAPI()
 
 origins = [
-    "http://localhost:8080"
+    "http://localhost:8080",
+    "http://ec2-54-173-57-250.compute-1.amazonaws.com"
 ]
 
 app.add_middleware(
@@ -28,8 +29,8 @@ app.add_middleware(
 )
 app.add_middleware(SessionMiddleware, secret_key=os.getenv("SECRET_KEY"))
 
-app.include_router(routers.router)
-app.include_router(routers.router_without_auth)
+app.include_router(routers.router, prefix="/api")
+app.include_router(routers.router_without_auth, prefix="/api")
 
 @app.on_event("startup")
 async def startup_event():
