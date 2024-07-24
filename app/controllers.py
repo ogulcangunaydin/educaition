@@ -115,86 +115,29 @@ def update_player_tactic(player_id: int, player_tactic: str, db: Session):
         )
 
 def start_game(room_id: int, db: Session):
-    # # Fetch the players in the room
-    # players = db.query(models.Player).filter(models.Player.room_id == room_id).all()
+    # Fetch the players in the room
+    players = db.query(models.Player).filter(models.Player.room_id == room_id).all()
 
-    # # Ensure there are at least two players
-    # if len(players) < 2:
-    #     raise HTTPException(status_code=400, detail="At least two players are required to start a game")
+    # Ensure there are at least two players
+    if len(players) < 2:
+        raise HTTPException(status_code=400, detail="At least two players are required to start a game")
 
-    # # Ensure all players are ready
-    # for player in players:
-    #     if not player.is_ready:
-    #         raise HTTPException(status_code=400, detail="All players are not ready")
+    # Ensure all players are ready
+    for player in players:
+        if not player.is_ready:
+            raise HTTPException(status_code=400, detail="All players are not ready")
 
-    # # Make the players play the game
-    # play_game(players, db)
+    # Make the players play the game
+    play_game(players, db)
     
-    # # Refresh the session
-    # for player in players:
-    #     db.refresh(player)
+    # Refresh the session
+    for player in players:
+        db.refresh(player)
 
-    # # Calculate the leaderboard
-    # leaderboard, matrix = calculate_leaderboard_and_matrix(players, db)
-    # # Return the leaderboard as a JSON response
-    # return JSONResponse(content={"leaderboard": leaderboard, "matrix": matrix})
-    
-    # Example response
-    leaderboard = {
-        "leaderboard": {
-            "player1": 42017,
-            "hebe": 40268,
-            "player3": 28079,
-            "player2": 25324,
-            "player4": 13245,
-            "ogi": 10335
-        },
-        "matrix": {
-            "player1": {
-                "player3": 60,
-                "player4": 60,
-                "player2": 0,
-                "hebe": 0,
-                "ogi": 40
-            },
-            "player3": {
-                "player1": 0,
-                "player4": 60,
-                "player2": 0,
-                "hebe": 0,
-                "ogi": 40
-            },
-            "player4": {
-                "player1": 0,
-                "player3": 0,
-                "player2": 0,
-                "hebe": 0,
-                "ogi": 0
-            },
-            "player2": {
-                "player1": 0,
-                "player3": 6,
-                "player4": 60,
-                "hebe": 0,
-                "ogi": 40
-            },
-            "hebe": {
-                "player1": 0,
-                "player3": 60,
-                "player4": 60,
-                "player2": 0,
-                "ogi": 40
-            },
-            "ogi": {
-                "player1": 0,
-                "player3": 0,
-                "player4": 0,
-                "player2": 0,
-                "hebe": 0
-            }
-        }
-    }
-    return JSONResponse(content=leaderboard)
+    # Calculate the leaderboard
+    leaderboard, matrix = calculate_leaderboard_and_matrix(players, db)
+    # Return the leaderboard as a JSON response
+    return JSONResponse(content={"leaderboard": leaderboard, "matrix": matrix})
 
 def authenticate(request: None, db: Session):
     user_id = request.session["current_user"]["id"]
