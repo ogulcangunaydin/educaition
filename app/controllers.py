@@ -7,7 +7,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.responses import JSONResponse
 from datetime import timedelta
 from app.services.update_player_tactic_and_test_code import update_player_tactic_and_test_code
-from app.services.prisoners_dilemma import play_game, calculate_leaderboard_and_matrix
+from app.services.prisoners_dilemma import play_game, calculate_leaderboard_and_scores_matrix
 from app.services.calculate_personality_traits import calculate_personality_traits
 from typing import List
 import os
@@ -135,7 +135,7 @@ def start_game(room_id: int, db: Session):
         db.refresh(player)
 
     # Calculate the leaderboard
-    leaderboard, matrix = calculate_leaderboard_and_matrix(players, db)
+    leaderboard, matrix = calculate_leaderboard_and_scores_matrix(players, db)
     # Return the leaderboard as a JSON response
     return JSONResponse(content={"leaderboard": leaderboard, "matrix": matrix})
 
