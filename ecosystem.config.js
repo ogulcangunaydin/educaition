@@ -13,7 +13,7 @@ module.exports = {
       ref: 'origin/main',
       repo: 'git@github.com:ogulcangunaydin/educaition.git',
       path: '/home/ec2-user/educaition',
-      'post-deploy': 'python3.10 -m venv env && source env/bin/activate && pip install -r requirements.txt && pm2 startOrRestart ecosystem.config.js'
+      'post-deploy': 'python3.10 -m venv env && source env/bin/activate && pip install -r requirements.txt && ~/.nvm/versions/node/v18.20.4/bin/pm2 startOrRestart ecosystem.config.js'
     }
   }
 }
