@@ -61,9 +61,9 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
-def create_room(request: None, db: Session):
+def create_room(name: str, request: None, db: Session):
     user_id = request.session["current_user"]["id"]
-    room = models.Room(user_id=user_id)
+    room = models.Room(user_id=user_id, name=name)
     db.add(room)
     db.commit()
     db.refresh(room)
@@ -72,6 +72,14 @@ def create_room(request: None, db: Session):
 def get_rooms(request: None, skip: int, limit: int, db: Session = None):
     user_id = request.session["current_user"]["id"]
     return db.query(models.Room).filter(models.Room.user_id == user_id).offset(skip).limit(limit).all()
+
+def delete_room(room_id: int, db: Session):
+    room = db.query(models.Room).get(room_id)
+    if room is None:
+        raise HTTPException(status_code=404, detail="Room not found")
+    db.delete(room)
+    db.commit()
+    return room
 
 def get_players(room_id: int, skip: int, limit: int, db: Session):
     return db.query(models.Player).filter(models.Player.room_id == room_id).offset(skip).limit(limit).all()

@@ -3,61 +3,118 @@ import os
 import logging
 
 def update_player_tactic_and_test_code(player_tactic: str, player_name: str):
-    # Define the prompt
+    def process_gpt_response(content):
+        # Remove triple backticks and leading/trailing whitespace
+        cleaned_content = content.replace("```python", "").replace("```", "").strip()
+        return cleaned_content
+
+    def send_request_to_gpt(prompt):
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {os.getenv('OPENAI_API_KEY')}"
+        }
+        data = {
+            "model": "gpt-4o",
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": 0.5,
+            "max_tokens": 200
+        }
+        response = requests.post(os.getenv('OPENAI_ENDPOINT'), headers=headers, json=data)
+        if response.status_code == 200:
+            raw_response = response.json()['choices'][0]['message']['content']
+            return process_gpt_response(raw_response)
+        else:
+            logging.error(f"Failed to get response from GPT. Status code: {response.status_code}, Response: {response.text}")
+            return None
+    
     prompt = (
-        f"Write the code of a Python function named {player_name} for the Prisoner's Dilemma game where the player's tactic is: "
-        f"{player_tactic}. The function should take an array of arrays as the input, where each sub-array represents a round of the game and "
-        "the first element of the sub-array is the player's move and the second element is the opponent's move. "
-        "The function should return the player's next move with either 'defect' or 'cooperate'. Without any explanation or comments just give me the function."
+        f"Generate a directly executable Python function named '{player_name}' for the Prisoner's Dilemma game. The tactic is: "
+        f"'{player_tactic}'. The function should accept an array of arrays as input, where each sub-array represents a game round. "
+        "The first element of the sub-array is the player's move, and the second is the opponent's move. "
+        "The function should return the player's next move with either 'defect' or 'cooperate'. "
+        "Ensure the code is syntactically correct, complete, and does not require any modifications to run."
+        "Please provide the function without any comments or additional explanations."
     )
 
-    # Define the headers
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {os.getenv('OPENAI_API_KEY')}"
-    }
+    generated_code = send_request_to_gpt(prompt)
 
-    # Define the data
-    data = {
-        "prompt": prompt,
-        "max_tokens": 200
-    }
-
-    # Send a request to the API with the headers and data
-    response = requests.post(os.getenv('OPENAI_ENDPOINT'), headers=headers, json=data)
-
-    # Get the generated text from the API response
-    generated_text = response.json()['choices'][0]['text']
-    
-    logging.info(f"Generated text: {generated_text}")
-      
-    # Define the test input
-    moves = [["cooperate", "defect"], ["defect", "cooperate"]]
-    moves_first_round = []
+    if not generated_code:
+        return False, None
 
     # Execute the generated Python function and get a reference to it
     try:
-        exec(generated_text)
+        exec(generated_code)
         player_function = locals()[player_name]
-    except Exception as e:
-        logging.error(f"Error executing generated code or getting function reference: {e}")
-        return False, None
+    except Exception as initial_error:
+        logging.error(f"Initial code: {generated_code}")
+        logging.error(f"Initial code execution error: {initial_error}")
 
-    # Call the generated Python function with the test input
+        # Prompt to fix the code
+        fix_prompt = (
+            f"The following Python function generated an error: '{initial_error}'.\n\n"
+            f"Original code:\n{generated_code}\n\n"
+            "Please fix the code."
+        )
+
+        fixed_code = send_request_to_gpt(fix_prompt)
+
+        if not fixed_code:
+            return False, "Failed to fix the code."
+
+        try:
+            exec(fixed_code)
+            player_function = locals()[player_name]
+        except Exception as fixed_error:
+            logging.error(f"Fixed code execution error: {fixed_error}")
+            return False, "Failed to execute fixed code."
+
+    # Define the test input
+    test_cases = [
+        [["cooperate", "defect"], ["defect", "cooperate"]],
+        [],
+        [["defect", "defect"], ["defect", "defect"]],
+        [["cooperate", "cooperate"], ["cooperate", "cooperate"]],
+        [["defect", "cooperate"], ["cooperate", "defect"], ["defect", "cooperate"]]
+    ]
+    
     try:
-        output = player_function(moves)
-        output_first_round = player_function(moves_first_round)
+        for moves in test_cases:
+            output = player_function(moves)
+            # Check if the output is either "defect" or "cooperate"
+            if output not in ["defect", "cooperate"]:
+                raise ValueError("Output validation failed")
+        
+        return True, generated_code
     except Exception as e:
-        logging.error(f"Error calling function: {e}")
-        return False, None
+        logging.error(f"Error during function execution or output validation: {e}")
 
-    # Check if the output is either "defect" or "cooperate"
-    test_result = output in ["defect", "cooperate"] and output_first_round in ["defect", "cooperate"]
+        # Prompt to fix the code
+        fix_prompt = (
+          f"The following Python function generated an error or failed output validation: '{e}'.\n\n"
+          f"Original code:\n{generated_code}\n\n"
+          "Please fix the code."
+        )
 
-    # If the test succeeds, return true and the generated code
-    if test_result:
-        return True, generated_text
+        fixed_code = send_request_to_gpt(fix_prompt)
 
-    # If the test fails, return false and None
-    else:
-        return False, None
+        if not fixed_code:
+          return False, None
+
+        try:
+          # Assuming the fixed code defines the same function name
+          exec(fixed_code)
+          fixed_player_function = locals()['player_function']
+
+          # Re-run the tests with the fixed function
+          output = fixed_player_function(moves)
+          output_first_round = fixed_player_function(moves_first_round)
+
+          test_result = output in ["defect", "cooperate"] and output_first_round in ["defect", "cooperate"]
+
+          if test_result:
+            return True, fixed_code
+          else:
+            return False, None
+        except Exception as fixed_error:
+          logging.error(f"Error executing fixed code: {fixed_error}")
+          return False, None

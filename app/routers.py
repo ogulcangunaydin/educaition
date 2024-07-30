@@ -40,8 +40,8 @@ def delete_user(user_id: int, db: Session = Depends(db_operations.get_db)):
     return controllers.delete_user(user_id, db)
 
 @router.post("/rooms/", response_model=schemas.Room)
-def create_room(request: Request, db: Session = Depends(db_operations.get_db)):
-    return controllers.create_room(request, db)
+def create_room(request: Request, name: str = Form(...), db: Session = Depends(db_operations.get_db)):
+    return controllers.create_room(name, request, db)
 
 @router.get("/rooms/", response_model=List[schemas.Room])
 def get_rooms(request: Request, skip: int = 0, limit: int = 100, db: Session = Depends(db_operations.get_db)):
@@ -50,6 +50,10 @@ def get_rooms(request: Request, skip: int = 0, limit: int = 100, db: Session = D
 @router.get("/rooms/{room_id}", response_model=schemas.Room)
 def read_room(room_id: int, db: Session = Depends(db_operations.get_db)):
     return controllers.read_room(room_id, db)
+
+@router.post("/rooms/delete/{room_id}", response_model=schemas.Room)
+def delete_room(room_id: int, db: Session = Depends(db_operations.get_db)):
+    return controllers.delete_room(room_id, db)
 
 @router_without_auth.post("/players/", response_model=schemas.Player)
 def create_player(player_name: str = Form(...), room_id: int = Form(...), db: Session = Depends(db_operations.get_db)):

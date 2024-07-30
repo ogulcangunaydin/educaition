@@ -31,6 +31,7 @@ class RoomCreate(RoomBase):
 class Room(RoomBase):
     id: int
     user_id: int
+    name: Optional[str]
 
     class Config:
         from_attributes = True

@@ -18,6 +18,7 @@ class Room(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
+    name = Column(String, nullable=False)
 
     user = relationship("User", back_populates="rooms")
     players = relationship("Player", back_populates="room")
