@@ -95,26 +95,21 @@ def update_player_tactic_and_test_code(player_tactic: str, player_name: str):
           "Please fix the code."
         )
 
-        fixed_code = send_request_to_gpt(fix_prompt)
+        fixed_further_code = send_request_to_gpt(fix_prompt)
 
-        if not fixed_code:
+        if not fixed_further_code:
           return False, None
 
         try:
-          # Assuming the fixed code defines the same function name
-          exec(fixed_code)
-          fixed_player_function = locals()['player_function']
+            exec(fixed_further_code)
+            fixed_player_function = locals()[player_name]
 
-          # Re-run the tests with the fixed function
-          output = fixed_player_function(moves)
-          output_first_round = fixed_player_function(moves_first_round)
-
-          test_result = output in ["defect", "cooperate"] and output_first_round in ["defect", "cooperate"]
-
-          if test_result:
-            return True, fixed_code
-          else:
-            return False, None
+            for moves in test_cases:
+                output = fixed_player_function(moves)
+                if output not in ["defect", "cooperate"]:
+                    raise ValueError("Output validation failed")
+        
+            return True, generated_code
         except Exception as fixed_error:
           logging.error(f"Error executing fixed code: {fixed_error}")
           return False, None
