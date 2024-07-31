@@ -85,3 +85,14 @@ class Round(RoundBase):
 
     class Config:
         from_attributes = True
+
+class SessionBase(BaseModel):
+    pass
+
+class SessionCreate(SessionBase):
+    id: int
+    room_id: int
+    name: str
+    status: str
+    player_ids: str
+    results: Optional[dict] = None

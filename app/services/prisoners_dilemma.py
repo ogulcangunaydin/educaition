@@ -3,6 +3,12 @@ from multiprocessing import Pool
 import random
 from app import models
 from sqlalchemy.orm import Session
+from math import factorial
+import json
+
+GAMES_PLAYED_WITH_EACH_OTHER = 10
+global_session = None
+global_players = []
 
 def compute_payoffs(player1_choice, player2_choice):
     # Define the payoff matrix
@@ -36,19 +42,51 @@ def get_player_choice(player_name, game_history, functions):
 
     return player_choice
 
-def play_game(players, db: Session):
-    # Prepare the player functions
-    functions = prepare_player_functions(players)
+def play_game(session_id, db: Session):
+    global global_session, global_players
 
-    # Generate all possible pairs of players
-    player_pairs = list(combinations(players, 2))
+    # Prepare the player functions
+    global_session = db.query(models.Session).filter(models.Session.id == session_id).first()
+    player_ids = global_session.player_ids.split(",")
+
+    global_players = [db.query(models.Player).filter(models.Player.id == player_id).first() for player_id in player_ids]
+
+    functions = prepare_player_functions(global_players)
+
+    # Generate all possible pairs of global_players
+    player_pairs = list(combinations(global_players, 2))
+    total_players = len(global_players)
+    total_games = (factorial(total_players) / (factorial(2) * factorial(total_players - 2))) * GAMES_PLAYED_WITH_EACH_OTHER
+    ten_percent_games = total_games / GAMES_PLAYED_WITH_EACH_OTHER
+    completed_games = 0
     
     for player1, player2 in player_pairs:
         play_multiple_games(player1, player2, db, functions)
+        completed_games += GAMES_PLAYED_WITH_EACH_OTHER
+
+        # Update session status at each 10 percent completion
+        if completed_games % ten_percent_games == 0:
+            completion_percentage = (completed_games / total_games) * 100
+            global_session.status = f"{completion_percentage}% completed"
+            db.commit()
+            
+    # After all games are finished, calculate the leaderboard and scores matrix
+    leaderboard, scores_matrix = calculate_leaderboard_and_scores_matrix(global_players, db)
+
+    # Convert the leaderboard to a JSON-compatible format
+    # Assuming leaderboard is a list of tuples or a similar structure that needs conversion
+    leaderboard_jsonb = {"leaderboard": leaderboard, "matrix": scores_matrix}
+
+    # Update the session results with the JSON-formatted leaderboard information
+    global_session.results = leaderboard_jsonb
+
+    # Set the session status to "finished"
+    global_session.status = "finished"
+    db.commit()
 
 def play_multiple_games(player1, player2, db, functions):
     # Play the game 100 times
-    for _ in range(10):
+    for _ in range(GAMES_PLAYED_WITH_EACH_OTHER):
         # Create a new game
         game = models.Game(home_player_id=player1.id, away_player_id=player2.id)
         db.add(game)

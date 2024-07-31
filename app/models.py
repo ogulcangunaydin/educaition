@@ -1,5 +1,6 @@
 from sqlalchemy.orm import relationship
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Float
+from sqlalchemy.dialects.postgresql import JSONB
 from .database import Base
 
 class User(Base):
@@ -22,6 +23,7 @@ class Room(Base):
 
     user = relationship("User", back_populates="rooms")
     players = relationship("Player", back_populates="room")
+    sessions = relationship("Session", back_populates="room")
 
 class Player(Base):
     __tablename__ = "players"
@@ -66,3 +68,15 @@ class Round(Base):
     game_id = Column(Integer, ForeignKey("games.id"))
 
     game = relationship("Game", back_populates="rounds")
+    
+class Session(Base):
+    __tablename__ = 'sessions'
+
+    id = Column(Integer, primary_key=True, index=True)
+    room_id = Column(Integer, ForeignKey('rooms.id'))
+    name = Column(String, nullable=True)
+    status = Column(String, default='started')
+    player_ids = Column(String, nullable=True)
+    results = Column(JSONB, nullable=True)
+
+    room = relationship("Room", back_populates="sessions")

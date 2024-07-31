@@ -2,7 +2,7 @@
 
 from sqlalchemy.orm import Session
 from . import models, schemas, security, db_operations
-from fastapi import HTTPException, Depends, status
+from fastapi import HTTPException, Depends, status, BackgroundTasks
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.responses import JSONResponse
 from datetime import timedelta
@@ -81,8 +81,12 @@ def delete_room(room_id: int, db: Session):
     db.commit()
     return room
 
-def get_players(room_id: int, skip: int, limit: int, db: Session):
+def get_players_by_room(room_id: int, skip: int, limit: int, db: Session):
     return db.query(models.Player).filter(models.Player.room_id == room_id).offset(skip).limit(limit).all()
+
+def get_players_by_ids(player_ids: str, db: Session):
+    player_ids = player_ids.split(",")
+    return db.query(models.Player).filter(models.Player.id.in_(player_ids)).all()
 
 def create_player(player: schemas.PlayerCreate, db: Session):
     existing_player = db.query(models.Player).filter(models.Player.player_name == player.player_name, models.Player.room_id == player.room_id).first()
@@ -122,30 +126,43 @@ def update_player_tactic(player_id: int, player_tactic: str, db: Session):
             detail="The given tactic is not ok",
         )
 
-def start_game(room_id: int, db: Session):
-    # Fetch the players in the room
+def start_game(room_id: int, name: str, db: Session, background_tasks: BackgroundTasks):
+    # Existing validation checks
     players = db.query(models.Player).filter(models.Player.room_id == room_id).all()
-
-    # Ensure there are at least two players
     if len(players) < 2:
         raise HTTPException(status_code=400, detail="At least two players are required to start a game")
-
-    # Ensure all players are ready
     for player in players:
         if not player.is_ready:
             raise HTTPException(status_code=400, detail="All players are not ready")
-
-    # Make the players play the game
-    play_game(players, db)
     
-    # Refresh the session
-    for player in players:
-        db.refresh(player)
+    # Put players' ids into a comma separated string
+    player_ids = ",".join([str(player.id) for player in players])
 
-    # Calculate the leaderboard
-    leaderboard, matrix = calculate_leaderboard_and_scores_matrix(players, db)
-    # Return the leaderboard as a JSON response
-    return JSONResponse(content={"leaderboard": leaderboard, "matrix": matrix})
+    # Create a new session
+    new_session = models.Session(room_id=room_id, name=name, player_ids= player_ids, status='started')
+    db.add(new_session)
+    db.commit()
+    
+    # Initiate the game in the background
+    background_tasks.add_task(play_game, new_session.id, db)
+    
+    # Return the session details
+    return new_session
+
+def get_game_results(session_id: int, db: Session):
+    # Find the last session created for this room
+    session = db.query(models.Session).filter(models.Session.id == session_id).first()
+    
+    if not session:
+        raise HTTPException(status_code=404, detail="Please start a game first")
+    
+    # Check if the last session status is 'finished'
+    if session.status == "finished":
+        # If finished, return the results stored in the session
+        return JSONResponse(content={"results": session.results})
+    else:
+        # If not finished, return the session object with its status
+        return {"session_id": session.id, "status": session.status, "player_ids": session.player_ids}
 
 def authenticate(request: None, db: Session):
     user_id = request.session["current_user"]["id"]
@@ -173,3 +190,9 @@ def update_player_personality_traits(player_id: int, answers: str, db: Session):
     
     db.commit()
     return player
+
+def get_sessions_by_room(room_id: int, db: Session):
+    return db.query(models.Session).filter(models.Session.room_id == room_id).all()
+
+def get_session(session_id: int, db: Session):
+    return db.query(models.Session).filter(models.Session.id == session_id).first()
