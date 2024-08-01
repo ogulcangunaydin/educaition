@@ -49,8 +49,13 @@ def get_player_choice(player_name, game_history, functions):
     return player_choice
 
 def play_multiple_games_wrapper(args):
-    player1, player2, db, functions, game_session_id = args
-    play_multiple_games(player1, player2, db, functions, game_session_id)
+    player1, player2, session_factory, functions, game_session_id = args
+    
+    db = session_factory()
+    try:
+        play_multiple_games(player1, player2, db, functions, game_session_id)
+    finally:
+        db.close()
 
 def play_game(game_session_id, db: Session):
     global global_game_session, global_players
@@ -73,7 +78,7 @@ def play_game(game_session_id, db: Session):
     total_games = (factorial(total_players) / (factorial(2) * factorial(total_players - 2))) * GAMES_PLAYED_WITH_EACH_OTHER
     completed_games = 0
     
-    tasks = [(player1, player2, SessionLocal(), functions, game_session_id) for player1, player2 in player_pairs]
+    tasks = [(player1, player2, SessionLocal, functions, game_session_id) for player1, player2 in player_pairs]
     
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         future_to_pair = {executor.submit(play_multiple_games_wrapper, task): task for task in tasks}
