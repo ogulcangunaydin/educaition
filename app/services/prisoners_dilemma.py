@@ -11,6 +11,7 @@ from datetime import datetime
 
 GAMES_PLAYED_WITH_EACH_OTHER = 1000
 MAXIMUM_NUMBER_OF_ROUNDS = 1000
+MAX_WORKERS = 4
 global_game_session = None
 global_game_session_id = None
 global_players = []
@@ -70,27 +71,27 @@ def play_game(game_session_id, db: Session):
     player_pairs = list(combinations(global_players, 2))
     total_players = len(global_players)
     total_games = (factorial(total_players) / (factorial(2) * factorial(total_players - 2))) * GAMES_PLAYED_WITH_EACH_OTHER
-    ten_percent_games = total_games / GAMES_PLAYED_WITH_EACH_OTHER
     completed_games = 0
     
     tasks = [(player1, player2, SessionLocal(), functions, game_session_id) for player1, player2 in player_pairs]
     
-    with ThreadPoolExecutor() as executor:
+    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         future_to_pair = {executor.submit(play_multiple_games_wrapper, task): task for task in tasks}
         
         for future in as_completed(future_to_pair):
             pair = future_to_pair[future]
             try:
                 completed_games += GAMES_PLAYED_WITH_EACH_OTHER
-                if completed_games % ten_percent_games == 0:
-                    now = datetime.now()
-                    checkpoint_duration = (now - checkpoint_start_time).total_seconds()
-                    checkpoint_durations.append(checkpoint_duration)
-                    checkpoint_start_time = now
+                completion_percentage = round((completed_games / total_games) * 100)
+                now = datetime.now()
+                checkpoint_duration = (now - checkpoint_start_time).total_seconds()
+                checkpoint_durations.append(checkpoint_duration)
+                checkpoint_start_time = now
 
-                    completion_percentage = (completed_games / total_games) * 100
-                    global_game_session.status = f"{completion_percentage}"
-                    db.commit()
+                global_game_session.status = f"{completion_percentage}"
+                db.commit()
+                
+                logging.info(f"{completion_percentage}% completed in {checkpoint_duration} seconds")
             except Exception as exc:
                 print(f'Game between {pair[0]} and {pair[1]} generated an exception: {exc}')
             
