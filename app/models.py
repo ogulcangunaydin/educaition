@@ -53,10 +53,12 @@ class Game(Base):
     away_player_id = Column(Integer, ForeignKey("players.id"))
     home_player_score = Column(Integer, default=0)
     away_player_score = Column(Integer, default=0)
+    session_id = Column(Integer, ForeignKey("sessions.id"))
 
     home_player = relationship("Player", foreign_keys=[home_player_id])
     away_player = relationship("Player", foreign_keys=[away_player_id])
     rounds = relationship("Round", back_populates="game")
+    session = relationship("Session", back_populates="games")
 
 class Round(Base):
     __tablename__ = "rounds"
@@ -79,4 +81,5 @@ class Session(Base):
     player_ids = Column(String, nullable=True)
     results = Column(JSONB, nullable=True)
 
+    games = relationship("Game", back_populates="session")
     room = relationship("Room", back_populates="sessions")

@@ -1,13 +1,18 @@
 from itertools import combinations
-from multiprocessing import Pool
 import random
 from app import models
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
 from math import factorial
-import json
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from ..database import SessionLocal
+import logging
+from datetime import datetime
 
-GAMES_PLAYED_WITH_EACH_OTHER = 10
-global_session = None
+GAMES_PLAYED_WITH_EACH_OTHER = 1000
+MAXIMUM_NUMBER_OF_ROUNDS = 1000
+global_game_session = None
+global_game_session_id = None
 global_players = []
 
 def compute_payoffs(player1_choice, player2_choice):
@@ -42,12 +47,20 @@ def get_player_choice(player_name, game_history, functions):
 
     return player_choice
 
-def play_game(session_id, db: Session):
-    global global_session, global_players
+def play_multiple_games_wrapper(args):
+    player1, player2, db, functions, game_session_id = args
+    play_multiple_games(player1, player2, db, functions, game_session_id)
+
+def play_game(game_session_id, db: Session):
+    global global_game_session, global_players
+
+    start_time = datetime.now()
+    checkpoint_start_time = start_time  # Initialize checkpoint start time
+    checkpoint_durations = []
 
     # Prepare the player functions
-    global_session = db.query(models.Session).filter(models.Session.id == session_id).first()
-    player_ids = global_session.player_ids.split(",")
+    global_game_session = db.query(models.Session).filter(models.Session.id == game_session_id).first()
+    player_ids = global_game_session.player_ids.split(",")
 
     global_players = [db.query(models.Player).filter(models.Player.id == player_id).first() for player_id in player_ids]
 
@@ -60,106 +73,116 @@ def play_game(session_id, db: Session):
     ten_percent_games = total_games / GAMES_PLAYED_WITH_EACH_OTHER
     completed_games = 0
     
-    for player1, player2 in player_pairs:
-        play_multiple_games(player1, player2, db, functions)
-        completed_games += GAMES_PLAYED_WITH_EACH_OTHER
+    tasks = [(player1, player2, SessionLocal(), functions, game_session_id) for player1, player2 in player_pairs]
+    
+    with ThreadPoolExecutor() as executor:
+        future_to_pair = {executor.submit(play_multiple_games_wrapper, task): task for task in tasks}
+        
+        for future in as_completed(future_to_pair):
+            pair = future_to_pair[future]
+            try:
+                completed_games += GAMES_PLAYED_WITH_EACH_OTHER
+                if completed_games % ten_percent_games == 0:
+                    now = datetime.now()
+                    checkpoint_duration = (now - checkpoint_start_time).total_seconds()
+                    checkpoint_durations.append(checkpoint_duration)
+                    checkpoint_start_time = now
 
-        # Update session status at each 10 percent completion
-        if completed_games % ten_percent_games == 0:
-            completion_percentage = (completed_games / total_games) * 100
-            global_session.status = f"{completion_percentage}% completed"
-            db.commit()
+                    completion_percentage = (completed_games / total_games) * 100
+                    global_game_session.status = f"{completion_percentage}"
+                    db.commit()
+            except Exception as exc:
+                print(f'Game between {pair[0]} and {pair[1]} generated an exception: {exc}')
             
+    post_completion_start_time = datetime.now()  # Start time after 100% completion
+    
     # After all games are finished, calculate the leaderboard and scores matrix
-    leaderboard, scores_matrix = calculate_leaderboard_and_scores_matrix(global_players, db)
+    leaderboard, scores_matrix = calculate_leaderboard_and_scores_matrix(global_players, game_session_id, db)
 
     # Convert the leaderboard to a JSON-compatible format
     # Assuming leaderboard is a list of tuples or a similar structure that needs conversion
     leaderboard_jsonb = {"leaderboard": leaderboard, "matrix": scores_matrix}
 
     # Update the session results with the JSON-formatted leaderboard information
-    global_session.results = leaderboard_jsonb
+    global_game_session.results = leaderboard_jsonb
 
     # Set the session status to "finished"
-    global_session.status = "finished"
+    global_game_session.status = "finished"
     db.commit()
 
-def play_multiple_games(player1, player2, db, functions):
-    # Play the game 100 times
-    for _ in range(GAMES_PLAYED_WITH_EACH_OTHER):
-        # Create a new game
-        game = models.Game(home_player_id=player1.id, away_player_id=player2.id)
-        db.add(game)
+    try:
+        db.query(models.Game).filter(models.Game.session_id == game_session_id).delete()
         db.commit()
+    except SQLAlchemyError as e:
+        logging.info(f"An error occurred while deleting game records: {e}")
+        db.rollback()
 
-        # Initialize the game histories
-        game_history_player1 = []
-        game_history_player2 = []
+    remaining_time_to_exit = (datetime.now() - post_completion_start_time).total_seconds()
+    
+    logging.info(f"Game session {global_game_session.name} with id:{game_session_id} completed in {remaining_time_to_exit} seconds. Checkpoint durations: {checkpoint_durations}")
 
-        # For each round in the game
-        for round_number in range(1, 51):
-            # Get the players' choices
-            player1_choice = get_player_choice(player1.player_name, game_history_player1, functions)
-            player2_choice = get_player_choice(player2.player_name, game_history_player2, functions)
-
-            # Add the choices to the game histories
-            game_history_player1.append([player1_choice, player2_choice])
-            game_history_player2.append([player2_choice, player1_choice])
-
-            # Compute the payoffs
-            player1_score, player2_score = compute_payoffs(player1_choice, player2_choice)
-
-            # Update the players' scores
-            game.home_player_score += player1_score
-            game.away_player_score += player2_score
-
-            # Create a new round
-            round = models.Round(round_number=round_number, home_choice=player1_choice, away_choice=player2_choice, game_id=game.id)
-            db.add(round)
+def play_multiple_games(player1, player2, db, functions, game_session_id):
+    try:
+        for _ in range(GAMES_PLAYED_WITH_EACH_OTHER):
+            game = models.Game(home_player_id=player1.id, away_player_id=player2.id, session_id=game_session_id)
+            db.add(game)
             db.commit()
 
-            # Decide whether the game ends on this round with the probability of p = 0.005
-            if random.random() <= 0.005:
-                break
-       
-        db.commit()
+            game_history_player1 = []
+            game_history_player2 = []
 
-def calculate_scores_matrix(players, db: Session):
-    # Initialize the scores matrix
+            for _ in range(1, MAXIMUM_NUMBER_OF_ROUNDS):
+                player1_choice = get_player_choice(player1.player_name, game_history_player1, functions)
+                player2_choice = get_player_choice(player2.player_name, game_history_player2, functions)
+
+                game_history_player1.append([player1_choice, player2_choice])
+                game_history_player2.append([player2_choice, player1_choice])
+
+                player1_score, player2_score = compute_payoffs(player1_choice, player2_choice)
+                game.home_player_score += player1_score
+                game.away_player_score += player2_score
+
+                if random.random() <= 0.005:
+                    break
+
+        db.commit
+    except SQLAlchemyError as e:
+        logging.info(f"An error occurred: {e}")
+        db.rollback()
+
+def calculate_scores_matrix(players, all_games):
+    # Create a dictionary to map player IDs to player names for quick lookup
+    player_id_to_name = {player.id: player.player_name for player in players}
+    
+    # Initialize the scores matrix with player names
     scores_matrix = {player.player_name: {opponent.player_name: 0 for opponent in players if opponent.id != player.id} for player in players}
 
-    # For each player
-    for player in players:
-        # Get all games where the player was the home player
-        home_games = db.query(models.Game).filter(models.Game.home_player_id == player.id).all()
-        # Get all games where the player was the away player
-        away_games = db.query(models.Game).filter(models.Game.away_player_id == player.id).all()
-
-        # Update the scores matrix for each game
-        for game in home_games:
-            opponent_name = db.query(models.Player).filter(models.Player.id == game.away_player_id).first().player_name
-            scores_matrix[player.player_name][opponent_name] += game.home_player_score
-        for game in away_games:
-            opponent_name = db.query(models.Player).filter(models.Player.id == game.home_player_id).first().player_name
-            scores_matrix[player.player_name][opponent_name] += game.away_player_score
+    # Process each game to update the scores matrix
+    for game in all_games:
+        home_player_name = player_id_to_name[game.home_player_id]
+        away_player_name = player_id_to_name[game.away_player_id]
+        
+        # Update the scores matrix for the home player
+        scores_matrix[home_player_name][away_player_name] += game.home_player_score
+        # Update the scores matrix for the away player
+        scores_matrix[away_player_name][home_player_name] += game.away_player_score
 
     return scores_matrix
 
-def calculate_leaderboard_and_scores_matrix(players, db: Session):
-    # Initialize the leaderboard
+def calculate_leaderboard_and_scores_matrix(players, game_session_id, db: Session):
+    all_games = db.query(models.Game).filter(models.Game.session_id == game_session_id).all()
+    scores_matrix = calculate_scores_matrix(players, all_games)
+
     leaderboard = {}
+    # Process games in Python to calculate total scores
+    player_scores = {player.id: 0 for player in players}  # Initialize scores for all players
+    for game in all_games:
+        player_scores[game.home_player_id] += game.home_player_score
+        player_scores[game.away_player_id] += game.away_player_score
 
-    # Calculate the scores matrix by calling the new function
-    scores_matrix = calculate_scores_matrix(players, db)
-
-    # For each player, calculate the total score
+    # Map player IDs back to player names and scores
     for player in players:
-        home_games = db.query(models.Game).filter(models.Game.home_player_id == player.id).all()
-        away_games = db.query(models.Game).filter(models.Game.away_player_id == player.id).all()
-        total_score = sum(game.home_player_score for game in home_games) + sum(game.away_player_score for game in away_games)
-
-        # Add the player and their total score to the leaderboard
-        leaderboard[player.player_name] = total_score
+        leaderboard[player.player_name] = player_scores[player.id]
 
     # Sort the leaderboard by score in descending order
     leaderboard = dict(sorted(leaderboard.items(), key=lambda item: item[1], reverse=True))

@@ -61,6 +61,7 @@ class GameBase(BaseModel):
     away_player_id: int
     home_player_score: int
     away_player_score: int
+    session_id: int
 
 class GameCreate(GameBase):
     pass
