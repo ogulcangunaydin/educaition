@@ -9,7 +9,7 @@ from ..database import SessionLocal
 import logging
 from datetime import datetime
 
-GAMES_PLAYED_WITH_EACH_OTHER = 1000
+GAMES_PLAYED_WITH_EACH_OTHER = 100
 MAXIMUM_NUMBER_OF_ROUNDS = 1000
 MAX_WORKERS = 4
 global_game_session = None
