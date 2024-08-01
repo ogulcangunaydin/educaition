@@ -7,10 +7,12 @@ from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.responses import JSONResponse
 from datetime import timedelta
 from app.services.update_player_tactic_and_test_code import update_player_tactic_and_test_code
-from app.services.prisoners_dilemma import play_game, calculate_leaderboard_and_scores_matrix
+from app.services.prisoners_dilemma import play_game
 from app.services.calculate_personality_traits import calculate_personality_traits
-from typing import List
 import os
+import bleach
+import re
+from keyword import iskeyword
 
 
 def read_users(skip: int = 0, limit: int = 100, db: Session = None):
@@ -24,7 +26,10 @@ def read_user(user_id: int, db: Session = None):
     return db_user
 
 def create_user(user: schemas.UserCreate, db: Session = None):
-    db_user = models.User(username=user.username, email=user.email, hashed_password=security.get_password_hash(user.password))
+    clean_name = bleach.clean(user.username, strip=True)
+    clean_email = bleach.clean(user.email, strip=True)
+
+    db_user = models.User(username=clean_name, email=clean_email, hashed_password=security.get_password_hash(user.password))
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
@@ -34,7 +39,9 @@ def update_user(user_id: int, user: schemas.UserCreate, db: Session = None):
     db_user = db.query(models.User).get(user_id)
     if db_user is None:
         raise HTTPException(status_code=404, detail="User not found")
-    db_user.username = user.username
+    
+    cleaned_username = bleach.clean(user.username, strip=True)
+    db_user.username = cleaned_username
     db_user.hashed_password = security.get_password_hash(user.password)
     db.commit()
     return db_user
@@ -88,13 +95,29 @@ def get_players_by_ids(player_ids: str, db: Session):
     player_ids = player_ids.split(",")
     return db.query(models.Player).filter(models.Player.id.in_(player_ids)).all()
 
-def create_player(player: schemas.PlayerCreate, db: Session):
-    existing_player = db.query(models.Player).filter(models.Player.player_name == player.player_name, models.Player.room_id == player.room_id).first()
+def create_player_function_name(clean_name):
+    # Normalize the name
+    normalized_name = clean_name.lower()
+    # Replace spaces and invalid characters with underscores
+    function_name = re.sub(r'\W|^(?=\d)', '_', normalized_name)
+    # Ensure it starts with a valid character
+    if not function_name[0].isalpha():
+        function_name = "_" + function_name
+    # Check for reserved keywords
+    if iskeyword(function_name):
+        function_name += "_"
+    return function_name
+
+def create_player(player_name, room_id, db: Session):
+    clean_name = bleach.clean(player_name, strip=True)
+
+    existing_player = db.query(models.Player).filter(models.Player.player_name == clean_name, models.Player.room_id == room_id).first()
     if existing_player:
         raise HTTPException(status_code=400, detail="Player name already exists in the room.")
     
+    player_function_name = create_player_function_name(clean_name)
     # If the check passes, proceed to create a new player
-    new_player = models.Player(player_name=player.player_name, room_id=player.room_id)
+    new_player = models.Player(player_name=clean_name, player_function_name=player_function_name, room_id=room_id)
     db.add(new_player)
     db.commit()
     db.refresh(new_player)
@@ -110,11 +133,12 @@ def update_player_tactic(player_id: int, player_tactic: str, db: Session):
             detail="Player not found",
         )
     
-    success, player_code = update_player_tactic_and_test_code(player_tactic, player.player_name)
+    cleaned_player_tactic = bleach.clean(player_tactic, strip=True)
+    success, player_code = update_player_tactic_and_test_code(cleaned_player_tactic, player.player_function_name)
 
     # If the service returns true, update the player
     if success:
-        player.player_tactic = player_tactic
+        player.player_tactic = cleaned_player_tactic
         player.player_code = player_code
         db.commit()
         return player

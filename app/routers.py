@@ -57,8 +57,7 @@ def delete_room(room_id: int, db: Session = Depends(db_operations.get_db)):
 
 @router_without_auth.post("/players/", response_model=schemas.Player)
 def create_player(player_name: str = Form(...), room_id: int = Form(...), db: Session = Depends(db_operations.get_db)):
-    player = schemas.PlayerCreate(player_name=player_name, room_id=room_id)
-    return controllers.create_player(player, db)
+    return controllers.create_player(player_name, room_id, db)
 
 @router_without_auth.get("/players/room/{room_id}", response_model=List[schemas.Player])
 def get_players_by_room(room_id: int, skip: int = 0, limit: int = 100, db: Session = Depends(db_operations.get_db)):

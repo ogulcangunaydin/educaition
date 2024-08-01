@@ -30,6 +30,7 @@ class Player(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     player_name = Column(String, index=True)
+    player_function_name = Column(String)
     player_tactic = Column(String)
     player_code = Column(String)
     room_id = Column(Integer, ForeignKey("rooms.id"))

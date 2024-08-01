@@ -38,6 +38,7 @@ class Room(RoomBase):
 
 class PlayerBase(BaseModel):
     player_name: str
+    player_function_name: Optional[str] = None
     player_tactic: Optional[str] = None
     player_code: Optional[str] = None
     extroversion: Optional[float] = None
