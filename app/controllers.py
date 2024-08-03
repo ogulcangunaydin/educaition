@@ -150,6 +150,14 @@ def update_player_tactic(player_id: int, player_tactic: str, db: Session):
             detail="The given tactic is not ok",
         )
 
+def delete_player(player_id: int, db: Session):
+    player = db.query(models.Player).get(player_id)
+    if player is None:
+        raise HTTPException(status_code=404, detail="Player not found")
+    db.delete(player)
+    db.commit()
+    return player
+
 def start_game(room_id: int, name: str, db: Session, background_tasks: BackgroundTasks):
     # Existing validation checks
     players = db.query(models.Player).filter(models.Player.room_id == room_id).all()

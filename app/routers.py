@@ -75,6 +75,10 @@ def update_player_personality_traits(player_id: int, answers: str = Form(...), d
 def get_players_by_ids(player_ids: str, db: Session = Depends(db_operations.get_db)):
     return controllers.get_players_by_ids(player_ids, db)
 
+@router.post("/players/delete/{player_id}", response_model=schemas.Player)
+def delete_player(player_id: int, db: Session = Depends(db_operations.get_db)):
+    return controllers.delete_player(player_id, db)
+
 @router.post("/rooms/{room_id}/ready", response_model=schemas.SessionCreate)
 def start_game(room_id: int, background_tasks: BackgroundTasks,  db: Session = Depends(db_operations.get_db), name: str = Form(...)):
     return controllers.start_game(room_id, name, db, background_tasks)
