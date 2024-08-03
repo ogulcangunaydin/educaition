@@ -11,6 +11,7 @@ from ..database import SessionLocal
 GAMES_PLAYED_WITH_EACH_OTHER = 100
 MAXIMUM_NUMBER_OF_ROUNDS = 1000
 MAX_WORKERS = 4
+CHUNK_SIZE = 1000
 global_game_session = None
 global_game_session_id = None
 global_players = []
@@ -133,7 +134,7 @@ def play_game(game_session_id):
     
     logging.info(f"Game session {global_game_session.name} with id:{game_session_id} completed in {remaining_time_to_exit} seconds. Checkpoint durations: {checkpoint_durations}")
     
-    delete_games_for_session(game_session_id)
+    threaded_delete_games_for_session(game_session_id)
 
 def play_multiple_games(player1, player2, wrapperDb, functions, game_session_id):
     for _ in range(GAMES_PLAYED_WITH_EACH_OTHER):
@@ -219,16 +220,41 @@ def calculate_leaderboard_and_scores_matrix(players, game_session_id):
 
     return leaderboard, scores_matrix
 
-def delete_games_for_session(session_id):
-    deleteDb = SessionLocal()
-
+def fetch_game_ids_for_session(session_id):
+    db = SessionLocal()
     try:
-        deleteDb.query(models.Game).filter(models.Game.session_id == session_id).delete()
-        deleteDb.commit()
-        logging.info(f"Successfully deleted games for session ID: {session_id}")
-    except Exception as e:
-        logging.error(f"An error occurred while deleting games: {e}")
-        deleteDb.rollback()
+        game_ids = db.query(models.Game.id).filter(models.Game.session_id == session_id).all()
+        return [game_id[0] for game_id in game_ids]
+    except SQLAlchemyError as e:
+        logging.error(f"An error occurred while fetching game IDs: {e}")
     finally:
-        deleteDb.close()
-        logging.info("Delete Database session closed.")
+        db.close()
+
+def delete_games_chunk(game_ids_chunk):
+    db = SessionLocal()
+    try:
+        db.query(models.Game).filter(models.Game.id.in_(game_ids_chunk)).delete(synchronize_session=False)
+        db.commit()
+    except Exception as e:
+        logging.error(f"An error occurred while deleting games chunk: {e}")
+        db.rollback()
+    finally:
+        db.close()
+
+def divide_into_chunks(lst, chunk_size):
+    for i in range(0, len(lst), chunk_size):
+        yield lst[i:i + chunk_size]
+
+def threaded_delete_games_for_session(session_id):
+    start_time = datetime.now()
+
+    game_ids = fetch_game_ids_for_session(session_id)
+
+    chunks = divide_into_chunks(game_ids, chunk_size=CHUNK_SIZE)
+
+    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        executor.map(delete_games_chunk, chunks)
+    
+    end_time = datetime.now()
+    deletion_time = (end_time - start_time).total_seconds()
+    logging.info(f"Deleted all games for session ID: {session_id} in {deletion_time} seconds.")
