@@ -163,12 +163,16 @@ def play_multiple_games(player1, player2, wrapperDb, functions, game_session_id)
             wrapperDb.rollback()
 
 def calculate_scores_matrix(players, all_games):
+    logging.info("Starting to calculate scores matrix.")
+    
     # Create a dictionary to map player IDs to player names for quick lookup
     player_id_to_name = {player.id: player.player_name for player in players}
+    logging.info("Mapped player IDs to player names.")
     
     # Initialize the scores matrix with player names
     scores_matrix = {player.player_name: {opponent.player_name: 0 for opponent in players if opponent.id != player.id} for player in players}
-
+    logging.info("Initialized scores matrix with player names.")
+    
     # Process each game to update the scores matrix
     for game in all_games:
         home_player_name = player_id_to_name[game.home_player_id]
@@ -178,17 +182,21 @@ def calculate_scores_matrix(players, all_games):
         scores_matrix[home_player_name][away_player_name] += game.home_player_score
         # Update the scores matrix for the away player
         scores_matrix[away_player_name][home_player_name] += game.away_player_score
-
+    
+    logging.info("Completed updating scores matrix.")
     return scores_matrix
 
 def calculate_leaderboard_and_scores_matrix(players, game_session_id):
+    logging.info("Starting to calculate leaderboard and scores matrix.")
     db = SessionLocal()
     try:
         all_games = db.query(models.Game).filter(models.Game.session_id == game_session_id).all()
+        logging.info(f"Retrieved all games for session ID: {game_session_id}")
     except SQLAlchemyError as e:
-        logging.info(f"An error occurred: {e}")
+        logging.error(f"An error occurred while querying the database: {e}")
     finally:
         db.close()
+        logging.info("Database session closed.")
 
     scores_matrix = calculate_scores_matrix(players, all_games)
 
@@ -198,12 +206,14 @@ def calculate_leaderboard_and_scores_matrix(players, game_session_id):
     for game in all_games:
         player_scores[game.home_player_id] += game.home_player_score
         player_scores[game.away_player_id] += game.away_player_score
-
+    logging.info("Calculated total scores for all players.")
+    
     # Map player IDs back to player names and scores
     for player in players:
         leaderboard[player.player_name] = player_scores[player.id]
 
     # Sort the leaderboard by score in descending order
     leaderboard = dict(sorted(leaderboard.items(), key=lambda item: item[1], reverse=True))
+    logging.info("Sorted the leaderboard by score in descending order.")
 
     return leaderboard, scores_matrix
