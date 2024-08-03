@@ -50,11 +50,11 @@ def get_player_choice(player_name, game_history, functions):
 def play_multiple_games_wrapper(args):
     player1, player2, functions, game_session_id = args
     
-    db = SessionLocal()
+    wrapperDb = SessionLocal()
     try:
-        play_multiple_games(player1, player2, db, functions, game_session_id)
+        play_multiple_games(player1, player2, wrapperDb, functions, game_session_id)
     finally:
-        db.close()
+        wrapperDb.close()
 
 def play_game(game_session_id):
     global global_game_session, global_players    
@@ -64,15 +64,15 @@ def play_game(game_session_id):
     checkpoint_durations = []
 
     # Prepare the player functions
-    db = SessionLocal()
+    mainDb = SessionLocal()
     try:
-        global_game_session = db.query(models.Session).filter(models.Session.id == game_session_id).first()
+        global_game_session = mainDb.query(models.Session).filter(models.Session.id == game_session_id).first()
         player_ids = global_game_session.player_ids.split(",")
-        global_players = [db.query(models.Player).filter(models.Player.id == player_id).first() for player_id in player_ids]
+        global_players = [mainDb.query(models.Player).filter(models.Player.id == player_id).first() for player_id in player_ids]
     except SQLAlchemyError as e:
         logging.info(f"An error occurred: {e}")
     finally:
-        db.close()
+        mainDb.close()
 
     functions = prepare_player_functions(global_players)
 
@@ -95,16 +95,16 @@ def play_game(game_session_id):
             checkpoint_durations.append(checkpoint_duration)
             checkpoint_start_time = now
 
-            newDb = SessionLocal()
+            percentageDb = SessionLocal()
             try:
-                current_session = db.query(models.Session).filter(models.Session.id == game_session_id).first()
+                current_session = percentageDb.query(models.Session).filter(models.Session.id == game_session_id).first()
                 current_session.status = f"{completion_percentage}"
-                newDb.commit()
+                percentageDb.commit()
             except SQLAlchemyError as exc:
                 logging.info(f"An error occurred: {exc}")
-                newDb.rollback()
+                percentageDb.rollback()
             finally:
-                newDb.close()
+                percentageDb.close()
             
             logging.info(f"{completion_percentage}% completed in {checkpoint_duration} seconds")
             
@@ -117,29 +117,29 @@ def play_game(game_session_id):
     # Assuming leaderboard is a list of tuples or a similar structure that needs conversion
     leaderboard_jsonb = {"leaderboard": leaderboard, "matrix": scores_matrix}
 
-    db = SessionLocal()
+    lastDb = SessionLocal()
     try:
-        current_session = db.query(models.Session).filter(models.Session.id == game_session_id).first()
+        current_session = lastDb.query(models.Session).filter(models.Session.id == game_session_id).first()
         current_session.results = leaderboard_jsonb
         current_session.status = "finished"
-        db.query(models.Game).filter(models.Game.session_id == game_session_id).delete()
-        db.commit()
+        lastDb.query(models.Game).filter(models.Game.session_id == game_session_id).delete()
+        lastDb.commit()
     except SQLAlchemyError as e:
         logging.info(f"An error occurred: {e}")
-        db.rollback()
+        lastDb.rollback()
     finally:
-        db.close()
+        lastDb.close()
 
     remaining_time_to_exit = (datetime.now() - post_completion_start_time).total_seconds()
     
     logging.info(f"Game session {global_game_session.name} with id:{game_session_id} completed in {remaining_time_to_exit} seconds. Checkpoint durations: {checkpoint_durations}")
 
-def play_multiple_games(player1, player2, db, functions, game_session_id):
+def play_multiple_games(player1, player2, wrapperDb, functions, game_session_id):
     for _ in range(GAMES_PLAYED_WITH_EACH_OTHER):
         try:
             game = models.Game(home_player_id=player1.id, away_player_id=player2.id,
                                home_player_score=0, away_player_score=0, session_id=game_session_id)
-            db.add(game)
+            wrapperDb.add(game)
 
             game_history_player1 = []
             game_history_player2 = []
@@ -157,10 +157,10 @@ def play_multiple_games(player1, player2, db, functions, game_session_id):
 
                 if random.random() <= 0.005:
                     break
-            db.commit()
+            wrapperDb.commit()
         except SQLAlchemyError as e:
             logging.info(f"An error occurred: {e}")
-            db.rollback()
+            wrapperDb.rollback()
 
 def calculate_scores_matrix(players, all_games):
     # Create a dictionary to map player IDs to player names for quick lookup
