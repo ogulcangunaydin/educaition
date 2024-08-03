@@ -39,8 +39,8 @@ def prepare_player_functions(players):
 
     return functions
 
-def get_player_choice(player_name, game_history, functions):
-    player_function = functions[player_name]
+def get_player_choice(player_function_name, game_history, functions):
+    player_function = functions[player_function_name]
     
     # Call the player's function to get the choice
     player_choice = player_function(game_history)
@@ -145,8 +145,8 @@ def play_multiple_games(player1, player2, wrapperDb, functions, game_session_id)
             game_history_player2 = []
 
             for _ in range(1, MAXIMUM_NUMBER_OF_ROUNDS):
-                player1_choice = get_player_choice(player1.player_name, game_history_player1, functions)
-                player2_choice = get_player_choice(player2.player_name, game_history_player2, functions)
+                player1_choice = get_player_choice(player1.player_function_name, game_history_player1, functions)
+                player2_choice = get_player_choice(player2.player_function_name, game_history_player2, functions)
 
                 game_history_player1.append([player1_choice, player2_choice])
                 game_history_player2.append([player2_choice, player1_choice])

@@ -11,8 +11,7 @@ from app.services.prisoners_dilemma import play_game
 from app.services.calculate_personality_traits import calculate_personality_traits
 import os
 import bleach
-import re
-from keyword import iskeyword
+from .helpers import create_player_function_name
 
 
 def read_users(skip: int = 0, limit: int = 100, db: Session = None):
@@ -94,19 +93,6 @@ def get_players_by_room(room_id: int, skip: int, limit: int, db: Session):
 def get_players_by_ids(player_ids: str, db: Session):
     player_ids = player_ids.split(",")
     return db.query(models.Player).filter(models.Player.id.in_(player_ids)).all()
-
-def create_player_function_name(clean_name):
-    # Normalize the name
-    normalized_name = clean_name.lower()
-    # Replace spaces and invalid characters with underscores
-    function_name = re.sub(r'\W|^(?=\d)', '_', normalized_name)
-    # Ensure it starts with a valid character
-    if not function_name[0].isalpha():
-        function_name = "_" + function_name
-    # Check for reserved keywords
-    if iskeyword(function_name):
-        function_name += "_"
-    return function_name
 
 def create_player(player_name, room_id, db: Session):
     clean_name = bleach.clean(player_name, strip=True)

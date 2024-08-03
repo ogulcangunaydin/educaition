@@ -1,6 +1,7 @@
 import requests
 import os
 import logging
+import random
 
 def update_player_tactic_and_test_code(player_tactic: str, player_name: str):
     def process_gpt_response(content):
@@ -17,7 +18,7 @@ def update_player_tactic_and_test_code(player_tactic: str, player_name: str):
             "model": "gpt-4o",
             "messages": [{"role": "user", "content": prompt}],
             "temperature": 0.5,
-            "max_tokens": 200
+            "max_tokens": 500
         }
         response = requests.post(os.getenv('OPENAI_ENDPOINT'), headers=headers, json=data)
         if response.status_code == 200:
@@ -68,14 +69,26 @@ def update_player_tactic_and_test_code(player_tactic: str, player_name: str):
             logging.error(f"Fixed code execution error: {fixed_error}")
             return False, "Failed to execute fixed code."
 
+    def generate_random_test_cases(test_cases, num_cases=3):
+        for _ in range(num_cases):
+            num_rounds = random.randint(10, 100)
+            rounds = [[random.choice(["cooperate", "defect"]), random.choice(["cooperate", "defect"])] for _ in range(num_rounds)]
+            test_cases.append(rounds)
+        return test_cases
+    
     # Define the test input
     test_cases = [
-        [["cooperate", "defect"], ["defect", "cooperate"]],
         [],
+        [["cooperate", "defect"]],
+        [["cooperate", "cooperate"]],
+        [["defect", "defect"]],
+        [["cooperate", "defect"], ["defect", "cooperate"]],
         [["defect", "defect"], ["defect", "defect"]],
         [["cooperate", "cooperate"], ["cooperate", "cooperate"]],
         [["defect", "cooperate"], ["cooperate", "defect"], ["defect", "cooperate"]]
     ]
+    
+    test_cases = generate_random_test_cases(test_cases)
     
     try:
         for moves in test_cases:
