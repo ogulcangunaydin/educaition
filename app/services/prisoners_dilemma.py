@@ -151,7 +151,7 @@ def play_multiple_games(player1, player2, db, functions, game_session_id):
                 if random.random() <= 0.005:
                     break
 
-        db.commit
+        db.commit()
     except SQLAlchemyError as e:
         logging.info(f"An error occurred: {e}")
         db.rollback()
