@@ -122,7 +122,6 @@ def play_game(game_session_id):
         current_session = lastDb.query(models.Session).filter(models.Session.id == game_session_id).first()
         current_session.results = leaderboard_jsonb
         current_session.status = "finished"
-        lastDb.query(models.Game).filter(models.Game.session_id == game_session_id).delete()
         lastDb.commit()
     except SQLAlchemyError as e:
         logging.info(f"An error occurred: {e}")
@@ -133,6 +132,8 @@ def play_game(game_session_id):
     remaining_time_to_exit = (datetime.now() - post_completion_start_time).total_seconds()
     
     logging.info(f"Game session {global_game_session.name} with id:{game_session_id} completed in {remaining_time_to_exit} seconds. Checkpoint durations: {checkpoint_durations}")
+    
+    delete_games_for_session(game_session_id)
 
 def play_multiple_games(player1, player2, wrapperDb, functions, game_session_id):
     for _ in range(GAMES_PLAYED_WITH_EACH_OTHER):
@@ -217,3 +218,17 @@ def calculate_leaderboard_and_scores_matrix(players, game_session_id):
     logging.info("Sorted the leaderboard by score in descending order.")
 
     return leaderboard, scores_matrix
+
+def delete_games_for_session(session_id):
+    deleteDb = SessionLocal()
+
+    try:
+        deleteDb.query(models.Game).filter(models.Game.session_id == session_id).delete()
+        deleteDb.commit()
+        logging.info(f"Successfully deleted games for session ID: {session_id}")
+    except Exception as e:
+        logging.error(f"An error occurred while deleting games: {e}")
+        deleteDb.rollback()
+    finally:
+        deleteDb.close()
+        logging.info("Delete Database session closed.")
