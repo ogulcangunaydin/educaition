@@ -1,13 +1,12 @@
 from itertools import combinations
 import random
 from app import models
-from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 from math import factorial
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from ..database import SessionLocal
 import logging
 from datetime import datetime
+from ..database import SessionLocal
 
 GAMES_PLAYED_WITH_EACH_OTHER = 100
 MAXIMUM_NUMBER_OF_ROUNDS = 1000
@@ -49,26 +48,31 @@ def get_player_choice(player_name, game_history, functions):
     return player_choice
 
 def play_multiple_games_wrapper(args):
-    player1, player2, session_factory, functions, game_session_id = args
+    player1, player2, functions, game_session_id = args
     
-    db = session_factory()
+    db = SessionLocal()
     try:
         play_multiple_games(player1, player2, db, functions, game_session_id)
     finally:
         db.close()
 
-def play_game(game_session_id, db: Session):
-    global global_game_session, global_players
+def play_game(game_session_id):
+    global global_game_session, global_players    
 
     start_time = datetime.now()
     checkpoint_start_time = start_time  # Initialize checkpoint start time
     checkpoint_durations = []
 
     # Prepare the player functions
-    global_game_session = db.query(models.Session).filter(models.Session.id == game_session_id).first()
-    player_ids = global_game_session.player_ids.split(",")
-
-    global_players = [db.query(models.Player).filter(models.Player.id == player_id).first() for player_id in player_ids]
+    db = SessionLocal()
+    try:
+        global_game_session = db.query(models.Session).filter(models.Session.id == game_session_id).first()
+        player_ids = global_game_session.player_ids.split(",")
+        global_players = [db.query(models.Player).filter(models.Player.id == player_id).first() for player_id in player_ids]
+    except SQLAlchemyError as e:
+        logging.info(f"An error occurred: {e}")
+    finally:
+        db.close()
 
     functions = prepare_player_functions(global_players)
 
@@ -78,61 +82,64 @@ def play_game(game_session_id, db: Session):
     total_games = (factorial(total_players) / (factorial(2) * factorial(total_players - 2))) * GAMES_PLAYED_WITH_EACH_OTHER
     completed_games = 0
     
-    tasks = [(player1, player2, SessionLocal, functions, game_session_id) for player1, player2 in player_pairs]
+    tasks = [(player1, player2, functions, game_session_id) for player1, player2 in player_pairs]
     
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         future_to_pair = {executor.submit(play_multiple_games_wrapper, task): task for task in tasks}
         
-        for future in as_completed(future_to_pair):
-            pair = future_to_pair[future]
-            try:
-                completed_games += GAMES_PLAYED_WITH_EACH_OTHER
-                completion_percentage = round((completed_games / total_games) * 100)
-                now = datetime.now()
-                checkpoint_duration = (now - checkpoint_start_time).total_seconds()
-                checkpoint_durations.append(checkpoint_duration)
-                checkpoint_start_time = now
+        for _ in as_completed(future_to_pair):
+            completed_games += GAMES_PLAYED_WITH_EACH_OTHER
+            completion_percentage = round((completed_games / total_games) * 100)
+            now = datetime.now()
+            checkpoint_duration = (now - checkpoint_start_time).total_seconds()
+            checkpoint_durations.append(checkpoint_duration)
+            checkpoint_start_time = now
 
-                global_game_session.status = f"{completion_percentage}"
-                db.commit()
-                
-                logging.info(f"{completion_percentage}% completed in {checkpoint_duration} seconds")
-            except Exception as exc:
-                print(f'Game between {pair[0]} and {pair[1]} generated an exception: {exc}')
+            newDb = SessionLocal()
+            try:
+                current_session = db.query(models.Session).filter(models.Session.id == game_session_id).first()
+                current_session.status = f"{completion_percentage}"
+                newDb.commit()
+            except SQLAlchemyError as exc:
+                logging.info(f"An error occurred: {exc}")
+                newDb.rollback()
+            finally:
+                newDb.close()
+            
+            logging.info(f"{completion_percentage}% completed in {checkpoint_duration} seconds")
             
     post_completion_start_time = datetime.now()  # Start time after 100% completion
     
     # After all games are finished, calculate the leaderboard and scores matrix
-    leaderboard, scores_matrix = calculate_leaderboard_and_scores_matrix(global_players, game_session_id, db)
+    leaderboard, scores_matrix = calculate_leaderboard_and_scores_matrix(global_players, game_session_id)
 
     # Convert the leaderboard to a JSON-compatible format
     # Assuming leaderboard is a list of tuples or a similar structure that needs conversion
     leaderboard_jsonb = {"leaderboard": leaderboard, "matrix": scores_matrix}
 
-    # Update the session results with the JSON-formatted leaderboard information
-    global_game_session.results = leaderboard_jsonb
-
-    # Set the session status to "finished"
-    global_game_session.status = "finished"
-    db.commit()
-
+    db = SessionLocal()
     try:
+        current_session = db.query(models.Session).filter(models.Session.id == game_session_id).first()
+        current_session.results = leaderboard_jsonb
+        current_session.status = "finished"
         db.query(models.Game).filter(models.Game.session_id == game_session_id).delete()
         db.commit()
     except SQLAlchemyError as e:
-        logging.info(f"An error occurred while deleting game records: {e}")
+        logging.info(f"An error occurred: {e}")
         db.rollback()
+    finally:
+        db.close()
 
     remaining_time_to_exit = (datetime.now() - post_completion_start_time).total_seconds()
     
     logging.info(f"Game session {global_game_session.name} with id:{game_session_id} completed in {remaining_time_to_exit} seconds. Checkpoint durations: {checkpoint_durations}")
 
 def play_multiple_games(player1, player2, db, functions, game_session_id):
-    try:
-        for _ in range(GAMES_PLAYED_WITH_EACH_OTHER):
-            game = models.Game(home_player_id=player1.id, away_player_id=player2.id, session_id=game_session_id)
+    for _ in range(GAMES_PLAYED_WITH_EACH_OTHER):
+        try:
+            game = models.Game(home_player_id=player1.id, away_player_id=player2.id,
+                               home_player_score=0, away_player_score=0, session_id=game_session_id)
             db.add(game)
-            db.commit()
 
             game_history_player1 = []
             game_history_player2 = []
@@ -150,11 +157,10 @@ def play_multiple_games(player1, player2, db, functions, game_session_id):
 
                 if random.random() <= 0.005:
                     break
-
-        db.commit()
-    except SQLAlchemyError as e:
-        logging.info(f"An error occurred: {e}")
-        db.rollback()
+            db.commit()
+        except SQLAlchemyError as e:
+            logging.info(f"An error occurred: {e}")
+            db.rollback()
 
 def calculate_scores_matrix(players, all_games):
     # Create a dictionary to map player IDs to player names for quick lookup
@@ -175,8 +181,15 @@ def calculate_scores_matrix(players, all_games):
 
     return scores_matrix
 
-def calculate_leaderboard_and_scores_matrix(players, game_session_id, db: Session):
-    all_games = db.query(models.Game).filter(models.Game.session_id == game_session_id).all()
+def calculate_leaderboard_and_scores_matrix(players, game_session_id):
+    db = SessionLocal()
+    try:
+        all_games = db.query(models.Game).filter(models.Game.session_id == game_session_id).all()
+    except SQLAlchemyError as e:
+        logging.info(f"An error occurred: {e}")
+    finally:
+        db.close()
+
     scores_matrix = calculate_scores_matrix(players, all_games)
 
     leaderboard = {}

@@ -176,7 +176,7 @@ def start_game(room_id: int, name: str, db: Session, background_tasks: Backgroun
     db.commit()
     
     # Initiate the game in the background
-    background_tasks.add_task(play_game, new_session.id, db)
+    background_tasks.add_task(play_game, new_session.id)
     
     # Return the session details
     return new_session
