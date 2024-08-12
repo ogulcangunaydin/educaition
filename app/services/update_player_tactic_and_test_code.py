@@ -28,6 +28,14 @@ def update_player_tactic_and_test_code(player_tactic: str, player_name: str):
             logging.error(f"Failed to get response from GPT. Status code: {response.status_code}, Response: {response.text}")
             return None
     
+    def summarize_tactic(tactic: str) -> str:
+        """
+        Summarize the player's tactic into a one-sentence summary using GPT.
+        """
+        prompt = f"Summarize the following tactic with few words: '{tactic}'"
+        summary = send_request_to_gpt(prompt)
+        return summary
+    
     prompt = (
         f"Generate a directly executable Python function named '{player_name}' for the Prisoner's Dilemma game. The tactic is: "
         f"'{player_tactic}'. The function should accept an array of arrays as input, where each sub-array represents a game round. "
@@ -96,8 +104,15 @@ def update_player_tactic_and_test_code(player_tactic: str, player_name: str):
             # Check if the output is either "defect" or "cooperate"
             if output not in ["defect", "cooperate"]:
                 raise ValueError("Output validation failed")
+            
+        short_tactic = summarize_tactic(player_tactic)
+
+        # Remove backslashes and double quotes
+        if short_tactic:
+            short_tactic = short_tactic.replace("\\", "").replace("\"", "")
         
-        return True, generated_code
+
+        return True, generated_code, short_tactic
     except Exception as e:
         logging.error(f"Error during function execution or output validation: {e}")
 

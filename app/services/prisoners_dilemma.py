@@ -209,13 +209,16 @@ def calculate_leaderboard_and_scores_matrix(players, game_session_id):
         player_scores[game.home_player_id] += game.home_player_score
         player_scores[game.away_player_id] += game.away_player_score
     logging.info("Calculated total scores for all players.")
-    
-    # Map player IDs back to player names and scores
+
+    # Map player IDs back to player names, scores, and short tactics
     for player in players:
-        leaderboard[player.player_name] = player_scores[player.id]
+        leaderboard[player.player_name] = {
+            'score': player_scores[player.id],
+            'short_tactic': player.short_tactic
+        }
 
     # Sort the leaderboard by score in descending order
-    leaderboard = dict(sorted(leaderboard.items(), key=lambda item: item[1], reverse=True))
+    leaderboard = dict(sorted(leaderboard.items(), key=lambda item: item[1]['score'], reverse=True))
     logging.info("Sorted the leaderboard by score in descending order.")
 
     return leaderboard, scores_matrix

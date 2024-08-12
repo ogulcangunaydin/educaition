@@ -41,6 +41,7 @@ class PlayerBase(BaseModel):
     player_function_name: Optional[str] = None
     player_tactic: Optional[str] = None
     player_code: Optional[str] = None
+    short_tactic: Optional[str] = None
     extroversion: Optional[float] = None
     agreeableness: Optional[float] = None
     conscientiousness: Optional[float] = None

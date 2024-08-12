@@ -120,12 +120,14 @@ def update_player_tactic(player_id: int, player_tactic: str, db: Session):
         )
     
     cleaned_player_tactic = bleach.clean(player_tactic, strip=True)
-    success, player_code = update_player_tactic_and_test_code(cleaned_player_tactic, player.player_function_name)
+    success, player_code, short_tactic = update_player_tactic_and_test_code(cleaned_player_tactic,
+                                                                            player.player_function_name)
 
     # If the service returns true, update the player
     if success:
         player.player_tactic = cleaned_player_tactic
         player.player_code = player_code
+        player.short_tactic = short_tactic
         db.commit()
         return player
 
