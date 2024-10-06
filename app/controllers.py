@@ -9,6 +9,7 @@ from datetime import timedelta
 from app.services.update_player_tactic_and_test_code import update_player_tactic_and_test_code
 from app.services.prisoners_dilemma import play_game
 from app.services.calculate_personality_traits import calculate_personality_traits
+from app.services.job_recommendation_service import get_job_recommendation
 import os
 import bleach
 from .helpers import create_player_function_name
@@ -216,3 +217,64 @@ def get_sessions_by_room(room_id: int, db: Session):
 
 def get_session(session_id: int, db: Session):
     return db.query(models.Session).filter(models.Session.id == session_id).first()
+
+def create_dissonance_test_participant(db: Session, participant: schemas.DissonanceTestParticipantCreate):
+    db_participant = models.DissonanceTestParticipant(**participant.dict())
+    db.add(db_participant)
+    db.commit()
+    db.refresh(db_participant)
+    return db_participant
+
+def read_dissonance_test_participant(participant_id: int, db: Session):
+    db_participant = db.query(models.DissonanceTestParticipant).filter(models.DissonanceTestParticipant.id == participant_id).first()
+    if db_participant is None:
+        raise HTTPException(status_code=404, detail="Participant not found")
+    return db_participant
+
+def get_dissonance_test_participants(skip: int, limit: int, db: Session):
+    return db.query(models.DissonanceTestParticipant).offset(skip).limit(limit).all()
+
+def update_dissonance_test_participant(participant_id: int, participant: schemas.DissonanceTestParticipantCreate, db: Session):
+    db_participant = db.query(models.DissonanceTestParticipant).filter(models.DissonanceTestParticipant.id == participant_id).first()
+    if db_participant is None:
+        raise HTTPException(status_code=404, detail="Participant not found")
+    for key, value in participant.dict().items():
+        setattr(db_participant, key, value)
+    db.commit()
+    db.refresh(db_participant)
+    return db_participant
+
+def delete_dissonance_test_participant(participant_id: int, db: Session):
+    db_participant = db.query(models.DissonanceTestParticipant).filter(models.DissonanceTestParticipant.id == participant_id).first()
+    if db_participant is None:
+        raise HTTPException(status_code=404, detail="Participant not found")
+    db.delete(db_participant)
+    db.commit()
+    return db_participant
+
+def update_dissonance_test_participant_personality_traits(participant_id: int, answers: str, db: Session):
+    # Retrieve the player from the database
+    db_participant = db.query(models.DissonanceTestParticipant).filter(models.DissonanceTestParticipant.id == participant_id).first()
+    
+    if db_participant is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Participant not found",
+        )
+    
+    # Calculate personality scores using the previously defined function
+    personality_scores = calculate_personality_traits(answers)
+    
+    job_recommendation = get_job_recommendation(personality_scores, db_participant.gender, db_participant.age)
+    
+    # Update the db_participant with the calculated personality traits
+    db_participant.extroversion = personality_scores["extroversion"]
+    db_participant.agreeableness = personality_scores["agreeableness"]
+    db_participant.conscientiousness = personality_scores["conscientiousness"]
+    db_participant.negative_emotionality = personality_scores["negative_emotionality"]
+    db_participant.open_mindedness = personality_scores["open_mindedness"]
+    db_participant.job_recommendation = job_recommendation
+    
+    db.commit()
+    db.refresh(db_participant)
+    return db_participant

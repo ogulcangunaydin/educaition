@@ -99,3 +99,29 @@ class SessionCreate(SessionBase):
     status: str
     player_ids: str
     results: Optional[dict] = None
+    
+class DissonanceTestParticipantBase(BaseModel):
+    email: Optional[str] = None
+    age: Optional[int] = None
+    gender: Optional[str] = None
+    education: Optional[str] = None
+    income: Optional[int] = None
+    sentiment: Optional[int] = None
+    question_variant: Optional[str] = None
+    first_answer: Optional[int] = None
+    second_answer: Optional[int] = None
+    extroversion: Optional[float] = None
+    agreeableness: Optional[float] = None
+    conscientiousness: Optional[float] = None
+    negative_emotionality: Optional[float] = None
+    open_mindedness: Optional[float] = None
+    job_recommendation: Optional[str] = None
+
+class DissonanceTestParticipantCreate(DissonanceTestParticipantBase):
+    pass
+
+class DissonanceTestParticipant(DissonanceTestParticipantBase):
+    id: int
+
+    class Config:
+        orm_mode = True

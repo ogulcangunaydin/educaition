@@ -85,3 +85,23 @@ class Session(Base):
 
     games = relationship("Game", back_populates="session")
     room = relationship("Room", back_populates="sessions")
+
+class DissonanceTestParticipant(Base):
+    __tablename__ = 'dissonance_test_participants'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    email = Column(String(255), nullable=True)
+    age = Column(Integer, nullable=True)
+    gender = Column(String(50), nullable=True)
+    education = Column(String(255), nullable=True)
+    income = Column(Integer, nullable=True)
+    sentiment = Column(Integer, nullable=True)
+    question_variant = Column(String(255), nullable=True)
+    first_answer = Column(Integer, nullable=True)
+    second_answer = Column(Integer, nullable=True)
+    extroversion = Column(Float, nullable=True)
+    agreeableness = Column(Float, nullable=True)
+    conscientiousness = Column(Float, nullable=True)
+    negative_emotionality = Column(Float, nullable=True)
+    open_mindedness = Column(Float, nullable=True)
+    job_recommendation = Column(String, nullable=True)
