@@ -103,7 +103,7 @@ def authenticate_user(request: Request, db: Session = Depends(db_operations.get_
 def create_dissonance_test_participant(participant: schemas.DissonanceTestParticipantCreate, db: Session = Depends(db_operations.get_db)):
     return controllers.create_dissonance_test_participant(db=db, participant=participant)
 
-@router.get("/dissonance_test_participants/{participant_id}", response_model=schemas.DissonanceTestParticipant)
+@router_without_auth.get("/dissonance_test_participants/{participant_id}", response_model=schemas.DissonanceTestParticipant)
 def read_dissonance_test_participant(participant_id: int, db: Session = Depends(db_operations.get_db)):
     return controllers.read_dissonance_test_participant(participant_id, db)
 

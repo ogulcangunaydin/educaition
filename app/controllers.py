@@ -238,8 +238,11 @@ def update_dissonance_test_participant(participant_id: int, participant: schemas
     db_participant = db.query(models.DissonanceTestParticipant).filter(models.DissonanceTestParticipant.id == participant_id).first()
     if db_participant is None:
         raise HTTPException(status_code=404, detail="Participant not found")
-    for key, value in participant.dict().items():
+    
+    update_data = participant.dict(exclude_unset=True)
+    for key, value in update_data.items():
         setattr(db_participant, key, value)
+    
     db.commit()
     db.refresh(db_participant)
     return db_participant
