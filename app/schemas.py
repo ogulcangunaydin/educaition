@@ -107,9 +107,10 @@ class DissonanceTestParticipantBase(BaseModel):
     education: Optional[str] = None
     income: Optional[int] = None
     sentiment: Optional[int] = None
-    question_variant: Optional[str] = None
-    first_answer: Optional[int] = None
-    second_answer: Optional[int] = None
+    comfort_question_first_answer: Optional[int] = None
+    fare_question_first_answer: Optional[int] = None
+    comfort_question_second_answer: Optional[int] = None
+    fare_question_second_answer: Optional[int] = None
     extroversion: Optional[float] = None
     agreeableness: Optional[float] = None
     conscientiousness: Optional[float] = None
@@ -124,4 +125,4 @@ class DissonanceTestParticipant(DissonanceTestParticipantBase):
     id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True

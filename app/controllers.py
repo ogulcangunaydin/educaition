@@ -268,7 +268,7 @@ def update_dissonance_test_participant_personality_traits(participant_id: int, a
     # Calculate personality scores using the previously defined function
     personality_scores = calculate_personality_traits(answers)
     
-    job_recommendation = get_job_recommendation(personality_scores, db_participant.gender, db_participant.age)
+    job_recommendation = get_job_recommendation(personality_scores, db_participant.gender, db_participant.age, db_participant.education)
     
     # Update the db_participant with the calculated personality traits
     db_participant.extroversion = personality_scores["extroversion"]
