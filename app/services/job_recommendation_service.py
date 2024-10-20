@@ -1,9 +1,9 @@
 import requests
 import os
 import logging
-from sqlalchemy.orm import Session
+from typing import Optional
 
-def get_job_recommendation(personality_scores: dict, gender: str, age: int, education: str) -> str:
+def get_job_recommendation(personality_scores: dict, gender: str, age: int, education: str, workload: Optional[int] = None, career_start: Optional[int] = None, flexibility: Optional[int] = None) -> str:
     def send_request_to_gpt(prompt):
         headers = {
             "Content-Type": "application/json",
@@ -23,7 +23,10 @@ def get_job_recommendation(personality_scores: dict, gender: str, age: int, educ
             return None
 
     prompt = (
-        f"Aşağıdaki bilgilere dayanarak maddelenmiş bir şekilde uygun 5 meslek önerisi yap. Her meslek önerisi için, ilgili kişilik özelliğinin sayısal değerine atıfta bulunarak sebep belirt. Ayrıca, meslek önerisinin kişinin yaşına, mesleğine ve cinsiyetine nasıl uygun olduğunu da açıkla. Yanıtları Markdown formatında ver:\n"
+        f"Aşağıdaki bilgilere dayanarak maddelenmiş bir şekilde uygun 5 meslek önerisi yap."
+        f"Her meslek önerisi için, ilgili kişilik özelliğinin sayısal değerine atıfta bulunarak sebep belirt."
+        f"Ayrıca, meslek önerisinin kişinin yaşına, mesleğine, cinsiyetine ve çalışma koşullarına nasıl uygun olduğunu da açıkla."
+        f"Yanıtları Markdown formatında ver:\n"
         f"Cinsiyet: {gender}\n"
         f"Yaş: {age}\n"
         f"Eğitim Durumu: {education}\n"
@@ -32,6 +35,9 @@ def get_job_recommendation(personality_scores: dict, gender: str, age: int, educ
         f"Sorumluluk: {personality_scores['conscientiousness']}\n"
         f"Olumsuz Duygusallık: {personality_scores['negative_emotionality']}\n"
         f"Açık Fikirlilik: {personality_scores['open_mindedness']}\n"
+        f"Çalışma Yoğunluğu (1-10): {workload}\n"
+        f"Kariyer Başlangıcı (1-10): {career_start}\n"
+        f"İş Esnekliği (1-10): {flexibility}\n"
         f"Önerilen Meslekler:\n"
         f"1. **Meslek:** [Meslek Adı]\n"
         f"   **Sebep:** [Bu mesleğin neden uygun olduğunu ve hangi kişilik özelliklerine dayandığını açıklayın.]\n"

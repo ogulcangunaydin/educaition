@@ -1,8 +1,9 @@
 # controllers.py
 
+import json
 from sqlalchemy.orm import Session
 from . import models, schemas, security, db_operations
-from fastapi import HTTPException, Depends, status, BackgroundTasks
+from fastapi import HTTPException, Depends, status, BackgroundTasks, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.responses import JSONResponse
 from datetime import timedelta
@@ -10,6 +11,7 @@ from app.services.update_player_tactic_and_test_code import update_player_tactic
 from app.services.prisoners_dilemma import play_game
 from app.services.calculate_personality_traits import calculate_personality_traits
 from app.services.job_recommendation_service import get_job_recommendation
+from app.services.compatibility_analysis_service import get_compatibility_analysis
 import os
 import bleach
 from .helpers import create_player_function_name
@@ -66,7 +68,8 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
     access_token = security.create_access_token(
         data={"sub": user.username}, expires_delta=access_token_expires
     )
-    return {"access_token": access_token, "token_type": "bearer"}
+
+    return {"access_token": access_token, "current_user_id": user.id, "token_type": "bearer"}
 
 def create_room(name: str, request: None, db: Session):
     user_id = request.session["current_user"]["id"]
@@ -231,10 +234,11 @@ def read_dissonance_test_participant(participant_id: int, db: Session):
         raise HTTPException(status_code=404, detail="Participant not found")
     return db_participant
 
-def get_dissonance_test_participants(skip: int, limit: int, db: Session):
-    return db.query(models.DissonanceTestParticipant).offset(skip).limit(limit).all()
+def get_dissonance_test_participants(request: Request, skip: int, limit: int, db: Session):
+    user_id = request.session["current_user"]["id"]
+    return db.query(models.DissonanceTestParticipant).filter(models.DissonanceTestParticipant.user_id == user_id).offset(skip).limit(limit).all()
 
-def update_dissonance_test_participant(participant_id: int, participant: schemas.DissonanceTestParticipantCreate, db: Session):
+def update_dissonance_test_participant(participant_id: int, participant: schemas.DissonanceTestParticipantUpdateSecond, db: Session):
     db_participant = db.query(models.DissonanceTestParticipant).filter(models.DissonanceTestParticipant.id == participant_id).first()
     if db_participant is None:
         raise HTTPException(status_code=404, detail="Participant not found")
@@ -265,11 +269,15 @@ def update_dissonance_test_participant_personality_traits(participant_id: int, a
             detail="Participant not found",
         )
     
+    parsed_answers = json.loads(answers)
+    answers_dict = {f"q{i+1}": int(answer) for i, answer in enumerate(parsed_answers)}
+
     # Calculate personality scores using the previously defined function
-    personality_scores = calculate_personality_traits(answers)
+    personality_scores = calculate_personality_traits(parsed_answers)
     
     job_recommendation = get_job_recommendation(personality_scores, db_participant.gender, db_participant.age, db_participant.education)
-    
+    compatibility_analysis = get_compatibility_analysis(personality_scores, db_participant.star_sign, db_participant.rising_sign)
+
     # Update the db_participant with the calculated personality traits
     db_participant.extroversion = personality_scores["extroversion"]
     db_participant.agreeableness = personality_scores["agreeableness"]
@@ -277,6 +285,8 @@ def update_dissonance_test_participant_personality_traits(participant_id: int, a
     db_participant.negative_emotionality = personality_scores["negative_emotionality"]
     db_participant.open_mindedness = personality_scores["open_mindedness"]
     db_participant.job_recommendation = job_recommendation
+    db_participant.compatibility_analysis = compatibility_analysis
+    db_participant.personality_test_answers = answers_dict
     
     db.commit()
     db.refresh(db_participant)

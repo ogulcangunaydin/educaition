@@ -1,5 +1,7 @@
-from pydantic import BaseModel
-from typing import Optional
+from pydantic import BaseModel, field_serializer, ConfigDict
+from typing import Optional, Dict
+from datetime import datetime
+import json
 
 class UserBase(BaseModel):
     username: str
@@ -17,6 +19,7 @@ class User(UserBase):
 
 class Token(BaseModel):
     access_token: str
+    current_user_id: int
     token_type: str
     
 class TokenData(BaseModel):
@@ -105,24 +108,46 @@ class DissonanceTestParticipantBase(BaseModel):
     age: Optional[int] = None
     gender: Optional[str] = None
     education: Optional[str] = None
-    income: Optional[int] = None
     sentiment: Optional[int] = None
     comfort_question_first_answer: Optional[int] = None
     fare_question_first_answer: Optional[int] = None
     comfort_question_second_answer: Optional[int] = None
     fare_question_second_answer: Optional[int] = None
+    workload: Optional[int] = None
+    career_start: Optional[int] = None
+    flexibility: Optional[int] = None
+    star_sign: Optional[str] = None
+    rising_sign: Optional[str] = None
+    user_id: int
+
+class DissonanceTestParticipantCreate(DissonanceTestParticipantBase):
+    pass
+
+class DissonanceTestParticipantUpdateSecond(BaseModel):
+    fare_question_second_answer: int
+    comfort_question_second_answer: int
+
+class DissonanceTestParticipantResult(BaseModel):
+    compatibility_analysis: Optional[str] = None
+    job_recommendation: Optional[str] = None
     extroversion: Optional[float] = None
     agreeableness: Optional[float] = None
     conscientiousness: Optional[float] = None
     negative_emotionality: Optional[float] = None
     open_mindedness: Optional[float] = None
-    job_recommendation: Optional[str] = None
-
-class DissonanceTestParticipantCreate(DissonanceTestParticipantBase):
-    pass
 
 class DissonanceTestParticipant(DissonanceTestParticipantBase):
-    id: int
+    model_config = ConfigDict(ser_json_timedelta='iso8601', from_attributes=True)
 
-    class Config:
-        from_attributes = True
+    id: int
+    created_at: datetime
+    extroversion: Optional[float] = None
+    agreeableness: Optional[float] = None
+    conscientiousness: Optional[float] = None
+    negative_emotionality: Optional[float] = None
+    open_mindedness: Optional[float] = None
+    personality_test_answers: Optional[Dict[str, int]] = None
+        
+    @field_serializer('created_at')
+    def serialize_created_at(self, created_at: datetime, _info):
+        return created_at.strftime('%d/%m/%Y  %H:%M:%S')

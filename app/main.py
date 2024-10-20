@@ -6,6 +6,7 @@ from . import models, db_operations, routers
 from .database import engine
 import os
 import logging
+from .custom_session_middleware import CustomSessionMiddleware  # Adjust the import based on your project structure
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -28,7 +29,7 @@ app.add_middleware(
     allow_methods=["*"],  # Allows all methods
     allow_headers=["*"],  # Allows all headers
 )
-app.add_middleware(SessionMiddleware, secret_key=os.getenv("SECRET_KEY"))
+app.add_middleware(CustomSessionMiddleware, secret_key=os.getenv("SECRET_KEY"))
 
 app.include_router(routers.router, prefix="/api")
 app.include_router(routers.router_without_auth, prefix="/api")

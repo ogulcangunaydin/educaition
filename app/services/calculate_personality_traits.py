@@ -1,8 +1,7 @@
 import json
 
-def calculate_personality_traits(answers):
+def calculate_personality_traits(parsed_answers):
   # Convert answers to integers
-  parsed_answers = json.loads(answers)
   answers = [int(answer) for answer in parsed_answers]
   
   # Calculate personality traits

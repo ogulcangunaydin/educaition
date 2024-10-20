@@ -6,6 +6,8 @@ from sqlalchemy.orm import Session
 from starlette.requests import Request
 from typing import List
 from . import schemas, db_operations, controllers
+from fastapi.responses import JSONResponse
+
 
 router = APIRouter(
     dependencies=[Depends(db_operations.get_current_user)]
@@ -103,16 +105,16 @@ def authenticate_user(request: Request, db: Session = Depends(db_operations.get_
 def create_dissonance_test_participant(participant: schemas.DissonanceTestParticipantCreate, db: Session = Depends(db_operations.get_db)):
     return controllers.create_dissonance_test_participant(db=db, participant=participant)
 
-@router_without_auth.get("/dissonance_test_participants/{participant_id}", response_model=schemas.DissonanceTestParticipant)
+@router_without_auth.get("/dissonance_test_participants/{participant_id}", response_model=schemas.DissonanceTestParticipantResult)
 def read_dissonance_test_participant(participant_id: int, db: Session = Depends(db_operations.get_db)):
     return controllers.read_dissonance_test_participant(participant_id, db)
 
 @router.get("/dissonance_test_participants/", response_model=List[schemas.DissonanceTestParticipant])
-def get_dissonance_test_participants(skip: int = 0, limit: int = 100, db: Session = Depends(db_operations.get_db)):
-    return controllers.get_dissonance_test_participants(skip, limit, db)
+def get_dissonance_test_participants(request: Request, skip: int = 0, limit: int = 100, db: Session = Depends(db_operations.get_db)):
+    return controllers.get_dissonance_test_participants(request, skip, limit, db)
 
 @router_without_auth.post("/dissonance_test_participants/{participant_id}", response_model=schemas.DissonanceTestParticipant)
-def update_dissonance_test_participant(participant_id: int, participant: schemas.DissonanceTestParticipantCreate, db: Session = Depends(db_operations.get_db)):
+def update_dissonance_test_participant(participant_id: int, participant: schemas.DissonanceTestParticipantUpdateSecond, db: Session = Depends(db_operations.get_db)):
     return controllers.update_dissonance_test_participant(participant_id, participant, db)
 
 @router_without_auth.post("/dissonance_test_participants/{participant_id}/personality", response_model=schemas.DissonanceTestParticipant)
