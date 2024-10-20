@@ -29,22 +29,22 @@ def upgrade() -> None:
     try:
         op.add_column('users', sa.Column('created_at', sa.DateTime(timezone=True), server_default=func.now(), nullable=False))
         op.add_column('users', sa.Column('updated_at', sa.DateTime(timezone=True), onupdate=func.now(), nullable=True))
-        
+        logger.info("Added columns to users")
         op.add_column('rooms', sa.Column('created_at', sa.DateTime(timezone=True), server_default=func.now(), nullable=False))
         op.add_column('rooms', sa.Column('updated_at', sa.DateTime(timezone=True), onupdate=func.now(), nullable=True))
-        
+        logger.info("Added columns to rooms")
         op.add_column('players', sa.Column('created_at', sa.DateTime(timezone=True), server_default=func.now(), nullable=False))
         op.add_column('players', sa.Column('updated_at', sa.DateTime(timezone=True), onupdate=func.now(), nullable=True))
-        
+        logger.info("Added columns to players")
         op.add_column('games', sa.Column('created_at', sa.DateTime(timezone=True), server_default=func.now(), nullable=False))
         op.add_column('games', sa.Column('updated_at', sa.DateTime(timezone=True), onupdate=func.now(), nullable=True))
-        
+        logger.info("Added columns to games")
         op.add_column('rounds', sa.Column('created_at', sa.DateTime(timezone=True), server_default=func.now(), nullable=False))
         op.add_column('rounds', sa.Column('updated_at', sa.DateTime(timezone=True), onupdate=func.now(), nullable=True))
-        
+        logger.info("Added columns to rounds")
         op.add_column('sessions', sa.Column('created_at', sa.DateTime(timezone=True), server_default=func.now(), nullable=False))
         op.add_column('sessions', sa.Column('updated_at', sa.DateTime(timezone=True), onupdate=func.now(), nullable=True))
-        
+        logger.info("Added columns to sessions")
         op.add_column('dissonance_test_participants', sa.Column('created_at', sa.DateTime(timezone=True), server_default=func.now(), nullable=False))
         op.add_column('dissonance_test_participants', sa.Column('updated_at', sa.DateTime(timezone=True), onupdate=func.now(), nullable=True))
         
