@@ -203,7 +203,8 @@ def update_player_personality_traits(player_id: int, answers: str, db: Session):
         )
     
     # Calculate personality scores using the previously defined function
-    personality_scores = calculate_personality_traits(answers)
+    parsed_answers = json.loads(answers)
+    personality_scores = calculate_personality_traits(parsed_answers)
     
     # Update the player with the calculated personality traits
     player.extroversion = personality_scores["extroversion"]
