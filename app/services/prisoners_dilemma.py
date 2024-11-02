@@ -7,6 +7,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import logging
 from datetime import datetime
 from ..database import SessionLocal
+from collections import OrderedDict
+import json
 
 GAMES_PLAYED_WITH_EACH_OTHER = 100
 MAXIMUM_NUMBER_OF_ROUNDS = 1000
@@ -56,6 +58,25 @@ def play_multiple_games_wrapper(args):
         play_multiple_games(player1, player2, wrapperDb, functions, game_session_id)
     finally:
         wrapperDb.close()
+        
+def save_leaderboard_to_db(game_session_id, leaderboard, scores_matrix):
+    # Convert the leaderboard to a JSON-compatible format
+    leaderboard_json_str = json.dumps({
+        'leaderboard': leaderboard,
+        'matrix': scores_matrix
+    }, ensure_ascii=False, sort_keys=False)
+    
+    lastDb = SessionLocal()
+    try:
+        current_session = lastDb.query(models.Session).filter(models.Session.id == game_session_id).first()
+        current_session.results = leaderboard_json_str
+        current_session.status = "finished"
+        lastDb.commit()
+    except SQLAlchemyError as e:
+        logging.info(f"An error occurred: {e}")
+        lastDb.rollback()
+    finally:
+        lastDb.close()
 
 def play_game(game_session_id):
     global global_game_session, global_players    
@@ -113,22 +134,9 @@ def play_game(game_session_id):
     
     # After all games are finished, calculate the leaderboard and scores matrix
     leaderboard, scores_matrix = calculate_leaderboard_and_scores_matrix(global_players, game_session_id)
-
-    # Convert the leaderboard to a JSON-compatible format
-    # Assuming leaderboard is a list of tuples or a similar structure that needs conversion
-    leaderboard_jsonb = {"leaderboard": leaderboard, "matrix": scores_matrix}
-
-    lastDb = SessionLocal()
-    try:
-        current_session = lastDb.query(models.Session).filter(models.Session.id == game_session_id).first()
-        current_session.results = leaderboard_jsonb
-        current_session.status = "finished"
-        lastDb.commit()
-    except SQLAlchemyError as e:
-        logging.info(f"An error occurred: {e}")
-        lastDb.rollback()
-    finally:
-        lastDb.close()
+    
+    # Save the leaderboard to the database
+    save_leaderboard_to_db(game_session_id, leaderboard, scores_matrix)
 
     remaining_time_to_exit = (datetime.now() - post_completion_start_time).total_seconds()
     
@@ -171,8 +179,13 @@ def calculate_scores_matrix(players, all_games):
     player_id_to_name = {player.id: player.player_name for player in players}
     logging.info("Mapped player IDs to player names.")
     
-    # Initialize the scores matrix with player names
-    scores_matrix = {player.player_name: {opponent.player_name: 0 for opponent in players if opponent.id != player.id} for player in players}
+    # Initialize the scores matrix with player names using OrderedDict
+    scores_matrix = OrderedDict()
+    for player in players:
+        scores_matrix[player.player_name] = OrderedDict()
+        for opponent in players:
+            if opponent.id != player.id:
+                scores_matrix[player.player_name][opponent.player_name] = 0
     logging.info("Initialized scores matrix with player names.")
     
     # Process each game to update the scores matrix
@@ -188,6 +201,27 @@ def calculate_scores_matrix(players, all_games):
     logging.info("Completed updating scores matrix.")
     return scores_matrix
 
+def calculate_total_scores(players, all_games):
+    logging.info("Calculating total scores for all players.")
+    player_scores = {player.id: 0 for player in players}  # Initialize scores for all players
+    for game in all_games:
+        player_scores[game.home_player_id] += game.home_player_score
+        player_scores[game.away_player_id] += game.away_player_score
+    logging.info("Calculated total scores for all players.")
+    return player_scores
+
+def calculate_leaderboard(players, player_scores):
+    logging.info("Calculating leaderboard.")
+    leaderboard = OrderedDict()
+    # Map player IDs back to player names, scores, and short tactics
+    for player in players:
+        leaderboard[player.player_name] = {
+            'score': player_scores[player.id],
+            'short_tactic': player.short_tactic
+        }
+    logging.info("Sorted the leaderboard by score in descending order.")
+    return leaderboard
+
 def calculate_leaderboard_and_scores_matrix(players, game_session_id):
     logging.info("Starting to calculate leaderboard and scores matrix.")
     db = SessionLocal()
@@ -200,26 +234,14 @@ def calculate_leaderboard_and_scores_matrix(players, game_session_id):
         db.close()
         logging.info("Database session closed.")
 
-    scores_matrix = calculate_scores_matrix(players, all_games)
+    player_scores = calculate_total_scores(players, all_games)
+    
+    # Sort players by their scores in descending order
+    sorted_players = sorted(players, key=lambda player: player_scores[player.id], reverse=True)
+    
+    scores_matrix = calculate_scores_matrix(sorted_players, all_games)
 
-    leaderboard = {}
-    # Process games in Python to calculate total scores
-    player_scores = {player.id: 0 for player in players}  # Initialize scores for all players
-    for game in all_games:
-        player_scores[game.home_player_id] += game.home_player_score
-        player_scores[game.away_player_id] += game.away_player_score
-    logging.info("Calculated total scores for all players.")
-
-    # Map player IDs back to player names, scores, and short tactics
-    for player in players:
-        leaderboard[player.player_name] = {
-            'score': player_scores[player.id],
-            'short_tactic': player.short_tactic
-        }
-
-    # Sort the leaderboard by score in descending order
-    leaderboard = dict(sorted(leaderboard.items(), key=lambda item: item[1]['score'], reverse=True))
-    logging.info("Sorted the leaderboard by score in descending order.")
+    leaderboard = calculate_leaderboard(sorted_players, player_scores)
 
     return leaderboard, scores_matrix
 

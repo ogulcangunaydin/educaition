@@ -1,5 +1,5 @@
 from pydantic import BaseModel, field_serializer, ConfigDict
-from typing import Optional, Dict
+from typing import Optional, Union, Dict
 from datetime import datetime
 import json
 
@@ -101,7 +101,8 @@ class SessionCreate(SessionBase):
     name: str
     status: str
     player_ids: str
-    results: Optional[dict] = None
+    # TODO: This union is for getting also old data which is dict type
+    results: Optional[Union[str, dict]] = None
     
 class DissonanceTestParticipantBase(BaseModel):
     email: Optional[str] = None
