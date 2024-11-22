@@ -235,9 +235,9 @@ def read_dissonance_test_participant(participant_id: int, db: Session):
         raise HTTPException(status_code=404, detail="Participant not found")
     return db_participant
 
-def get_dissonance_test_participants(request: Request, skip: int, limit: int, db: Session):
+def get_dissonance_test_participants(request: Request, db: Session):
     user_id = request.session["current_user"]["id"]
-    return db.query(models.DissonanceTestParticipant).filter(models.DissonanceTestParticipant.user_id == user_id).offset(skip).limit(limit).all()
+    return db.query(models.DissonanceTestParticipant).filter(models.DissonanceTestParticipant.user_id == user_id).all()
 
 def update_dissonance_test_participant(participant_id: int, participant: schemas.DissonanceTestParticipantUpdateSecond, db: Session):
     db_participant = db.query(models.DissonanceTestParticipant).filter(models.DissonanceTestParticipant.id == participant_id).first()

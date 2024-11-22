@@ -110,8 +110,8 @@ def read_dissonance_test_participant(participant_id: int, db: Session = Depends(
     return controllers.read_dissonance_test_participant(participant_id, db)
 
 @router.get("/dissonance_test_participants/", response_model=List[schemas.DissonanceTestParticipant])
-def get_dissonance_test_participants(request: Request, skip: int = 0, limit: int = 100, db: Session = Depends(db_operations.get_db)):
-    return controllers.get_dissonance_test_participants(request, skip, limit, db)
+def get_dissonance_test_participants(request: Request, db: Session = Depends(db_operations.get_db)):
+    return controllers.get_dissonance_test_participants(request, db)
 
 @router_without_auth.post("/dissonance_test_participants/{participant_id}", response_model=schemas.DissonanceTestParticipant)
 def update_dissonance_test_participant(participant_id: int, participant: schemas.DissonanceTestParticipantUpdateSecond, db: Session = Depends(db_operations.get_db)):
