@@ -130,6 +130,8 @@ class DissonanceTestParticipant(Base):
     star_sign = Column(String(50), nullable=True)
     rising_sign = Column(String(50), nullable=True)
     personality_test_answers = Column(JSONB, nullable=True)
+    comfort_question_displayed_average = Column(Float, nullable=True)  # New field
+    fare_question_displayed_average = Column(Float, nullable=True)  # New field
     
     user = relationship("User", back_populates="dissonance_test_participants")
     

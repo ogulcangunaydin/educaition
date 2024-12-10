@@ -114,6 +114,8 @@ class DissonanceTestParticipantBase(BaseModel):
     fare_question_first_answer: Optional[int] = None
     comfort_question_second_answer: Optional[int] = None
     fare_question_second_answer: Optional[int] = None
+    fare_question_displayed_average: Optional[float] = None
+    comfort_question_displayed_average: Optional[float] = None
     workload: Optional[int] = None
     career_start: Optional[int] = None
     flexibility: Optional[int] = None
@@ -127,6 +129,8 @@ class DissonanceTestParticipantCreate(DissonanceTestParticipantBase):
 class DissonanceTestParticipantUpdateSecond(BaseModel):
     fare_question_second_answer: int
     comfort_question_second_answer: int
+    fare_question_displayed_average: float
+    comfort_question_displayed_average: float
 
 class DissonanceTestParticipantResult(BaseModel):
     compatibility_analysis: Optional[str] = None
