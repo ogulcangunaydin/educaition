@@ -1,21 +1,46 @@
 from pydantic import BaseModel, field_serializer, ConfigDict
 from typing import Optional, Union, Dict
 from datetime import datetime
+from enum import Enum
 import json
 
-class UserBase(BaseModel):
-    username: str
-    email: Optional[str] = None
+class Language(BaseModel):
+    id: str
+    code: str
+    name: str
 
-class UserCreate(UserBase):
+class LoginRequest(BaseModel):
+    email: str
     password: str
 
-class User(UserBase):
-    id: int
-    is_active: bool
+class Theme(str, Enum):
+    light = "light"
+    dark = "dark"
 
-    class Config:
-        from_attributes = True
+class Role(str, Enum):
+    admin = "admin"
+    participant = "participant"
+
+class User(BaseModel):
+    id: int
+    email: str
+    name: str
+    token: Optional[str] = None
+    language: str
+    theme: Theme
+    role: Role
+    avatar_color: str
+        
+class UserCreate(User):
+    password: str
+    
+class UserUpdate(BaseModel):
+    password: Optional[str] = None
+    name: Optional[str] = None
+    email: Optional[str] = None
+    language: Optional[str] = None
+    theme: Optional[str] = None
+    avatar_color: Optional[str] = None
 
 class Token(BaseModel):
     access_token: str

@@ -14,20 +14,21 @@ from app.services.job_recommendation_service import get_job_recommendation
 from app.services.compatibility_analysis_service import get_compatibility_analysis
 import os
 import bleach
-from .helpers import create_player_function_name
+from .utils import create_valid_function_name
+from .schemas import *
 
 
-def read_users(skip: int = 0, limit: int = 100, db: Session = None):
-    users = db.query(models.User).offset(skip).limit(limit).all()
+def read_users(db: Session = Depends(db_operations.get_db)):
+    users = db.query(models.User).all()
     return users
 
-def read_user(user_id: int, db: Session = None):
+def read_user(user_id: int, db: Session = Depends(db_operations.get_db)):
     db_user = db.query(models.User).get(user_id)
     if db_user is None:
         raise HTTPException(status_code=404, detail="User not found")
     return db_user
 
-def create_user(user: schemas.UserCreate, db: Session = None):
+def create_user(user: schemas.UserCreate, db: Session = Depends(db_operations.get_db)):
     clean_name = bleach.clean(user.username, strip=True)
     clean_email = bleach.clean(user.email, strip=True)
 
@@ -37,7 +38,7 @@ def create_user(user: schemas.UserCreate, db: Session = None):
     db.refresh(db_user)
     return db_user
 
-def update_user(user_id: int, user: schemas.UserCreate, db: Session = None):
+def update_user(user_id: int, user: schemas.UserCreate, db: Session = Depends(db_operations.get_db)):
     db_user = db.query(models.User).get(user_id)
     if db_user is None:
         raise HTTPException(status_code=404, detail="User not found")
@@ -48,7 +49,7 @@ def update_user(user_id: int, user: schemas.UserCreate, db: Session = None):
     db.commit()
     return db_user
 
-def delete_user(user_id: int, db: Session = None):
+def delete_user(user_id: int, db: Session = Depends(db_operations.get_db)):
     db_user = db.query(models.User).get(user_id)
     if db_user is None:
         raise HTTPException(status_code=404, detail="User not found")
@@ -56,8 +57,9 @@ def delete_user(user_id: int, db: Session = None):
     db.commit()
     return db_user
 
-def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = None):
-    user = db_operations.authenticate_user(db, form_data.username, form_data.password)
+def login_for_access_token(login_request: LoginRequest, db: Session = Depends(db_operations.get_db)):
+    user = db_operations.authenticate_user(db, login_request)
+
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -71,7 +73,7 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
 
     return {"access_token": access_token, "current_user_id": user.id, "token_type": "bearer"}
 
-def create_room(name: str, request: None, db: Session):
+def create_room(name: str, request: None, db: Session = Depends(db_operations.get_db)):
     user_id = request.session["current_user"]["id"]
     room = models.Room(user_id=user_id, name=name)
     db.add(room)
@@ -79,9 +81,9 @@ def create_room(name: str, request: None, db: Session):
     db.refresh(room)
     return room
 
-def get_rooms(request: None, skip: int, limit: int, db: Session = None):
+def get_rooms(request: None, db: Session = Depends(db_operations.get_db)):
     user_id = request.session["current_user"]["id"]
-    return db.query(models.Room).filter(models.Room.user_id == user_id).offset(skip).limit(limit).all()
+    return db.query(models.Room).filter(models.Room.user_id == user_id).all()
 
 def delete_room(room_id: int, db: Session):
     room = db.query(models.Room).get(room_id)
@@ -91,21 +93,21 @@ def delete_room(room_id: int, db: Session):
     db.commit()
     return room
 
-def get_players_by_room(room_id: int, skip: int, limit: int, db: Session):
-    return db.query(models.Player).filter(models.Player.room_id == room_id).offset(skip).limit(limit).all()
+def get_players_by_room(room_id: int, db: Session = Depends(db_operations.get_db)):
+    return db.query(models.Player).filter(models.Player.room_id == room_id).all()
 
 def get_players_by_ids(player_ids: str, db: Session):
     player_ids = player_ids.split(",")
     return db.query(models.Player).filter(models.Player.id.in_(player_ids)).all()
 
-def create_player(player_name, room_id, db: Session):
+def create_player(player_name, room_id, db: Session = Depends(db_operations.get_db)):
     clean_name = bleach.clean(player_name, strip=True)
 
     existing_player = db.query(models.Player).filter(models.Player.player_name == clean_name, models.Player.room_id == room_id).first()
     if existing_player:
         raise HTTPException(status_code=400, detail="Player name already exists in the room.")
     
-    player_function_name = create_player_function_name(clean_name)
+    player_function_name = create_valid_function_name(clean_name)
     # If the check passes, proceed to create a new player
     new_player = models.Player(player_name=clean_name, player_function_name=player_function_name, room_id=room_id)
     db.add(new_player)
@@ -113,7 +115,7 @@ def create_player(player_name, room_id, db: Session):
     db.refresh(new_player)
     return new_player
 
-def update_player_tactic(player_id: int, player_tactic: str, db: Session):
+def update_player_tactic(player_id: int, player_tactic: str, db: Session = Depends(db_operations.get_db)):
     # Call the service to update the player's tactic and test the generated code
     player = db.query(models.Player).filter(models.Player.id == player_id).first()
     
@@ -142,7 +144,7 @@ def update_player_tactic(player_id: int, player_tactic: str, db: Session):
             detail="The given tactic is not ok",
         )
 
-def delete_player(player_id: int, db: Session):
+def delete_player(player_id: int, db: Session = Depends(db_operations.get_db)):
     player = db.query(models.Player).get(player_id)
     if player is None:
         raise HTTPException(status_code=404, detail="Player not found")
@@ -150,7 +152,7 @@ def delete_player(player_id: int, db: Session):
     db.commit()
     return player
 
-def start_game(room_id: int, name: str, db: Session, background_tasks: BackgroundTasks):
+def start_game(room_id: int, name: str, background_tasks: BackgroundTasks, db: Session = Depends(db_operations.get_db)):
     # Existing validation checks
     players = db.query(models.Player).filter(models.Player.room_id == room_id).all()
     if len(players) < 2:
@@ -173,7 +175,7 @@ def start_game(room_id: int, name: str, db: Session, background_tasks: Backgroun
     # Return the session details
     return new_session
 
-def get_game_results(session_id: int, db: Session):
+def get_game_results(session_id: int, db: Session = Depends(db_operations.get_db)):
     # Find the last session created for this room
     session = db.query(models.Session).filter(models.Session.id == session_id).first()
     
@@ -188,11 +190,14 @@ def get_game_results(session_id: int, db: Session):
         # If not finished, return the session object with its status
         return {"session_id": session.id, "status": session.status, "player_ids": session.player_ids}
 
-def authenticate(request: None, db: Session):
+def login(request: None, db: Session = Depends(db_operations.get_db)):
     user_id = request.session["current_user"]["id"]
     return db.query(models.User).filter(models.User.id == user_id).first()
 
-def update_player_personality_traits(player_id: int, answers: str, db: Session):
+def authenticate(user_id: int, db: Session = Depends(db_operations.get_db)):
+    return db.query(models.User).filter(models.User.id == user_id).first()
+
+def update_player_personality_traits(player_id: int, answers: str, db: Session = Depends(db_operations.get_db)):
     # Retrieve the player from the database
     player = db.query(models.Player).filter(models.Player.id == player_id).first()
     
@@ -216,30 +221,30 @@ def update_player_personality_traits(player_id: int, answers: str, db: Session):
     db.commit()
     return player
 
-def get_sessions_by_room(room_id: int, db: Session):
+def get_sessions_by_room(room_id: int, db: Session = Depends(db_operations.get_db)):
     return db.query(models.Session).filter(models.Session.room_id == room_id).all()
 
-def get_session(session_id: int, db: Session):
+def get_session(session_id: int, db: Session = Depends(db_operations.get_db)):
     return db.query(models.Session).filter(models.Session.id == session_id).first()
 
-def create_dissonance_test_participant(db: Session, participant: schemas.DissonanceTestParticipantCreate):
+def create_dissonance_test_participant(participant: schemas.DissonanceTestParticipantCreate, db: Session = Depends(db_operations.get_db)):
     db_participant = models.DissonanceTestParticipant(**participant.dict())
     db.add(db_participant)
     db.commit()
     db.refresh(db_participant)
     return db_participant
 
-def read_dissonance_test_participant(participant_id: int, db: Session):
+def read_dissonance_test_participant(participant_id: int, db: Session = Depends(db_operations.get_db)):
     db_participant = db.query(models.DissonanceTestParticipant).filter(models.DissonanceTestParticipant.id == participant_id).first()
     if db_participant is None:
         raise HTTPException(status_code=404, detail="Participant not found")
     return db_participant
 
-def get_dissonance_test_participants(request: Request, db: Session):
+def get_dissonance_test_participants(request: Request, db: Session = Depends(db_operations.get_db)):
     user_id = request.session["current_user"]["id"]
     return db.query(models.DissonanceTestParticipant).filter(models.DissonanceTestParticipant.user_id == user_id).all()
 
-def update_dissonance_test_participant(participant_id: int, participant: schemas.DissonanceTestParticipantUpdateSecond, db: Session):
+def update_dissonance_test_participant(participant_id: int, participant: schemas.DissonanceTestParticipantUpdateSecond, db: Session = Depends(db_operations.get_db)):
     db_participant = db.query(models.DissonanceTestParticipant).filter(models.DissonanceTestParticipant.id == participant_id).first()
     if db_participant is None:
         raise HTTPException(status_code=404, detail="Participant not found")
@@ -252,7 +257,7 @@ def update_dissonance_test_participant(participant_id: int, participant: schemas
     db.refresh(db_participant)
     return db_participant
 
-def delete_dissonance_test_participant(participant_id: int, db: Session):
+def delete_dissonance_test_participant(participant_id: int, db: Session = Depends(db_operations.get_db)):
     db_participant = db.query(models.DissonanceTestParticipant).filter(models.DissonanceTestParticipant.id == participant_id).first()
     if db_participant is None:
         raise HTTPException(status_code=404, detail="Participant not found")
@@ -260,7 +265,7 @@ def delete_dissonance_test_participant(participant_id: int, db: Session):
     db.commit()
     return db_participant
 
-def update_dissonance_test_participant_personality_traits(participant_id: int, answers: str, db: Session):
+def update_dissonance_test_participant_personality_traits(participant_id: int, answers: str, db: Session = Depends(db_operations.get_db)):
     # Retrieve the player from the database
     db_participant = db.query(models.DissonanceTestParticipant).filter(models.DissonanceTestParticipant.id == participant_id).first()
     
@@ -292,3 +297,6 @@ def update_dissonance_test_participant_personality_traits(participant_id: int, a
     db.commit()
     db.refresh(db_participant)
     return db_participant
+
+def get_languages(db: Session = Depends(db_operations.get_db)):
+    return db.query(models.Language).all()

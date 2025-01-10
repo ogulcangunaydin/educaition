@@ -6,8 +6,9 @@ from fastapi.security import OAuth2PasswordBearer
 from . import models, schemas, security
 from .database import SessionLocal
 from starlette.requests import Request
-from .helpers import to_dict
+from .utils import to_dict
 import os
+from .schemas import *
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
@@ -48,13 +49,13 @@ def create_initial_user():
         db.add(user)
         db.commit()
 
-def authenticate_user(db: Session, username: str, password: str):
-    user = get_user(db, username)
+def authenticate_user(db: Session, login_request: LoginRequest):
+    user = get_user(db, login_request.email)
     if not user:
         return False
-    if not security.verify_password(password, user.hashed_password):
+    if not security.verify_password(login_request.password, user.hashed_password):
         return False
     return user
 
-def get_user(db: Session, username: str):
-    return db.query(models.User).filter(models.User.username == username).first()
+def get_user(db: Session, email: str):
+    return db.query(models.User).filter(models.User.email == email).first()

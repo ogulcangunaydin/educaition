@@ -6,7 +6,7 @@ from keyword import iskeyword
 def to_dict(model_instance):
     return {c.name: getattr(model_instance, c.name) for c in model_instance.__table__.columns}
 
-def create_player_function_name(clean_name):
+def create_valid_function_name(clean_name):
     ascii_normalized_name = unicodedata.normalize('NFKD', clean_name).encode('ASCII', 'ignore').decode()
     
     # Normalize the name

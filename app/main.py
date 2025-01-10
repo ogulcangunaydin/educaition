@@ -7,6 +7,7 @@ from .database import engine
 import os
 import logging
 from .custom_session_middleware import CustomSessionMiddleware  # Adjust the import based on your project structure
+from contextlib import asynccontextmanager
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -14,7 +15,22 @@ load_dotenv()  # take environment variables from .env.
 
 models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI()
+async def startup_event():
+    db_operations.create_initial_user()
+
+async def shutdown_event():
+    # Add any shutdown logic here if needed
+    pass
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup logic
+    await startup_event()
+    yield
+    # Shutdown logic
+    await shutdown_event()
+
+app = FastAPI(lifespan=lifespan)
 
 origins = [
     "http://localhost:8080",
@@ -33,7 +49,3 @@ app.add_middleware(CustomSessionMiddleware, secret_key=os.getenv("SECRET_KEY"))
 
 app.include_router(routers.router, prefix="/api")
 app.include_router(routers.router_without_auth, prefix="/api")
-
-@app.on_event("startup")
-async def startup_event():
-    db_operations.create_initial_user()

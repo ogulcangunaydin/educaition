@@ -5,8 +5,11 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from starlette.requests import Request
 from typing import List
-from . import schemas, db_operations, controllers
+from . import schemas_operations, controllers
 from fastapi.responses import JSONResponse
+from .schemas import *
+
+from .routes import *
 
 
 router = APIRouter(
@@ -15,112 +18,115 @@ router = APIRouter(
 
 router_without_auth = APIRouter()
 
-@router_without_auth.post("/authenticate", response_model=schemas.Token)
-def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(db_operations.get_db)):
-    return controllers.login_for_access_token(form_data, db)
+@router_without_auth.post(LOGIN, response_model=User)
+def login_for_access_token(login_request: LoginRequest):
+    return controllers.login_for_access_token(login_request)
 
-@router.get("/users/", response_model=List[schemas.User])
-def get_users(skip: int = 0, limit: int = 100, db: Session = Depends(db_operations.get_db)):
-    return controllers.read_users(skip, limit, db)
+@router_without_auth.post(REGISTER, response_model=User)
+def create_user(user: UserCreate):
+    return controllers.create_user(user)
 
-@router.get("/users/{user_id}", response_model=schemas.User)
-def read_user(user_id: int, db: Session = Depends(db_operations.get_db)):
-    return controllers.read_user(user_id, db)
+@router.get(GET_USERS, response_model=List[User])
+def get_users(db: Session = Depends(db_operations.get_db)):
+    return controllers.read_users(db)
 
-@router.post("/users/", response_model=schemas.User)
-def create_user(username: str = Form(...), email: str = Form(...), password: str = Form(...), db: Session = Depends(db_operations.get_db)):
-    user = schemas.UserCreate(username=username, email=email, password=password)
-    return controllers.create_user(user, db)
+@router.get(GET_USER, response_model=User)
+def read_user(user_id: int):
+    return controllers.read_user(user_id)
 
-@router.put("/users/{user_id}", response_model=schemas.User)
-def update_user(user_id: int, username: str = Form(...), email: str = Form(...), password: str = Form(...), db: Session = Depends(db_operations.get_db)):
-    user = schemas.UserCreate(username=username, email=email, password=password)
-    return controllers.update_user(user_id, user, db)
+@router.get(AUTHENTICATE_USER, response_model=User)
+def authenticate_user(user_id: int):
+    return controllers.authenticate(user_id)
 
-@router.delete("/users/{user_id}", response_model=schemas.User)
-def delete_user(user_id: int, db: Session = Depends(db_operations.get_db)):
-    return controllers.delete_user(user_id, db)
+@router.put(UPDATE_USER, response_model=User)
+def update_user(user_id: int, update_user: UserUpdate):
+    user = User
+    return controllers.update_user(user_id, user)
 
-@router.post("/rooms/", response_model=schemas.Room)
-def create_room(request: Request, name: str = Form(...), db: Session = Depends(db_operations.get_db)):
-    return controllers.create_room(name, request, db)
+@router.delete(DELETE_USER, response_model=User)
+def delete_user(user_id: int):
+    return controllers.delete_user(user_id)
 
-@router.get("/rooms/", response_model=List[schemas.Room])
-def get_rooms(request: Request, skip: int = 0, limit: int = 100, db: Session = Depends(db_operations.get_db)):
-    return controllers.get_rooms(request, skip, limit, db)
+@router.get(GET_ROOMS, response_model=List[Room])
+def get_rooms(request: Request):
+    return controllers.get_rooms(request)
 
-@router.get("/rooms/{room_id}", response_model=schemas.Room)
-def read_room(room_id: int, db: Session = Depends(db_operations.get_db)):
-    return controllers.read_room(room_id, db)
+@router.get(GET_ROOM, response_model=Room)
+def read_room(room_id: int):
+    return controllers.read_room(room_id)
 
-@router.post("/rooms/delete/{room_id}", response_model=schemas.Room)
-def delete_room(room_id: int, db: Session = Depends(db_operations.get_db)):
-    return controllers.delete_room(room_id, db)
+@router.post(CREATE_ROOM, response_model=Room)
+def create_room(request: Request, name: str = Form(...)):
+    return controllers.create_room(name, request)
 
-@router_without_auth.post("/players/", response_model=schemas.Player)
-def create_player(player_name: str = Form(...), room_id: int = Form(...), db: Session = Depends(db_operations.get_db)):
-    return controllers.create_player(player_name, room_id, db)
+@router.post(DELETE_ROOM, response_model=Room)
+def delete_room(room_id: int):
+    return controllers.delete_room(room_id)
 
-@router_without_auth.get("/players/room/{room_id}", response_model=List[schemas.Player])
-def get_players_by_room(room_id: int, skip: int = 0, limit: int = 100, db: Session = Depends(db_operations.get_db)):
-    return controllers.get_players_by_room(room_id, skip, limit, db)
+@router_without_auth.post(CREATE_PLAYER, response_model=Player)
+def create_player(player_name: str = Form(...), room_id: int = Form(...)):
+    return controllers.create_player(player_name, room_id)
 
-@router_without_auth.post("/players/{player_id}/tactic", response_model=schemas.Player)
-def update_player_tactic(player_id: int, player_tactic: str = Form(...), db: Session = Depends(db_operations.get_db)):
-    return controllers.update_player_tactic(player_id, player_tactic, db)
+@router_without_auth.get(GET_PLAYERS_BY_ROOM, response_model=List[Player])
+def get_players_by_room(room_id: int):
+    return controllers.get_players_by_room(room_id)
 
-@router_without_auth.post("/players/{player_id}/personality", response_model=schemas.Player)
-def update_player_personality_traits(player_id: int, answers: str = Form(...), db: Session = Depends(db_operations.get_db)):
-    return controllers.update_player_personality_traits(player_id, answers, db)
+@router_without_auth.post(UPDATE_PLAYER_TACTIC, response_model=Player)
+def update_player_tactic(player_id: int, player_tactic: str = Form(...)):
+    return controllers.update_player_tactic(player_id, player_tactic)
 
-@router.get("/players/{player_ids}", response_model=List[schemas.Player])
-def get_players_by_ids(player_ids: str, db: Session = Depends(db_operations.get_db)):
-    return controllers.get_players_by_ids(player_ids, db)
+@router_without_auth.post(UPDATE_PLAYER_PERSONALITY, response_model=Player)
+def update_player_personality_traits(player_id: int, answers: str = Form(...)):
+    return controllers.update_player_personality_traits(player_id, answers)
 
-@router.post("/players/delete/{player_id}", response_model=schemas.Player)
-def delete_player(player_id: int, db: Session = Depends(db_operations.get_db)):
-    return controllers.delete_player(player_id, db)
+@router.get(GET_PLAYERS_BY_IDS, response_model=List[Player])
+def get_players_by_ids(player_ids: str):
+    return controllers.get_players_by_ids(player_ids)
 
-@router.post("/rooms/{room_id}/ready", response_model=schemas.SessionCreate)
+@router.post(DELETE_PLAYER, response_model=Player)
+def delete_player(player_id: int):
+    return controllers.delete_player(player_id)
+
+@router.post(START_GAME, response_model=SessionCreate)
 def start_game(room_id: int, background_tasks: BackgroundTasks,  db: Session = Depends(db_operations.get_db), name: str = Form(...)):
-    return controllers.start_game(room_id, name, db, background_tasks)
+    return controllers.start_game(room_id, name, background_tasks)
 
-@router.get("/rooms/{session_id}/results", response_model=schemas.Room)
-def get_game_results(session_id: int, db: Session = Depends(db_operations.get_db)):
-    return controllers.get_game_results(session_id, db)
+@router.get(GET_GAME_RESULTS, response_model=Room)
+def get_game_results(session_id: int):
+    return controllers.get_game_results(session_id)
 
-@router.get("/rooms/{room_id}/sessions", response_model=List[schemas.SessionCreate])
-def get_sessions_by_room(room_id: int, db: Session = Depends(db_operations.get_db)):
-    return controllers.get_sessions_by_room(room_id, db)
+@router.get(GET_SESSIONS_BY_ROOM, response_model=List[SessionCreate])
+def get_sessions_by_room(room_id: int):
+    return controllers.get_sessions_by_room(room_id)
 
-@router.get("/sessions/{session_id}", response_model=schemas.SessionCreate)
-def show_session(session_id: int, db: Session = Depends(db_operations.get_db)):
-    return controllers.get_session(session_id, db)
+@router.get(SHOW_SESSION, response_model=SessionCreate)
+def show_session(session_id: int):
+    return controllers.get_session(session_id)
 
-@router.get("/auth/", response_model=schemas.User)
-def authenticate_user(request: Request, db: Session = Depends(db_operations.get_db)):
-    return controllers.authenticate(request, db)
+@router_without_auth.post(CREATE_DISSONANCE_TEST_PARTICIPANT, response_model=DissonanceTestParticipant)
+def create_dissonance_test_participant(participant: DissonanceTestParticipantCreate):
+    return controllers.create_dissonance_test_participant(participant=participant)
 
-@router_without_auth.post("/dissonance_test_participants/", response_model=schemas.DissonanceTestParticipant)
-def create_dissonance_test_participant(participant: schemas.DissonanceTestParticipantCreate, db: Session = Depends(db_operations.get_db)):
-    return controllers.create_dissonance_test_participant(db=db, participant=participant)
+@router_without_auth.get(READ_DISSONANCE_TEST_PARTICIPANT, response_model=DissonanceTestParticipantResult)
+def read_dissonance_test_participant(participant_id: int):
+    return controllers.read_dissonance_test_participant(participant_id)
 
-@router_without_auth.get("/dissonance_test_participants/{participant_id}", response_model=schemas.DissonanceTestParticipantResult)
-def read_dissonance_test_participant(participant_id: int, db: Session = Depends(db_operations.get_db)):
-    return controllers.read_dissonance_test_participant(participant_id, db)
+@router.get(GET_DISSONANCE_TEST_PARTICIPANTS, response_model=List[DissonanceTestParticipant])
+def get_dissonance_test_participants(request: Request):
+    return controllers.get_dissonance_test_participants(request)
 
-@router.get("/dissonance_test_participants/", response_model=List[schemas.DissonanceTestParticipant])
-def get_dissonance_test_participants(request: Request, db: Session = Depends(db_operations.get_db)):
-    return controllers.get_dissonance_test_participants(request, db)
+@router_without_auth.post(UPDATE_DISSONANCE_TEST_PARTICIPANT, response_model=DissonanceTestParticipant)
+def update_dissonance_test_participant(participant_id: int, participant: DissonanceTestParticipantUpdateSecond):
+    return controllers.update_dissonance_test_participant(participant_id, participant)
 
-@router_without_auth.post("/dissonance_test_participants/{participant_id}", response_model=schemas.DissonanceTestParticipant)
-def update_dissonance_test_participant(participant_id: int, participant: schemas.DissonanceTestParticipantUpdateSecond, db: Session = Depends(db_operations.get_db)):
-    return controllers.update_dissonance_test_participant(participant_id, participant, db)
+@router_without_auth.post(UPDATE_DISSONANCE_TEST_PARTICIPANT_PERSONALITY, response_model=DissonanceTestParticipant)
+def update_dissonance_test_participant_personality_traits(participant_id: int, answers: str = Form(...)):
+    return controllers.update_dissonance_test_participant_personality_traits(participant_id, answers)
 
-@router_without_auth.post("/dissonance_test_participants/{participant_id}/personality", response_model=schemas.DissonanceTestParticipant)
-def update_dissonance_test_participant_personality_traits(participant_id: int, answers: str = Form(...), db: Session = Depends(db_operations.get_db)):
-    return controllers.update_dissonance_test_participant_personality_traits(participant_id, answers, db)
+@router.post(DELETE_DISSONANCE_TEST_PARTICIPANT, response_model=DissonanceTestParticipant)
+def delete_dissonance_test_participant(participant_id: int):
+    return controllers.delete_dissonance_test_participant(participant_id)
 
-@router.post("/dissonance_test_participants/{participant_id}/delete", response_model=schemas.DissonanceTestParticipant)
-def delete_dissonance_test_participant(participant_id: int, db: Session = Depends(db_operations.get_db)):
-    return controllers.delete_dissonance_test_participant(participant_id, db)
+@router_without_auth.get(GET_LANGUAGES, response_model=List[Language])
+def get_languages():
+    return controllers.get_languages()
