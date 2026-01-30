@@ -97,9 +97,8 @@ def load_job_riasec_scores(csv_path: str = None) -> Dict[str, Dict[str, float]]:
     Returns: {job_title: {R: score, I: score, ...}}
     """
     if csv_path is None:
-        # Default path - adjust based on your file location
-        csv_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 
-                                'educaition-react', 'src', 'pages', 'RiasecTest', 
+        # Default path - use data folder in backend
+        csv_path = os.path.join(os.path.dirname(__file__), '..', 'data', 
                                 'riasec_score_to_job.csv')
     
     jobs = {}

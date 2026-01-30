@@ -1,0 +1,2126 @@
+{
+  "say": {
+    "minScore": 150,
+    "maxScore": 550,
+    "distribution": [
+      {
+        "score": 150,
+        "avgRanking": 1291436,
+        "minRanking": 1291436,
+        "maxRanking": 1291436,
+        "count": 1
+      },
+      {
+        "score": 155,
+        "avgRanking": 1291181,
+        "minRanking": 1291077,
+        "maxRanking": 1291350,
+        "count": 3
+      },
+      {
+        "score": 160,
+        "avgRanking": 1290633,
+        "minRanking": 1290195,
+        "maxRanking": 1291047,
+        "count": 5
+      },
+      {
+        "score": 165,
+        "avgRanking": 1290526,
+        "minRanking": 1288097,
+        "maxRanking": 1302655,
+        "count": 9
+      },
+      {
+        "score": 170,
+        "avgRanking": 1285230,
+        "minRanking": 1283121,
+        "maxRanking": 1287617,
+        "count": 14
+      },
+      {
+        "score": 175,
+        "avgRanking": 1277635,
+        "minRanking": 1272654,
+        "maxRanking": 1282376,
+        "count": 18
+      },
+      {
+        "score": 180,
+        "avgRanking": 1264096,
+        "minRanking": 1254808,
+        "maxRanking": 1271843,
+        "count": 23
+      },
+      {
+        "score": 185,
+        "avgRanking": 1240382,
+        "minRanking": 1231265,
+        "maxRanking": 1253856,
+        "count": 27
+      },
+      {
+        "score": 190,
+        "avgRanking": 1209419,
+        "minRanking": 1194075,
+        "maxRanking": 1227509,
+        "count": 27
+      },
+      {
+        "score": 195,
+        "avgRanking": 1171071,
+        "minRanking": 1117083,
+        "maxRanking": 1193627,
+        "count": 33
+      },
+      {
+        "score": 200,
+        "avgRanking": 1127983,
+        "minRanking": 1060085,
+        "maxRanking": 1152476,
+        "count": 34
+      },
+      {
+        "score": 205,
+        "avgRanking": 1069525,
+        "minRanking": 1014031,
+        "maxRanking": 1095836,
+        "count": 19
+      },
+      {
+        "score": 210,
+        "avgRanking": 1024511,
+        "minRanking": 996027,
+        "maxRanking": 1052121,
+        "count": 32
+      },
+      {
+        "score": 215,
+        "avgRanking": 965961,
+        "minRanking": 934907,
+        "maxRanking": 995696,
+        "count": 36
+      },
+      {
+        "score": 220,
+        "avgRanking": 899300,
+        "minRanking": 862204,
+        "maxRanking": 931000,
+        "count": 31
+      },
+      {
+        "score": 225,
+        "avgRanking": 842739,
+        "minRanking": 747408,
+        "maxRanking": 870376,
+        "count": 53
+      },
+      {
+        "score": 230,
+        "avgRanking": 776826,
+        "minRanking": 707612,
+        "maxRanking": 809468,
+        "count": 46
+      },
+      {
+        "score": 235,
+        "avgRanking": 718509,
+        "minRanking": 670311,
+        "maxRanking": 751756,
+        "count": 50
+      },
+      {
+        "score": 240,
+        "avgRanking": 665864,
+        "minRanking": 589644,
+        "maxRanking": 693462,
+        "count": 63
+      },
+      {
+        "score": 245,
+        "avgRanking": 616752,
+        "minRanking": 596777,
+        "maxRanking": 643140,
+        "count": 59
+      },
+      {
+        "score": 250,
+        "avgRanking": 574370,
+        "minRanking": 554605,
+        "maxRanking": 595411,
+        "count": 75
+      },
+      {
+        "score": 255,
+        "avgRanking": 534434,
+        "minRanking": 517064,
+        "maxRanking": 554034,
+        "count": 74
+      },
+      {
+        "score": 260,
+        "avgRanking": 494343,
+        "minRanking": 422622,
+        "maxRanking": 515799,
+        "count": 76
+      },
+      {
+        "score": 265,
+        "avgRanking": 464773,
+        "minRanking": 410451,
+        "maxRanking": 484338,
+        "count": 89
+      },
+      {
+        "score": 270,
+        "avgRanking": 435398,
+        "minRanking": 422085,
+        "maxRanking": 449316,
+        "count": 78
+      },
+      {
+        "score": 275,
+        "avgRanking": 407101,
+        "minRanking": 395236,
+        "maxRanking": 420976,
+        "count": 62
+      },
+      {
+        "score": 280,
+        "avgRanking": 383499,
+        "minRanking": 371132,
+        "maxRanking": 408137,
+        "count": 88
+      },
+      {
+        "score": 285,
+        "avgRanking": 360502,
+        "minRanking": 348720,
+        "maxRanking": 382801,
+        "count": 65
+      },
+      {
+        "score": 290,
+        "avgRanking": 334659,
+        "minRanking": 285074,
+        "maxRanking": 366121,
+        "count": 93
+      },
+      {
+        "score": 295,
+        "avgRanking": 318811,
+        "minRanking": 271149,
+        "maxRanking": 340175,
+        "count": 69
+      },
+      {
+        "score": 300,
+        "avgRanking": 297166,
+        "minRanking": 255413,
+        "maxRanking": 327670,
+        "count": 370
+      },
+      {
+        "score": 305,
+        "avgRanking": 283558,
+        "minRanking": 241013,
+        "maxRanking": 309286,
+        "count": 246
+      },
+      {
+        "score": 310,
+        "avgRanking": 266859,
+        "minRanking": 228769,
+        "maxRanking": 289478,
+        "count": 179
+      },
+      {
+        "score": 315,
+        "avgRanking": 250701,
+        "minRanking": 217250,
+        "maxRanking": 275810,
+        "count": 155
+      },
+      {
+        "score": 320,
+        "avgRanking": 237618,
+        "minRanking": 230666,
+        "maxRanking": 252989,
+        "count": 146
+      },
+      {
+        "score": 325,
+        "avgRanking": 224523,
+        "minRanking": 188703,
+        "maxRanking": 239348,
+        "count": 139
+      },
+      {
+        "score": 330,
+        "avgRanking": 212485,
+        "minRanking": 206181,
+        "maxRanking": 222742,
+        "count": 127
+      },
+      {
+        "score": 335,
+        "avgRanking": 200808,
+        "minRanking": 166097,
+        "maxRanking": 219178,
+        "count": 112
+      },
+      {
+        "score": 340,
+        "avgRanking": 189565,
+        "minRanking": 184300,
+        "maxRanking": 202469,
+        "count": 94
+      },
+      {
+        "score": 345,
+        "avgRanking": 179720,
+        "minRanking": 174432,
+        "maxRanking": 195514,
+        "count": 85
+      },
+      {
+        "score": 350,
+        "avgRanking": 170119,
+        "minRanking": 164853,
+        "maxRanking": 184090,
+        "count": 111
+      },
+      {
+        "score": 355,
+        "avgRanking": 160368,
+        "minRanking": 155949,
+        "maxRanking": 175238,
+        "count": 91
+      },
+      {
+        "score": 360,
+        "avgRanking": 151707,
+        "minRanking": 147594,
+        "maxRanking": 155779,
+        "count": 78
+      },
+      {
+        "score": 365,
+        "avgRanking": 143730,
+        "minRanking": 139721,
+        "maxRanking": 147465,
+        "count": 82
+      },
+      {
+        "score": 370,
+        "avgRanking": 136123,
+        "minRanking": 132390,
+        "maxRanking": 147251,
+        "count": 77
+      },
+      {
+        "score": 375,
+        "avgRanking": 129122,
+        "minRanking": 125109,
+        "maxRanking": 144559,
+        "count": 78
+      },
+      {
+        "score": 380,
+        "avgRanking": 121322,
+        "minRanking": 118194,
+        "maxRanking": 124919,
+        "count": 88
+      },
+      {
+        "score": 385,
+        "avgRanking": 114845,
+        "minRanking": 111517,
+        "maxRanking": 129183,
+        "count": 69
+      },
+      {
+        "score": 390,
+        "avgRanking": 108327,
+        "minRanking": 105114,
+        "maxRanking": 111456,
+        "count": 76
+      },
+      {
+        "score": 395,
+        "avgRanking": 101900,
+        "minRanking": 99023,
+        "maxRanking": 105007,
+        "count": 66
+      },
+      {
+        "score": 400,
+        "avgRanking": 96129,
+        "minRanking": 79976,
+        "maxRanking": 98970,
+        "count": 83
+      },
+      {
+        "score": 405,
+        "avgRanking": 89788,
+        "minRanking": 87211,
+        "maxRanking": 92605,
+        "count": 63
+      },
+      {
+        "score": 410,
+        "avgRanking": 84625,
+        "minRanking": 81692,
+        "maxRanking": 87063,
+        "count": 67
+      },
+      {
+        "score": 415,
+        "avgRanking": 78832,
+        "minRanking": 76081,
+        "maxRanking": 81382,
+        "count": 94
+      },
+      {
+        "score": 420,
+        "avgRanking": 73255,
+        "minRanking": 59224,
+        "maxRanking": 75866,
+        "count": 64
+      },
+      {
+        "score": 425,
+        "avgRanking": 68251,
+        "minRanking": 65550,
+        "maxRanking": 80925,
+        "count": 66
+      },
+      {
+        "score": 430,
+        "avgRanking": 62481,
+        "minRanking": 60385,
+        "maxRanking": 65240,
+        "count": 61
+      },
+      {
+        "score": 435,
+        "avgRanking": 58008,
+        "minRanking": 55486,
+        "maxRanking": 69507,
+        "count": 56
+      },
+      {
+        "score": 440,
+        "avgRanking": 53256,
+        "minRanking": 50734,
+        "maxRanking": 55366,
+        "count": 59
+      },
+      {
+        "score": 445,
+        "avgRanking": 48666,
+        "minRanking": 46156,
+        "maxRanking": 50688,
+        "count": 90
+      },
+      {
+        "score": 450,
+        "avgRanking": 43722,
+        "minRanking": 41762,
+        "maxRanking": 46120,
+        "count": 88
+      },
+      {
+        "score": 455,
+        "avgRanking": 39626,
+        "minRanking": 37385,
+        "maxRanking": 41636,
+        "count": 52
+      },
+      {
+        "score": 460,
+        "avgRanking": 35372,
+        "minRanking": 33322,
+        "maxRanking": 37170,
+        "count": 67
+      },
+      {
+        "score": 465,
+        "avgRanking": 31380,
+        "minRanking": 29416,
+        "maxRanking": 33296,
+        "count": 68
+      },
+      {
+        "score": 470,
+        "avgRanking": 27771,
+        "minRanking": 25785,
+        "maxRanking": 29386,
+        "count": 54
+      },
+      {
+        "score": 475,
+        "avgRanking": 24126,
+        "minRanking": 22561,
+        "maxRanking": 25740,
+        "count": 44
+      },
+      {
+        "score": 480,
+        "avgRanking": 20733,
+        "minRanking": 19192,
+        "maxRanking": 22294,
+        "count": 45
+      },
+      {
+        "score": 485,
+        "avgRanking": 17767,
+        "minRanking": 16229,
+        "maxRanking": 18994,
+        "count": 33
+      },
+      {
+        "score": 490,
+        "avgRanking": 14957,
+        "minRanking": 13467,
+        "maxRanking": 16095,
+        "count": 33
+      },
+      {
+        "score": 495,
+        "avgRanking": 12377,
+        "minRanking": 11280,
+        "maxRanking": 13428,
+        "count": 26
+      },
+      {
+        "score": 500,
+        "avgRanking": 10195,
+        "minRanking": 9219,
+        "maxRanking": 11004,
+        "count": 19
+      },
+      {
+        "score": 505,
+        "avgRanking": 8067,
+        "minRanking": 7113,
+        "maxRanking": 8924,
+        "count": 27
+      },
+      {
+        "score": 510,
+        "avgRanking": 6598,
+        "minRanking": 5731,
+        "maxRanking": 12522,
+        "count": 20
+      },
+      {
+        "score": 515,
+        "avgRanking": 5129,
+        "minRanking": 4165,
+        "maxRanking": 8578,
+        "count": 13
+      },
+      {
+        "score": 520,
+        "avgRanking": 3795,
+        "minRanking": 3082,
+        "maxRanking": 6809,
+        "count": 14
+      },
+      {
+        "score": 525,
+        "avgRanking": 2324,
+        "minRanking": 1947,
+        "maxRanking": 2879,
+        "count": 24
+      },
+      {
+        "score": 530,
+        "avgRanking": 1629,
+        "minRanking": 1169,
+        "maxRanking": 3752,
+        "count": 11
+      },
+      {
+        "score": 535,
+        "avgRanking": 920,
+        "minRanking": 708,
+        "maxRanking": 1137,
+        "count": 4
+      },
+      {
+        "score": 540,
+        "avgRanking": 322,
+        "minRanking": 281,
+        "maxRanking": 373,
+        "count": 4
+      },
+      {
+        "score": 545,
+        "avgRanking": 161,
+        "minRanking": 113,
+        "maxRanking": 210,
+        "count": 2
+      },
+      {
+        "score": 550,
+        "avgRanking": 40,
+        "minRanking": 38,
+        "maxRanking": 43,
+        "count": 2
+      }
+    ]
+  },
+  "ea": {
+    "minScore": 140,
+    "maxScore": 525,
+    "distribution": [
+      {
+        "score": 140,
+        "avgRanking": 1494593,
+        "minRanking": 1494586,
+        "maxRanking": 1494601,
+        "count": 2
+      },
+      {
+        "score": 150,
+        "avgRanking": 1494417,
+        "minRanking": 1494344,
+        "maxRanking": 1494491,
+        "count": 2
+      },
+      {
+        "score": 155,
+        "avgRanking": 1494125,
+        "minRanking": 1493907,
+        "maxRanking": 1494331,
+        "count": 4
+      },
+      {
+        "score": 160,
+        "avgRanking": 1512204,
+        "minRanking": 1492397,
+        "maxRanking": 1702613,
+        "count": 11
+      },
+      {
+        "score": 165,
+        "avgRanking": 1497763,
+        "minRanking": 1489306,
+        "maxRanking": 1698611,
+        "count": 30
+      },
+      {
+        "score": 170,
+        "avgRanking": 1485468,
+        "minRanking": 1482505,
+        "maxRanking": 1488987,
+        "count": 32
+      },
+      {
+        "score": 175,
+        "avgRanking": 1479452,
+        "minRanking": 1470438,
+        "maxRanking": 1686462,
+        "count": 68
+      },
+      {
+        "score": 180,
+        "avgRanking": 1461340,
+        "minRanking": 1453270,
+        "maxRanking": 1470305,
+        "count": 57
+      },
+      {
+        "score": 185,
+        "avgRanking": 1442086,
+        "minRanking": 1426121,
+        "maxRanking": 1617923,
+        "count": 68
+      },
+      {
+        "score": 190,
+        "avgRanking": 1407331,
+        "minRanking": 1393231,
+        "maxRanking": 1424740,
+        "count": 64
+      },
+      {
+        "score": 195,
+        "avgRanking": 1375711,
+        "minRanking": 1355387,
+        "maxRanking": 1560821,
+        "count": 69
+      },
+      {
+        "score": 200,
+        "avgRanking": 1337899,
+        "minRanking": 1310831,
+        "maxRanking": 1479668,
+        "count": 57
+      },
+      {
+        "score": 205,
+        "avgRanking": 1287533,
+        "minRanking": 1262980,
+        "maxRanking": 1310386,
+        "count": 69
+      },
+      {
+        "score": 210,
+        "avgRanking": 1245737,
+        "minRanking": 1212034,
+        "maxRanking": 1382446,
+        "count": 83
+      },
+      {
+        "score": 215,
+        "avgRanking": 1196240,
+        "minRanking": 1157241,
+        "maxRanking": 1332499,
+        "count": 69
+      },
+      {
+        "score": 220,
+        "avgRanking": 1134540,
+        "minRanking": 1101229,
+        "maxRanking": 1272366,
+        "count": 95
+      },
+      {
+        "score": 225,
+        "avgRanking": 1077103,
+        "minRanking": 1042942,
+        "maxRanking": 1201235,
+        "count": 84
+      },
+      {
+        "score": 230,
+        "avgRanking": 1018858,
+        "minRanking": 983436,
+        "maxRanking": 1140670,
+        "count": 85
+      },
+      {
+        "score": 235,
+        "avgRanking": 955176,
+        "minRanking": 924052,
+        "maxRanking": 1060846,
+        "count": 81
+      },
+      {
+        "score": 240,
+        "avgRanking": 896527,
+        "minRanking": 869062,
+        "maxRanking": 981379,
+        "count": 93
+      },
+      {
+        "score": 245,
+        "avgRanking": 836574,
+        "minRanking": 807235,
+        "maxRanking": 935910,
+        "count": 91
+      },
+      {
+        "score": 250,
+        "avgRanking": 779376,
+        "minRanking": 750542,
+        "maxRanking": 857577,
+        "count": 93
+      },
+      {
+        "score": 255,
+        "avgRanking": 723145,
+        "minRanking": 696078,
+        "maxRanking": 799652,
+        "count": 93
+      },
+      {
+        "score": 260,
+        "avgRanking": 673460,
+        "minRanking": 643893,
+        "maxRanking": 769723,
+        "count": 95
+      },
+      {
+        "score": 265,
+        "avgRanking": 620358,
+        "minRanking": 593198,
+        "maxRanking": 715507,
+        "count": 105
+      },
+      {
+        "score": 270,
+        "avgRanking": 570027,
+        "minRanking": 545726,
+        "maxRanking": 655130,
+        "count": 83
+      },
+      {
+        "score": 275,
+        "avgRanking": 523679,
+        "minRanking": 501651,
+        "maxRanking": 575355,
+        "count": 73
+      },
+      {
+        "score": 280,
+        "avgRanking": 479182,
+        "minRanking": 459408,
+        "maxRanking": 541702,
+        "count": 85
+      },
+      {
+        "score": 285,
+        "avgRanking": 438202,
+        "minRanking": 419434,
+        "maxRanking": 457851,
+        "count": 73
+      },
+      {
+        "score": 290,
+        "avgRanking": 404301,
+        "minRanking": 382932,
+        "maxRanking": 486839,
+        "count": 100
+      },
+      {
+        "score": 295,
+        "avgRanking": 366340,
+        "minRanking": 348567,
+        "maxRanking": 440977,
+        "count": 68
+      },
+      {
+        "score": 300,
+        "avgRanking": 334305,
+        "minRanking": 316742,
+        "maxRanking": 404727,
+        "count": 72
+      },
+      {
+        "score": 305,
+        "avgRanking": 303831,
+        "minRanking": 287800,
+        "maxRanking": 372942,
+        "count": 110
+      },
+      {
+        "score": 310,
+        "avgRanking": 275272,
+        "minRanking": 261096,
+        "maxRanking": 332117,
+        "count": 88
+      },
+      {
+        "score": 315,
+        "avgRanking": 249847,
+        "minRanking": 236219,
+        "maxRanking": 309655,
+        "count": 76
+      },
+      {
+        "score": 320,
+        "avgRanking": 227231,
+        "minRanking": 213884,
+        "maxRanking": 287994,
+        "count": 93
+      },
+      {
+        "score": 325,
+        "avgRanking": 203193,
+        "minRanking": 193107,
+        "maxRanking": 240656,
+        "count": 86
+      },
+      {
+        "score": 330,
+        "avgRanking": 184043,
+        "minRanking": 174380,
+        "maxRanking": 231429,
+        "count": 100
+      },
+      {
+        "score": 335,
+        "avgRanking": 164823,
+        "minRanking": 156467,
+        "maxRanking": 173856,
+        "count": 96
+      },
+      {
+        "score": 340,
+        "avgRanking": 149387,
+        "minRanking": 140136,
+        "maxRanking": 197369,
+        "count": 103
+      },
+      {
+        "score": 345,
+        "avgRanking": 132735,
+        "minRanking": 125623,
+        "maxRanking": 140023,
+        "count": 93
+      },
+      {
+        "score": 350,
+        "avgRanking": 119411,
+        "minRanking": 111724,
+        "maxRanking": 125177,
+        "count": 109
+      },
+      {
+        "score": 355,
+        "avgRanking": 105957,
+        "minRanking": 99437,
+        "maxRanking": 111689,
+        "count": 70
+      },
+      {
+        "score": 360,
+        "avgRanking": 93717,
+        "minRanking": 88330,
+        "maxRanking": 99184,
+        "count": 67
+      },
+      {
+        "score": 365,
+        "avgRanking": 82528,
+        "minRanking": 77007,
+        "maxRanking": 87440,
+        "count": 64
+      },
+      {
+        "score": 370,
+        "avgRanking": 72009,
+        "minRanking": 67232,
+        "maxRanking": 76971,
+        "count": 61
+      },
+      {
+        "score": 375,
+        "avgRanking": 61847,
+        "minRanking": 58047,
+        "maxRanking": 66824,
+        "count": 37
+      },
+      {
+        "score": 380,
+        "avgRanking": 53960,
+        "minRanking": 49958,
+        "maxRanking": 57653,
+        "count": 47
+      },
+      {
+        "score": 385,
+        "avgRanking": 45636,
+        "minRanking": 42719,
+        "maxRanking": 49808,
+        "count": 29
+      },
+      {
+        "score": 390,
+        "avgRanking": 39496,
+        "minRanking": 35895,
+        "maxRanking": 42459,
+        "count": 30
+      },
+      {
+        "score": 395,
+        "avgRanking": 33195,
+        "minRanking": 30069,
+        "maxRanking": 35763,
+        "count": 26
+      },
+      {
+        "score": 400,
+        "avgRanking": 27500,
+        "minRanking": 25024,
+        "maxRanking": 29968,
+        "count": 29
+      },
+      {
+        "score": 405,
+        "avgRanking": 22729,
+        "minRanking": 20547,
+        "maxRanking": 24436,
+        "count": 23
+      },
+      {
+        "score": 410,
+        "avgRanking": 18539,
+        "minRanking": 16459,
+        "maxRanking": 20196,
+        "count": 25
+      },
+      {
+        "score": 415,
+        "avgRanking": 14680,
+        "minRanking": 13324,
+        "maxRanking": 16147,
+        "count": 26
+      },
+      {
+        "score": 420,
+        "avgRanking": 11745,
+        "minRanking": 10639,
+        "maxRanking": 12792,
+        "count": 14
+      },
+      {
+        "score": 425,
+        "avgRanking": 9327,
+        "minRanking": 8216,
+        "maxRanking": 10363,
+        "count": 17
+      },
+      {
+        "score": 430,
+        "avgRanking": 7530,
+        "minRanking": 6459,
+        "maxRanking": 10568,
+        "count": 12
+      },
+      {
+        "score": 435,
+        "avgRanking": 5767,
+        "minRanking": 5130,
+        "maxRanking": 6242,
+        "count": 13
+      },
+      {
+        "score": 440,
+        "avgRanking": 4629,
+        "minRanking": 4210,
+        "maxRanking": 4930,
+        "count": 10
+      },
+      {
+        "score": 445,
+        "avgRanking": 3773,
+        "minRanking": 3520,
+        "maxRanking": 4000,
+        "count": 7
+      },
+      {
+        "score": 450,
+        "avgRanking": 3123,
+        "minRanking": 2877,
+        "maxRanking": 3389,
+        "count": 4
+      },
+      {
+        "score": 455,
+        "avgRanking": 2598,
+        "minRanking": 2400,
+        "maxRanking": 2836,
+        "count": 6
+      },
+      {
+        "score": 460,
+        "avgRanking": 2166,
+        "minRanking": 1996,
+        "maxRanking": 2336,
+        "count": 13
+      },
+      {
+        "score": 465,
+        "avgRanking": 1785,
+        "minRanking": 1632,
+        "maxRanking": 1969,
+        "count": 7
+      },
+      {
+        "score": 470,
+        "avgRanking": 1476,
+        "minRanking": 1367,
+        "maxRanking": 1618,
+        "count": 6
+      },
+      {
+        "score": 475,
+        "avgRanking": 1267,
+        "minRanking": 1181,
+        "maxRanking": 1337,
+        "count": 5
+      },
+      {
+        "score": 480,
+        "avgRanking": 1047,
+        "minRanking": 964,
+        "maxRanking": 1115,
+        "count": 5
+      },
+      {
+        "score": 485,
+        "avgRanking": 877,
+        "minRanking": 788,
+        "maxRanking": 945,
+        "count": 3
+      },
+      {
+        "score": 490,
+        "avgRanking": 625,
+        "minRanking": 598,
+        "maxRanking": 657,
+        "count": 5
+      },
+      {
+        "score": 495,
+        "avgRanking": 550,
+        "minRanking": 522,
+        "maxRanking": 578,
+        "count": 2
+      },
+      {
+        "score": 500,
+        "avgRanking": 403,
+        "minRanking": 376,
+        "maxRanking": 430,
+        "count": 5
+      },
+      {
+        "score": 505,
+        "avgRanking": 290,
+        "minRanking": 290,
+        "maxRanking": 290,
+        "count": 1
+      },
+      {
+        "score": 510,
+        "avgRanking": 253,
+        "minRanking": 253,
+        "maxRanking": 253,
+        "count": 1
+      },
+      {
+        "score": 515,
+        "avgRanking": 165,
+        "minRanking": 165,
+        "maxRanking": 165,
+        "count": 1
+      },
+      {
+        "score": 525,
+        "avgRanking": 69,
+        "minRanking": 69,
+        "maxRanking": 69,
+        "count": 1
+      }
+    ]
+  },
+  "söz": {
+    "minScore": 145,
+    "maxScore": 490,
+    "distribution": [
+      {
+        "score": 145,
+        "avgRanking": 1173988,
+        "minRanking": 1173988,
+        "maxRanking": 1173988,
+        "count": 1
+      },
+      {
+        "score": 150,
+        "avgRanking": 1173922,
+        "minRanking": 1173922,
+        "maxRanking": 1173922,
+        "count": 1
+      },
+      {
+        "score": 155,
+        "avgRanking": 1215301,
+        "minRanking": 1173524,
+        "maxRanking": 1423390,
+        "count": 6
+      },
+      {
+        "score": 160,
+        "avgRanking": 1172583,
+        "minRanking": 1172061,
+        "maxRanking": 1173040,
+        "count": 3
+      },
+      {
+        "score": 165,
+        "avgRanking": 1170277,
+        "minRanking": 1168885,
+        "maxRanking": 1171833,
+        "count": 9
+      },
+      {
+        "score": 170,
+        "avgRanking": 1165888,
+        "minRanking": 1163335,
+        "maxRanking": 1168279,
+        "count": 15
+      },
+      {
+        "score": 175,
+        "avgRanking": 1168177,
+        "minRanking": 1153875,
+        "maxRanking": 1407502,
+        "count": 26
+      },
+      {
+        "score": 180,
+        "avgRanking": 1148115,
+        "minRanking": 1141050,
+        "maxRanking": 1153486,
+        "count": 32
+      },
+      {
+        "score": 185,
+        "avgRanking": 1140472,
+        "minRanking": 1122817,
+        "maxRanking": 1375997,
+        "count": 27
+      },
+      {
+        "score": 190,
+        "avgRanking": 1112729,
+        "minRanking": 1102296,
+        "maxRanking": 1120889,
+        "count": 29
+      },
+      {
+        "score": 195,
+        "avgRanking": 1087185,
+        "minRanking": 1074530,
+        "maxRanking": 1099502,
+        "count": 35
+      },
+      {
+        "score": 200,
+        "avgRanking": 1060656,
+        "minRanking": 1044769,
+        "maxRanking": 1071679,
+        "count": 19
+      },
+      {
+        "score": 205,
+        "avgRanking": 1029382,
+        "minRanking": 1012491,
+        "maxRanking": 1041878,
+        "count": 22
+      },
+      {
+        "score": 210,
+        "avgRanking": 992215,
+        "minRanking": 978005,
+        "maxRanking": 1008201,
+        "count": 23
+      },
+      {
+        "score": 215,
+        "avgRanking": 976300,
+        "minRanking": 934957,
+        "maxRanking": 1167575,
+        "count": 27
+      },
+      {
+        "score": 220,
+        "avgRanking": 914853,
+        "minRanking": 893534,
+        "maxRanking": 1101833,
+        "count": 33
+      },
+      {
+        "score": 225,
+        "avgRanking": 870546,
+        "minRanking": 849837,
+        "maxRanking": 891769,
+        "count": 29
+      },
+      {
+        "score": 230,
+        "avgRanking": 831110,
+        "minRanking": 804532,
+        "maxRanking": 1027126,
+        "count": 42
+      },
+      {
+        "score": 235,
+        "avgRanking": 781489,
+        "minRanking": 760435,
+        "maxRanking": 802372,
+        "count": 41
+      },
+      {
+        "score": 240,
+        "avgRanking": 736348,
+        "minRanking": 711349,
+        "maxRanking": 952624,
+        "count": 54
+      },
+      {
+        "score": 245,
+        "avgRanking": 689915,
+        "minRanking": 660689,
+        "maxRanking": 887591,
+        "count": 42
+      },
+      {
+        "score": 250,
+        "avgRanking": 636611,
+        "minRanking": 611404,
+        "maxRanking": 853765,
+        "count": 51
+      },
+      {
+        "score": 255,
+        "avgRanking": 588713,
+        "minRanking": 563335,
+        "maxRanking": 608843,
+        "count": 30
+      },
+      {
+        "score": 260,
+        "avgRanking": 537759,
+        "minRanking": 516395,
+        "maxRanking": 559682,
+        "count": 31
+      },
+      {
+        "score": 265,
+        "avgRanking": 495439,
+        "minRanking": 469419,
+        "maxRanking": 621074,
+        "count": 45
+      },
+      {
+        "score": 270,
+        "avgRanking": 448329,
+        "minRanking": 426534,
+        "maxRanking": 554885,
+        "count": 35
+      },
+      {
+        "score": 275,
+        "avgRanking": 406695,
+        "minRanking": 384412,
+        "maxRanking": 425048,
+        "count": 36
+      },
+      {
+        "score": 280,
+        "avgRanking": 363244,
+        "minRanking": 346926,
+        "maxRanking": 382213,
+        "count": 29
+      },
+      {
+        "score": 285,
+        "avgRanking": 329078,
+        "minRanking": 310039,
+        "maxRanking": 345321,
+        "count": 29
+      },
+      {
+        "score": 290,
+        "avgRanking": 291431,
+        "minRanking": 276459,
+        "maxRanking": 309148,
+        "count": 70
+      },
+      {
+        "score": 295,
+        "avgRanking": 261167,
+        "minRanking": 245270,
+        "maxRanking": 275604,
+        "count": 46
+      },
+      {
+        "score": 300,
+        "avgRanking": 229169,
+        "minRanking": 216778,
+        "maxRanking": 243583,
+        "count": 33
+      },
+      {
+        "score": 305,
+        "avgRanking": 209808,
+        "minRanking": 191106,
+        "maxRanking": 313079,
+        "count": 49
+      },
+      {
+        "score": 310,
+        "avgRanking": 178786,
+        "minRanking": 166947,
+        "maxRanking": 281280,
+        "count": 31
+      },
+      {
+        "score": 315,
+        "avgRanking": 162543,
+        "minRanking": 145228,
+        "maxRanking": 292652,
+        "count": 43
+      },
+      {
+        "score": 320,
+        "avgRanking": 141980,
+        "minRanking": 126368,
+        "maxRanking": 260884,
+        "count": 48
+      },
+      {
+        "score": 325,
+        "avgRanking": 122998,
+        "minRanking": 110429,
+        "maxRanking": 227239,
+        "count": 37
+      },
+      {
+        "score": 330,
+        "avgRanking": 100776,
+        "minRanking": 93860,
+        "maxRanking": 108621,
+        "count": 43
+      },
+      {
+        "score": 335,
+        "avgRanking": 88500,
+        "minRanking": 80622,
+        "maxRanking": 157726,
+        "count": 38
+      },
+      {
+        "score": 340,
+        "avgRanking": 74570,
+        "minRanking": 68331,
+        "maxRanking": 79454,
+        "count": 50
+      },
+      {
+        "score": 345,
+        "avgRanking": 62634,
+        "minRanking": 58171,
+        "maxRanking": 68303,
+        "count": 46
+      },
+      {
+        "score": 350,
+        "avgRanking": 53409,
+        "minRanking": 48876,
+        "maxRanking": 57730,
+        "count": 57
+      },
+      {
+        "score": 355,
+        "avgRanking": 44535,
+        "minRanking": 41308,
+        "maxRanking": 48681,
+        "count": 45
+      },
+      {
+        "score": 360,
+        "avgRanking": 39299,
+        "minRanking": 34213,
+        "maxRanking": 77969,
+        "count": 43
+      },
+      {
+        "score": 365,
+        "avgRanking": 31419,
+        "minRanking": 28599,
+        "maxRanking": 34051,
+        "count": 44
+      },
+      {
+        "score": 370,
+        "avgRanking": 26147,
+        "minRanking": 23777,
+        "maxRanking": 28229,
+        "count": 50
+      },
+      {
+        "score": 375,
+        "avgRanking": 21082,
+        "minRanking": 19243,
+        "maxRanking": 23396,
+        "count": 38
+      },
+      {
+        "score": 380,
+        "avgRanking": 17001,
+        "minRanking": 15491,
+        "maxRanking": 18925,
+        "count": 32
+      },
+      {
+        "score": 385,
+        "avgRanking": 14142,
+        "minRanking": 12528,
+        "maxRanking": 15404,
+        "count": 32
+      },
+      {
+        "score": 390,
+        "avgRanking": 11282,
+        "minRanking": 10126,
+        "maxRanking": 12462,
+        "count": 24
+      },
+      {
+        "score": 395,
+        "avgRanking": 9306,
+        "minRanking": 8275,
+        "maxRanking": 10069,
+        "count": 33
+      },
+      {
+        "score": 400,
+        "avgRanking": 7147,
+        "minRanking": 6449,
+        "maxRanking": 7974,
+        "count": 23
+      },
+      {
+        "score": 405,
+        "avgRanking": 5680,
+        "minRanking": 5251,
+        "maxRanking": 6261,
+        "count": 17
+      },
+      {
+        "score": 410,
+        "avgRanking": 4505,
+        "minRanking": 3975,
+        "maxRanking": 4988,
+        "count": 16
+      },
+      {
+        "score": 415,
+        "avgRanking": 3444,
+        "minRanking": 3111,
+        "maxRanking": 3914,
+        "count": 11
+      },
+      {
+        "score": 420,
+        "avgRanking": 2777,
+        "minRanking": 2498,
+        "maxRanking": 3043,
+        "count": 7
+      },
+      {
+        "score": 425,
+        "avgRanking": 2208,
+        "minRanking": 1995,
+        "maxRanking": 2399,
+        "count": 9
+      },
+      {
+        "score": 430,
+        "avgRanking": 1713,
+        "minRanking": 1502,
+        "maxRanking": 1869,
+        "count": 10
+      },
+      {
+        "score": 435,
+        "avgRanking": 1340,
+        "minRanking": 1204,
+        "maxRanking": 1475,
+        "count": 4
+      },
+      {
+        "score": 440,
+        "avgRanking": 1010,
+        "minRanking": 943,
+        "maxRanking": 1118,
+        "count": 7
+      },
+      {
+        "score": 445,
+        "avgRanking": 1051,
+        "minRanking": 724,
+        "maxRanking": 2562,
+        "count": 7
+      },
+      {
+        "score": 450,
+        "avgRanking": 694,
+        "minRanking": 671,
+        "maxRanking": 710,
+        "count": 4
+      },
+      {
+        "score": 455,
+        "avgRanking": 529,
+        "minRanking": 484,
+        "maxRanking": 558,
+        "count": 3
+      },
+      {
+        "score": 460,
+        "avgRanking": 635,
+        "minRanking": 351,
+        "maxRanking": 1165,
+        "count": 3
+      },
+      {
+        "score": 465,
+        "avgRanking": 303,
+        "minRanking": 283,
+        "maxRanking": 340,
+        "count": 3
+      },
+      {
+        "score": 475,
+        "avgRanking": 186,
+        "minRanking": 182,
+        "maxRanking": 191,
+        "count": 2
+      },
+      {
+        "score": 480,
+        "avgRanking": 126,
+        "minRanking": 126,
+        "maxRanking": 126,
+        "count": 1
+      },
+      {
+        "score": 490,
+        "avgRanking": 64,
+        "minRanking": 64,
+        "maxRanking": 64,
+        "count": 1
+      }
+    ]
+  },
+  "dil": {
+    "minScore": 130,
+    "maxScore": 525,
+    "distribution": [
+      {
+        "score": 130,
+        "avgRanking": 140651,
+        "minRanking": 140651,
+        "maxRanking": 140651,
+        "count": 1
+      },
+      {
+        "score": 135,
+        "avgRanking": 140646,
+        "minRanking": 140646,
+        "maxRanking": 140646,
+        "count": 1
+      },
+      {
+        "score": 140,
+        "avgRanking": 140609,
+        "minRanking": 140606,
+        "maxRanking": 140615,
+        "count": 3
+      },
+      {
+        "score": 150,
+        "avgRanking": 140451,
+        "minRanking": 140446,
+        "maxRanking": 140456,
+        "count": 2
+      },
+      {
+        "score": 155,
+        "avgRanking": 140139,
+        "minRanking": 140057,
+        "maxRanking": 140264,
+        "count": 5
+      },
+      {
+        "score": 160,
+        "avgRanking": 139608,
+        "minRanking": 139431,
+        "maxRanking": 139845,
+        "count": 5
+      },
+      {
+        "score": 165,
+        "avgRanking": 138949,
+        "minRanking": 138723,
+        "maxRanking": 139236,
+        "count": 7
+      },
+      {
+        "score": 170,
+        "avgRanking": 137913,
+        "minRanking": 137485,
+        "maxRanking": 138443,
+        "count": 10
+      },
+      {
+        "score": 175,
+        "avgRanking": 137948,
+        "minRanking": 136250,
+        "maxRanking": 149919,
+        "count": 11
+      },
+      {
+        "score": 180,
+        "avgRanking": 135405,
+        "minRanking": 134837,
+        "maxRanking": 135939,
+        "count": 7
+      },
+      {
+        "score": 185,
+        "avgRanking": 132770,
+        "minRanking": 132330,
+        "maxRanking": 133570,
+        "count": 8
+      },
+      {
+        "score": 190,
+        "avgRanking": 131243,
+        "minRanking": 130341,
+        "maxRanking": 132030,
+        "count": 9
+      },
+      {
+        "score": 195,
+        "avgRanking": 128545,
+        "minRanking": 127444,
+        "maxRanking": 129702,
+        "count": 6
+      },
+      {
+        "score": 200,
+        "avgRanking": 126213,
+        "minRanking": 125247,
+        "maxRanking": 127045,
+        "count": 5
+      },
+      {
+        "score": 205,
+        "avgRanking": 122901,
+        "minRanking": 121119,
+        "maxRanking": 124185,
+        "count": 5
+      },
+      {
+        "score": 210,
+        "avgRanking": 120392,
+        "minRanking": 117820,
+        "maxRanking": 130027,
+        "count": 7
+      },
+      {
+        "score": 215,
+        "avgRanking": 115718,
+        "minRanking": 114669,
+        "maxRanking": 116595,
+        "count": 7
+      },
+      {
+        "score": 220,
+        "avgRanking": 112523,
+        "minRanking": 111534,
+        "maxRanking": 113512,
+        "count": 2
+      },
+      {
+        "score": 225,
+        "avgRanking": 108457,
+        "minRanking": 107853,
+        "maxRanking": 109330,
+        "count": 3
+      },
+      {
+        "score": 230,
+        "avgRanking": 105395,
+        "minRanking": 104306,
+        "maxRanking": 106447,
+        "count": 9
+      },
+      {
+        "score": 235,
+        "avgRanking": 106858,
+        "minRanking": 103031,
+        "maxRanking": 114151,
+        "count": 3
+      },
+      {
+        "score": 240,
+        "avgRanking": 99684,
+        "minRanking": 98451,
+        "maxRanking": 100293,
+        "count": 4
+      },
+      {
+        "score": 245,
+        "avgRanking": 96175,
+        "minRanking": 94915,
+        "maxRanking": 97462,
+        "count": 6
+      },
+      {
+        "score": 250,
+        "avgRanking": 92922,
+        "minRanking": 91942,
+        "maxRanking": 94276,
+        "count": 5
+      },
+      {
+        "score": 255,
+        "avgRanking": 89263,
+        "minRanking": 89263,
+        "maxRanking": 89263,
+        "count": 1
+      },
+      {
+        "score": 260,
+        "avgRanking": 87535,
+        "minRanking": 86352,
+        "maxRanking": 88728,
+        "count": 10
+      },
+      {
+        "score": 265,
+        "avgRanking": 84566,
+        "minRanking": 83618,
+        "maxRanking": 85607,
+        "count": 5
+      },
+      {
+        "score": 270,
+        "avgRanking": 81896,
+        "minRanking": 80798,
+        "maxRanking": 82434,
+        "count": 7
+      },
+      {
+        "score": 275,
+        "avgRanking": 79392,
+        "minRanking": 79392,
+        "maxRanking": 79392,
+        "count": 1
+      },
+      {
+        "score": 280,
+        "avgRanking": 76366,
+        "minRanking": 75171,
+        "maxRanking": 77627,
+        "count": 6
+      },
+      {
+        "score": 285,
+        "avgRanking": 73341,
+        "minRanking": 72383,
+        "maxRanking": 74729,
+        "count": 5
+      },
+      {
+        "score": 290,
+        "avgRanking": 74845,
+        "minRanking": 72112,
+        "maxRanking": 77578,
+        "count": 2
+      },
+      {
+        "score": 295,
+        "avgRanking": 68183,
+        "minRanking": 67284,
+        "maxRanking": 69407,
+        "count": 12
+      },
+      {
+        "score": 300,
+        "avgRanking": 66579,
+        "minRanking": 65231,
+        "maxRanking": 71872,
+        "count": 9
+      },
+      {
+        "score": 305,
+        "avgRanking": 64218,
+        "minRanking": 62437,
+        "maxRanking": 70072,
+        "count": 10
+      },
+      {
+        "score": 310,
+        "avgRanking": 61287,
+        "minRanking": 60438,
+        "maxRanking": 62127,
+        "count": 8
+      },
+      {
+        "score": 315,
+        "avgRanking": 58456,
+        "minRanking": 57357,
+        "maxRanking": 59495,
+        "count": 9
+      },
+      {
+        "score": 320,
+        "avgRanking": 55753,
+        "minRanking": 54881,
+        "maxRanking": 57059,
+        "count": 12
+      },
+      {
+        "score": 325,
+        "avgRanking": 53593,
+        "minRanking": 52444,
+        "maxRanking": 54661,
+        "count": 10
+      },
+      {
+        "score": 330,
+        "avgRanking": 52071,
+        "minRanking": 50319,
+        "maxRanking": 58110,
+        "count": 10
+      },
+      {
+        "score": 335,
+        "avgRanking": 48904,
+        "minRanking": 47746,
+        "maxRanking": 49935,
+        "count": 12
+      },
+      {
+        "score": 340,
+        "avgRanking": 46160,
+        "minRanking": 45489,
+        "maxRanking": 47031,
+        "count": 11
+      },
+      {
+        "score": 345,
+        "avgRanking": 44734,
+        "minRanking": 43328,
+        "maxRanking": 48814,
+        "count": 10
+      },
+      {
+        "score": 350,
+        "avgRanking": 41886,
+        "minRanking": 40960,
+        "maxRanking": 42956,
+        "count": 14
+      },
+      {
+        "score": 355,
+        "avgRanking": 39410,
+        "minRanking": 38717,
+        "maxRanking": 40617,
+        "count": 11
+      },
+      {
+        "score": 360,
+        "avgRanking": 37882,
+        "minRanking": 36500,
+        "maxRanking": 44307,
+        "count": 22
+      },
+      {
+        "score": 365,
+        "avgRanking": 35334,
+        "minRanking": 34302,
+        "maxRanking": 36205,
+        "count": 12
+      },
+      {
+        "score": 370,
+        "avgRanking": 33178,
+        "minRanking": 32545,
+        "maxRanking": 33975,
+        "count": 17
+      },
+      {
+        "score": 375,
+        "avgRanking": 31181,
+        "minRanking": 30121,
+        "maxRanking": 31880,
+        "count": 11
+      },
+      {
+        "score": 380,
+        "avgRanking": 28863,
+        "minRanking": 27827,
+        "maxRanking": 29531,
+        "count": 15
+      },
+      {
+        "score": 385,
+        "avgRanking": 26861,
+        "minRanking": 26143,
+        "maxRanking": 27711,
+        "count": 13
+      },
+      {
+        "score": 390,
+        "avgRanking": 24711,
+        "minRanking": 23841,
+        "maxRanking": 25648,
+        "count": 17
+      },
+      {
+        "score": 395,
+        "avgRanking": 22488,
+        "minRanking": 21628,
+        "maxRanking": 23477,
+        "count": 23
+      },
+      {
+        "score": 400,
+        "avgRanking": 20647,
+        "minRanking": 19714,
+        "maxRanking": 21596,
+        "count": 30
+      },
+      {
+        "score": 405,
+        "avgRanking": 18865,
+        "minRanking": 17837,
+        "maxRanking": 19534,
+        "count": 18
+      },
+      {
+        "score": 410,
+        "avgRanking": 16945,
+        "minRanking": 16118,
+        "maxRanking": 17799,
+        "count": 25
+      },
+      {
+        "score": 415,
+        "avgRanking": 15145,
+        "minRanking": 14400,
+        "maxRanking": 16028,
+        "count": 22
+      },
+      {
+        "score": 420,
+        "avgRanking": 13521,
+        "minRanking": 12809,
+        "maxRanking": 14344,
+        "count": 22
+      },
+      {
+        "score": 425,
+        "avgRanking": 12427,
+        "minRanking": 11389,
+        "maxRanking": 18202,
+        "count": 19
+      },
+      {
+        "score": 430,
+        "avgRanking": 10681,
+        "minRanking": 10238,
+        "maxRanking": 11266,
+        "count": 16
+      },
+      {
+        "score": 435,
+        "avgRanking": 9367,
+        "minRanking": 8695,
+        "maxRanking": 9852,
+        "count": 10
+      },
+      {
+        "score": 440,
+        "avgRanking": 8061,
+        "minRanking": 7651,
+        "maxRanking": 8567,
+        "count": 9
+      },
+      {
+        "score": 445,
+        "avgRanking": 7048,
+        "minRanking": 6617,
+        "maxRanking": 7559,
+        "count": 7
+      },
+      {
+        "score": 450,
+        "avgRanking": 6449,
+        "minRanking": 6386,
+        "maxRanking": 6525,
+        "count": 4
+      },
+      {
+        "score": 455,
+        "avgRanking": 5216,
+        "minRanking": 4911,
+        "maxRanking": 5534,
+        "count": 9
+      },
+      {
+        "score": 460,
+        "avgRanking": 4614,
+        "minRanking": 4210,
+        "maxRanking": 4858,
+        "count": 4
+      },
+      {
+        "score": 465,
+        "avgRanking": 3798,
+        "minRanking": 3658,
+        "maxRanking": 3994,
+        "count": 3
+      },
+      {
+        "score": 470,
+        "avgRanking": 3260,
+        "minRanking": 2968,
+        "maxRanking": 3410,
+        "count": 4
+      },
+      {
+        "score": 475,
+        "avgRanking": 2586,
+        "minRanking": 2426,
+        "maxRanking": 2719,
+        "count": 6
+      },
+      {
+        "score": 480,
+        "avgRanking": 2056,
+        "minRanking": 2042,
+        "maxRanking": 2071,
+        "count": 2
+      },
+      {
+        "score": 485,
+        "avgRanking": 1699,
+        "minRanking": 1636,
+        "maxRanking": 1875,
+        "count": 4
+      },
+      {
+        "score": 495,
+        "avgRanking": 1220,
+        "minRanking": 1220,
+        "maxRanking": 1220,
+        "count": 1
+      },
+      {
+        "score": 500,
+        "avgRanking": 946,
+        "minRanking": 946,
+        "maxRanking": 946,
+        "count": 1
+      },
+      {
+        "score": 505,
+        "avgRanking": 680,
+        "minRanking": 680,
+        "maxRanking": 680,
+        "count": 1
+      },
+      {
+        "score": 525,
+        "avgRanking": 209,
+        "minRanking": 209,
+        "maxRanking": 209,
+        "count": 1
+      }
+    ]
+  }
+}

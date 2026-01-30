@@ -11,8 +11,7 @@ def load_programs_from_csv(csv_path: str = None) -> List[Dict]:
     Load all programs from the master CSV file.
     """
     if csv_path is None:
-        csv_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 
-                                'educaition-react', 'public', 'assets', 'data_2025', 
+        csv_path = os.path.join(os.path.dirname(__file__), '..', 'data', 
                                 'all_universities_programs_master.csv')
     
     programs = []
@@ -32,8 +31,7 @@ def load_score_distribution(json_path: str = None) -> Dict:
     Load score-to-ranking distribution data.
     """
     if json_path is None:
-        json_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 
-                                 'educaition-react', 'public', 'assets', 'data_2025', 
+        json_path = os.path.join(os.path.dirname(__file__), '..', 'data', 
                                  'score_ranking_distribution.json')
     
     try:
