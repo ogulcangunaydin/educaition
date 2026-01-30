@@ -19,8 +19,21 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.add_column('dissonance_test_participants', sa.Column('user_id', sa.Integer, nullable=True))
-    op.create_foreign_key('fk_dissonance_test_participants_user', 'dissonance_test_participants', 'users', ['user_id'], ['id'])
+    conn = op.get_bind()
+    result = conn.execute(sa.text(
+        "SELECT column_name FROM information_schema.columns "
+        "WHERE table_name='dissonance_test_participants' AND column_name='user_id'"
+    ))
+    if result.fetchone() is None:
+        op.add_column('dissonance_test_participants', sa.Column('user_id', sa.Integer, nullable=True))
+    
+    # Check if foreign key exists
+    fk_result = conn.execute(sa.text(
+        "SELECT constraint_name FROM information_schema.table_constraints "
+        "WHERE table_name='dissonance_test_participants' AND constraint_name='fk_dissonance_test_participants_user'"
+    ))
+    if fk_result.fetchone() is None:
+        op.create_foreign_key('fk_dissonance_test_participants_user', 'dissonance_test_participants', 'users', ['user_id'], ['id'])
 
 def downgrade() -> None:
     op.drop_constraint('fk_dissonance_test_participants_user', 'dissonance_test_participants', type_='foreignkey')

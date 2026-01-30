@@ -19,16 +19,32 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Remove old columns
-    op.drop_column('dissonance_test_participants', 'first_answer')
-    op.drop_column('dissonance_test_participants', 'second_answer')
-    op.drop_column('dissonance_test_participants', 'question_variant')
+    conn = op.get_bind()
     
-    # Add new columns
-    op.add_column('dissonance_test_participants', sa.Column('comfort_question_first_answer', sa.Integer, nullable=True))
-    op.add_column('dissonance_test_participants', sa.Column('fare_question_first_answer', sa.Integer, nullable=True))
-    op.add_column('dissonance_test_participants', sa.Column('comfort_question_second_answer', sa.Integer, nullable=True))
-    op.add_column('dissonance_test_participants', sa.Column('fare_question_second_answer', sa.Integer, nullable=True))
+    def column_exists(col_name):
+        result = conn.execute(sa.text(
+            f"SELECT column_name FROM information_schema.columns "
+            f"WHERE table_name='dissonance_test_participants' AND column_name='{col_name}'"
+        ))
+        return result.fetchone() is not None
+    
+    # Remove old columns if they exist
+    if column_exists('first_answer'):
+        op.drop_column('dissonance_test_participants', 'first_answer')
+    if column_exists('second_answer'):
+        op.drop_column('dissonance_test_participants', 'second_answer')
+    if column_exists('question_variant'):
+        op.drop_column('dissonance_test_participants', 'question_variant')
+    
+    # Add new columns if they don't exist
+    if not column_exists('comfort_question_first_answer'):
+        op.add_column('dissonance_test_participants', sa.Column('comfort_question_first_answer', sa.Integer, nullable=True))
+    if not column_exists('fare_question_first_answer'):
+        op.add_column('dissonance_test_participants', sa.Column('fare_question_first_answer', sa.Integer, nullable=True))
+    if not column_exists('comfort_question_second_answer'):
+        op.add_column('dissonance_test_participants', sa.Column('comfort_question_second_answer', sa.Integer, nullable=True))
+    if not column_exists('fare_question_second_answer'):
+        op.add_column('dissonance_test_participants', sa.Column('fare_question_second_answer', sa.Integer, nullable=True))
 
 def downgrade() -> None:
     # Add old columns back

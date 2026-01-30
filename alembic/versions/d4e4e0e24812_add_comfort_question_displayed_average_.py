@@ -19,8 +19,19 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.add_column('dissonance_test_participants', sa.Column('comfort_question_displayed_average', sa.Float(), nullable=True))
-    op.add_column('dissonance_test_participants', sa.Column('fare_question_displayed_average', sa.Float(), nullable=True))
+    conn = op.get_bind()
+    
+    def column_exists(col_name):
+        result = conn.execute(sa.text(
+            f"SELECT column_name FROM information_schema.columns "
+            f"WHERE table_name='dissonance_test_participants' AND column_name='{col_name}'"
+        ))
+        return result.fetchone() is not None
+    
+    if not column_exists('comfort_question_displayed_average'):
+        op.add_column('dissonance_test_participants', sa.Column('comfort_question_displayed_average', sa.Float(), nullable=True))
+    if not column_exists('fare_question_displayed_average'):
+        op.add_column('dissonance_test_participants', sa.Column('fare_question_displayed_average', sa.Float(), nullable=True))
 
 
 def downgrade() -> None:

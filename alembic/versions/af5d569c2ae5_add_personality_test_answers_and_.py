@@ -19,8 +19,19 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.add_column('dissonance_test_participants', sa.Column('personality_test_answers', postgresql.JSONB, nullable=True))
-    op.add_column('dissonance_test_participants', sa.Column('compatibility_analysis', sa.String, nullable=True))
+    conn = op.get_bind()
+    
+    def column_exists(col_name):
+        result = conn.execute(sa.text(
+            f"SELECT column_name FROM information_schema.columns "
+            f"WHERE table_name='dissonance_test_participants' AND column_name='{col_name}'"
+        ))
+        return result.fetchone() is not None
+    
+    if not column_exists('personality_test_answers'):
+        op.add_column('dissonance_test_participants', sa.Column('personality_test_answers', postgresql.JSONB, nullable=True))
+    if not column_exists('compatibility_analysis'):
+        op.add_column('dissonance_test_participants', sa.Column('compatibility_analysis', sa.String, nullable=True))
 
 def downgrade() -> None:
     op.drop_column('dissonance_test_participants', 'personality_test_answers')

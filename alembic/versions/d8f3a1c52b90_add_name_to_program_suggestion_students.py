@@ -19,7 +19,13 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.add_column('program_suggestion_students', sa.Column('name', sa.String(100), nullable=True))
+    conn = op.get_bind()
+    result = conn.execute(sa.text(
+        "SELECT column_name FROM information_schema.columns "
+        "WHERE table_name='program_suggestion_students' AND column_name='name'"
+    ))
+    if result.fetchone() is None:
+        op.add_column('program_suggestion_students', sa.Column('name', sa.String(100), nullable=True))
 
 
 def downgrade() -> None:
