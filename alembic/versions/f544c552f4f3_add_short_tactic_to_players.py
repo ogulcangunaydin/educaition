@@ -19,8 +19,14 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Use op.add_column to add the short_tactic column to the players table
-    op.add_column('players', sa.Column('short_tactic', sa.String(), nullable=True))
+    # Check if column exists before adding (handles re-runs)
+    conn = op.get_bind()
+    result = conn.execute(sa.text(
+        "SELECT column_name FROM information_schema.columns "
+        "WHERE table_name='players' AND column_name='short_tactic'"
+    ))
+    if result.fetchone() is None:
+        op.add_column('players', sa.Column('short_tactic', sa.String(), nullable=True))
 
 def downgrade() -> None:
     # Use op.drop_column to remove the short_tactic column from the players table
