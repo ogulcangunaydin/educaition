@@ -18,6 +18,7 @@ app = FastAPI()
 
 origins = [
     "http://localhost:8080",
+    "http://192.168.1.106:8080",
     "http://ec2-54-173-57-250.compute-1.amazonaws.com",
     "http://educaition.com.tr"
 ]

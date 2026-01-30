@@ -12,6 +12,8 @@ from app.services.prisoners_dilemma import play_game
 from app.services.calculate_personality_traits import calculate_personality_traits
 from app.services.job_recommendation_service import get_job_recommendation
 from app.services.compatibility_analysis_service import get_compatibility_analysis
+from app.services.riasec_service import calculate_riasec_scores
+from app.services.program_suggestion_service import get_suggested_programs
 import os
 import bleach
 from .helpers import create_player_function_name
@@ -292,3 +294,307 @@ def update_dissonance_test_participant_personality_traits(participant_id: int, a
     db.commit()
     db.refresh(db_participant)
     return db_participant
+
+
+# High School Room Controllers
+def create_high_school_room(high_school_name: str, high_school_code: str, request: Request, db: Session):
+    user_id = request.session["current_user"]["id"]
+    clean_name = bleach.clean(high_school_name, strip=True)
+    clean_code = bleach.clean(high_school_code, strip=True) if high_school_code else None
+    
+    room = models.HighSchoolRoom(
+        user_id=user_id,
+        high_school_name=clean_name,
+        high_school_code=clean_code
+    )
+    db.add(room)
+    db.commit()
+    db.refresh(room)
+    return room
+
+
+def get_high_school_rooms(request: Request, skip: int, limit: int, db: Session):
+    user_id = request.session["current_user"]["id"]
+    return db.query(models.HighSchoolRoom).filter(
+        models.HighSchoolRoom.user_id == user_id
+    ).offset(skip).limit(limit).all()
+
+
+def get_high_school_room(room_id: int, db: Session):
+    room = db.query(models.HighSchoolRoom).filter(
+        models.HighSchoolRoom.id == room_id
+    ).first()
+    if room is None:
+        raise HTTPException(status_code=404, detail="High school room not found")
+    return room
+
+
+def delete_high_school_room(room_id: int, db: Session):
+    room = db.query(models.HighSchoolRoom).filter(
+        models.HighSchoolRoom.id == room_id
+    ).first()
+    if room is None:
+        raise HTTPException(status_code=404, detail="High school room not found")
+    db.delete(room)
+    db.commit()
+    return room
+
+
+def get_high_school_room_students(room_id: int, db: Session):
+    # Get all students
+    all_students = db.query(models.ProgramSuggestionStudent).filter(
+        models.ProgramSuggestionStudent.high_school_room_id == room_id
+    ).all()
+    
+    # Filter out orphaned 'started' records that have a sibling with same created_at
+    # This handles the duplicate issue caused by React StrictMode
+    from datetime import timedelta
+    
+    # Group by created_at timestamp (within 2 second window)
+    completed_times = set()
+    for student in all_students:
+        if student.status != 'started' and student.created_at:
+            # Add a time window around completed records
+            completed_times.add(student.created_at)
+    
+    filtered_students = []
+    for student in all_students:
+        # Keep all non-started records
+        if student.status != 'started':
+            filtered_students.append(student)
+        else:
+            # For 'started' records, check if there's a completed sibling within 5 seconds
+            is_orphan_duplicate = False
+            if student.created_at:
+                for completed_time in completed_times:
+                    time_diff = abs((student.created_at - completed_time).total_seconds())
+                    if time_diff <= 5:  # Within 5 seconds
+                        is_orphan_duplicate = True
+                        break
+            
+            if not is_orphan_duplicate:
+                filtered_students.append(student)
+    
+    return filtered_students
+
+
+# Program Suggestion Student Controllers
+def create_program_suggestion_student(high_school_room_id: int, db: Session):
+    # Verify room exists
+    room = db.query(models.HighSchoolRoom).filter(
+        models.HighSchoolRoom.id == high_school_room_id
+    ).first()
+    if room is None:
+        raise HTTPException(status_code=404, detail="High school room not found")
+    
+    # Check for duplicate records created within last 5 seconds with status 'started'
+    # This handles race conditions from React StrictMode or double-clicks
+    from datetime import datetime, timedelta, timezone
+    five_seconds_ago = datetime.now(timezone.utc) - timedelta(seconds=5)
+    
+    recent_started = db.query(models.ProgramSuggestionStudent).filter(
+        models.ProgramSuggestionStudent.high_school_room_id == high_school_room_id,
+        models.ProgramSuggestionStudent.status == 'started',
+        models.ProgramSuggestionStudent.created_at >= five_seconds_ago
+    ).order_by(models.ProgramSuggestionStudent.created_at.desc()).all()
+    
+    # If there's a recent 'started' record, return it instead of creating new
+    if recent_started:
+        return recent_started[0]
+    
+    student = models.ProgramSuggestionStudent(
+        high_school_room_id=high_school_room_id,
+        status='started'
+    )
+    db.add(student)
+    db.commit()
+    db.refresh(student)
+    return student
+
+
+def get_program_suggestion_student(student_id: int, db: Session):
+    student = db.query(models.ProgramSuggestionStudent).filter(
+        models.ProgramSuggestionStudent.id == student_id
+    ).first()
+    if student is None:
+        raise HTTPException(status_code=404, detail="Student not found")
+    return student
+
+
+def update_student_step1(student_id: int, data: schemas.ProgramSuggestionStudentUpdateStep1, db: Session):
+    student = db.query(models.ProgramSuggestionStudent).filter(
+        models.ProgramSuggestionStudent.id == student_id
+    ).first()
+    if student is None:
+        raise HTTPException(status_code=404, detail="Student not found")
+    
+    student.name = data.name
+    student.birth_year = data.birth_year
+    student.gender = data.gender
+    student.status = 'step1_completed'
+    
+    db.commit()
+    db.refresh(student)
+    return student
+
+
+def update_student_step2(student_id: int, data: schemas.ProgramSuggestionStudentUpdateStep2, db: Session):
+    student = db.query(models.ProgramSuggestionStudent).filter(
+        models.ProgramSuggestionStudent.id == student_id
+    ).first()
+    if student is None:
+        raise HTTPException(status_code=404, detail="Student not found")
+    
+    student.class_year = data.class_year
+    student.will_take_exam = data.will_take_exam
+    student.average_grade = data.average_grade
+    student.area = data.area
+    student.wants_foreign_language = data.wants_foreign_language
+    student.status = 'step2_completed'
+    
+    db.commit()
+    db.refresh(student)
+    return student
+
+
+def update_student_step3(student_id: int, data: schemas.ProgramSuggestionStudentUpdateStep3, db: Session):
+    student = db.query(models.ProgramSuggestionStudent).filter(
+        models.ProgramSuggestionStudent.id == student_id
+    ).first()
+    if student is None:
+        raise HTTPException(status_code=404, detail="Student not found")
+    
+    student.expected_score_min = data.expected_score_min
+    student.expected_score_max = data.expected_score_max
+    student.expected_score_distribution = data.expected_score_distribution
+    student.alternative_area = data.alternative_area
+    student.alternative_score_min = data.alternative_score_min
+    student.alternative_score_max = data.alternative_score_max
+    student.alternative_score_distribution = data.alternative_score_distribution
+    student.status = 'step3_completed'
+    
+    db.commit()
+    db.refresh(student)
+    return student
+
+
+def update_student_step4(student_id: int, data: schemas.ProgramSuggestionStudentUpdateStep4, db: Session):
+    student = db.query(models.ProgramSuggestionStudent).filter(
+        models.ProgramSuggestionStudent.id == student_id
+    ).first()
+    if student is None:
+        raise HTTPException(status_code=404, detail="Student not found")
+    
+    student.preferred_language = data.preferred_language
+    student.desired_universities = data.desired_universities
+    student.desired_cities = data.desired_cities
+    student.status = 'step4_completed'
+    
+    db.commit()
+    db.refresh(student)
+    return student
+
+
+def update_student_riasec(student_id: int, data: schemas.ProgramSuggestionStudentUpdateRiasec, db: Session):
+    student = db.query(models.ProgramSuggestionStudent).filter(
+        models.ProgramSuggestionStudent.id == student_id
+    ).first()
+    if student is None:
+        raise HTTPException(status_code=404, detail="Student not found")
+    
+    # Calculate RIASEC scores
+    riasec_scores = calculate_riasec_scores(data.riasec_answers)
+    
+    # Calculate expected score (middle point based on distribution)
+    expected_score = calculate_expected_score(
+        student.expected_score_min,
+        student.expected_score_max,
+        student.expected_score_distribution
+    )
+    
+    alternative_score = None
+    if student.alternative_area:
+        alternative_score = calculate_expected_score(
+            student.alternative_score_min,
+            student.alternative_score_max,
+            student.alternative_score_distribution
+        )
+    
+    # Get program suggestions
+    result = get_suggested_programs(
+        riasec_scores=riasec_scores,
+        expected_score=expected_score,
+        area=student.area,
+        alternative_score=alternative_score,
+        alternative_area=student.alternative_area,
+        preferred_language=student.preferred_language,
+        desired_universities=student.desired_universities,
+        desired_cities=student.desired_cities
+    )
+    
+    # Update student record
+    student.riasec_answers = data.riasec_answers
+    student.riasec_scores = result['riasec_scores']
+    student.suggested_jobs = result['suggested_jobs']
+    student.suggested_programs = result['suggested_programs']
+    student.gpt_prompt = result.get('gpt_prompt')
+    student.gpt_response = result.get('gpt_response')
+    student.status = 'completed'
+    
+    db.commit()
+    db.refresh(student)
+    return student
+
+
+def calculate_expected_score(min_score: float, max_score: float, distribution: str) -> float:
+    """Calculate expected score based on distribution preference."""
+    if not min_score or not max_score:
+        return 0
+    
+    range_val = max_score - min_score
+    
+    if distribution == 'low':
+        return min_score + (range_val * 0.25)
+    elif distribution == 'high':
+        return min_score + (range_val * 0.75)
+    else:  # medium or default
+        return min_score + (range_val * 0.5)
+
+
+def get_student_result(student_id: int, db: Session):
+    student = db.query(models.ProgramSuggestionStudent).filter(
+        models.ProgramSuggestionStudent.id == student_id
+    ).first()
+    if student is None:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    return {
+        'id': student.id,
+        'name': student.name,
+        'expected_score_min': student.expected_score_min,
+        'expected_score_max': student.expected_score_max,
+        'alternative_area': student.alternative_area,
+        'alternative_score_min': student.alternative_score_min,
+        'alternative_score_max': student.alternative_score_max,
+        'riasec_scores': student.riasec_scores,
+        'suggested_jobs': student.suggested_jobs,
+        'suggested_programs': student.suggested_programs,
+        'area': student.area
+    }
+
+
+def get_student_debug(student_id: int, db: Session):
+    student = db.query(models.ProgramSuggestionStudent).filter(
+        models.ProgramSuggestionStudent.id == student_id
+    ).first()
+    if student is None:
+        raise HTTPException(status_code=404, detail="Student not found")
+    
+    return {
+        'id': student.id,
+        'name': student.name,
+        'riasec_scores': student.riasec_scores,
+        'suggested_jobs': student.suggested_jobs,
+        'gpt_prompt': student.gpt_prompt,
+        'gpt_response': student.gpt_response
+    }

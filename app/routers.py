@@ -124,3 +124,108 @@ def update_dissonance_test_participant_personality_traits(participant_id: int, a
 @router.post("/dissonance_test_participants/{participant_id}/delete", response_model=schemas.DissonanceTestParticipant)
 def delete_dissonance_test_participant(participant_id: int, db: Session = Depends(db_operations.get_db)):
     return controllers.delete_dissonance_test_participant(participant_id, db)
+
+
+# High School Room Routes
+@router.post("/high-school-rooms/", response_model=schemas.HighSchoolRoom)
+def create_high_school_room(
+    request: Request,
+    high_school_name: str = Form(...),
+    high_school_code: str = Form(None),
+    db: Session = Depends(db_operations.get_db)
+):
+    return controllers.create_high_school_room(high_school_name, high_school_code, request, db)
+
+
+@router.get("/high-school-rooms/", response_model=List[schemas.HighSchoolRoom])
+def get_high_school_rooms(
+    request: Request,
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(db_operations.get_db)
+):
+    return controllers.get_high_school_rooms(request, skip, limit, db)
+
+
+@router.get("/high-school-rooms/{room_id}", response_model=schemas.HighSchoolRoom)
+def get_high_school_room(room_id: int, db: Session = Depends(db_operations.get_db)):
+    return controllers.get_high_school_room(room_id, db)
+
+
+@router.delete("/high-school-rooms/{room_id}", response_model=schemas.HighSchoolRoom)
+def delete_high_school_room(room_id: int, db: Session = Depends(db_operations.get_db)):
+    return controllers.delete_high_school_room(room_id, db)
+
+
+@router.get("/high-school-rooms/{room_id}/students", response_model=List[schemas.ProgramSuggestionStudent])
+def get_high_school_room_students(room_id: int, db: Session = Depends(db_operations.get_db)):
+    return controllers.get_high_school_room_students(room_id, db)
+
+
+# Program Suggestion Student Routes (without auth - anonymous students)
+@router_without_auth.post("/program-suggestion/students/", response_model=schemas.ProgramSuggestionStudent)
+def create_program_suggestion_student(
+    student: schemas.ProgramSuggestionStudentCreate,
+    db: Session = Depends(db_operations.get_db)
+):
+    return controllers.create_program_suggestion_student(student.high_school_room_id, db)
+
+
+@router_without_auth.get("/program-suggestion/students/{student_id}", response_model=schemas.ProgramSuggestionStudent)
+def get_program_suggestion_student(student_id: int, db: Session = Depends(db_operations.get_db)):
+    return controllers.get_program_suggestion_student(student_id, db)
+
+
+@router_without_auth.post("/program-suggestion/students/{student_id}/step1", response_model=schemas.ProgramSuggestionStudent)
+def update_student_step1(
+    student_id: int,
+    data: schemas.ProgramSuggestionStudentUpdateStep1,
+    db: Session = Depends(db_operations.get_db)
+):
+    return controllers.update_student_step1(student_id, data, db)
+
+
+@router_without_auth.post("/program-suggestion/students/{student_id}/step2", response_model=schemas.ProgramSuggestionStudent)
+def update_student_step2(
+    student_id: int,
+    data: schemas.ProgramSuggestionStudentUpdateStep2,
+    db: Session = Depends(db_operations.get_db)
+):
+    return controllers.update_student_step2(student_id, data, db)
+
+
+@router_without_auth.post("/program-suggestion/students/{student_id}/step3", response_model=schemas.ProgramSuggestionStudent)
+def update_student_step3(
+    student_id: int,
+    data: schemas.ProgramSuggestionStudentUpdateStep3,
+    db: Session = Depends(db_operations.get_db)
+):
+    return controllers.update_student_step3(student_id, data, db)
+
+
+@router_without_auth.post("/program-suggestion/students/{student_id}/step4", response_model=schemas.ProgramSuggestionStudent)
+def update_student_step4(
+    student_id: int,
+    data: schemas.ProgramSuggestionStudentUpdateStep4,
+    db: Session = Depends(db_operations.get_db)
+):
+    return controllers.update_student_step4(student_id, data, db)
+
+
+@router_without_auth.post("/program-suggestion/students/{student_id}/riasec", response_model=schemas.ProgramSuggestionStudent)
+def update_student_riasec(
+    student_id: int,
+    data: schemas.ProgramSuggestionStudentUpdateRiasec,
+    db: Session = Depends(db_operations.get_db)
+):
+    return controllers.update_student_riasec(student_id, data, db)
+
+
+@router_without_auth.get("/program-suggestion/students/{student_id}/result", response_model=schemas.ProgramSuggestionStudentResult)
+def get_student_result(student_id: int, db: Session = Depends(db_operations.get_db)):
+    return controllers.get_student_result(student_id, db)
+
+
+@router.get("/program-suggestion/students/{student_id}/debug", response_model=schemas.ProgramSuggestionStudentDebug)
+def get_student_debug(student_id: int, db: Session = Depends(db_operations.get_db)):
+    return controllers.get_student_debug(student_id, db)

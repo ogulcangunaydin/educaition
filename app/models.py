@@ -1,5 +1,5 @@
 from sqlalchemy.orm import relationship
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Float, DateTime
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Float, DateTime, Text
 from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import JSONB
 from .database import Base
@@ -17,6 +17,7 @@ class User(Base):
 
     rooms = relationship("Room", back_populates="user")
     dissonance_test_participants = relationship("DissonanceTestParticipant", back_populates="user")
+    high_school_rooms = relationship("HighSchoolRoom", back_populates="user")
 
 class Room(Base):
     __tablename__ = "rooms"
@@ -134,4 +135,71 @@ class DissonanceTestParticipant(Base):
     fare_question_displayed_average = Column(Float, nullable=True)  # New field
     
     user = relationship("User", back_populates="dissonance_test_participants")
+
+
+class HighSchoolRoom(Base):
+    __tablename__ = 'high_school_rooms'
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    high_school_name = Column(String, nullable=False)
+    high_school_code = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now(), nullable=True)
+
+    user = relationship("User", back_populates="high_school_rooms")
+    students = relationship("ProgramSuggestionStudent", back_populates="high_school_room")
+
+
+class ProgramSuggestionStudent(Base):
+    __tablename__ = 'program_suggestion_students'
+
+    id = Column(Integer, primary_key=True, index=True)
+    high_school_room_id = Column(Integer, ForeignKey('high_school_rooms.id'), nullable=False)
+    
+    # Step 1.1 - Personal Info
+    name = Column(String(100), nullable=True)
+    birth_year = Column(Integer, nullable=True)
+    gender = Column(String(20), nullable=True)
+    
+    # Step 1.2 - Education Info
+    class_year = Column(String(20), nullable=True)  # 9, 10, 11, 12, mezun
+    will_take_exam = Column(Boolean, default=True)
+    average_grade = Column(Float, nullable=True)  # Optional
+    area = Column(String(50), nullable=True)  # say, ea, söz, dil
+    wants_foreign_language = Column(Boolean, default=False)
+    
+    # Step 1.3 - Score Expectations
+    expected_score_min = Column(Float, nullable=True)
+    expected_score_max = Column(Float, nullable=True)
+    expected_score_distribution = Column(String(20), nullable=True)  # low, medium, high
+    alternative_area = Column(String(50), nullable=True)
+    alternative_score_min = Column(Float, nullable=True)
+    alternative_score_max = Column(Float, nullable=True)
+    alternative_score_distribution = Column(String(20), nullable=True)
+    
+    # Step 1.4 - Preferences
+    preferred_language = Column(String(50), nullable=True)  # Türkçe, İngilizce, etc.
+    desired_universities = Column(JSONB, nullable=True)  # List of university names
+    desired_cities = Column(JSONB, nullable=True)  # List of cities: istanbul, ankara, izmir, other
+    
+    # RIASEC Test Results
+    riasec_answers = Column(JSONB, nullable=True)
+    riasec_scores = Column(JSONB, nullable=True)  # {R: x, I: x, A: x, S: x, E: x, C: x}
+    suggested_jobs = Column(JSONB, nullable=True)  # Top 3 jobs from RIASEC
+    
+    # Final Results
+    suggested_programs = Column(JSONB, nullable=True)  # Final 9 program suggestions
+    
+    # GPT Debug Info
+    gpt_prompt = Column(Text, nullable=True)
+    gpt_response = Column(Text, nullable=True)
+    
+    # Status
+    status = Column(String(50), default='started')  # started, step1_completed, step2_completed, riasec_completed, completed
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now(), nullable=True)
+
+    high_school_room = relationship("HighSchoolRoom", back_populates="students")
     
