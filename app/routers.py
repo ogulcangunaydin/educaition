@@ -37,66 +37,8 @@ router_without_auth = APIRouter()
 # The following functions kept for backward compatibility but routes removed
 # _create_auth_response, login_for_access_token, refresh_token, logout, get_password_requirements
 
-
-@router.get("/users/", response_model=list[schemas.User])
-def get_users(
-    current_user: AdminUser,
-    skip: int = 0,
-    limit: int = 100,
-    db: Session = Depends(get_db),
-):
-    return controllers.read_users(skip, limit, db)
-
-
-@router.get("/users/{user_id}", response_model=schemas.User)
-def read_user(user_id: int, current_user: AdminUser, db: Session = Depends(get_db)):
-    return controllers.read_user(user_id, db)
-
-
-@router.post("/users/", response_model=schemas.User)
-def create_user(
-    current_user: AdminUser,
-    username: str = Form(...),
-    email: str = Form(...),
-    password: str = Form(...),
-    role: str = Form("student"),
-    university: str = Form("halic"),
-    db: Session = Depends(get_db),
-):
-    user = schemas.UserCreate(
-        username=username,
-        email=email,
-        password=password,
-        role=role,
-        university=university,
-    )
-    return controllers.create_user(user, db)
-
-
-@router.put("/users/{user_id}", response_model=schemas.User)
-def update_user(
-    user_id: int,
-    current_user: AdminUser,
-    username: str = Form(...),
-    email: str = Form(...),
-    password: str = Form(None),
-    role: str = Form(None),
-    university: str = Form(None),
-    db: Session = Depends(get_db),
-):
-    user = schemas.UserUpdate(
-        username=username,
-        email=email,
-        password=password if password else None,
-        role=role,
-        university=university,
-    )
-    return controllers.update_user(user_id, user, db)
-
-
-@router.delete("/users/{user_id}", response_model=schemas.User)
-def delete_user(user_id: int, current_user: AdminUser, db: Session = Depends(get_db)):
-    return controllers.delete_user(user_id, db)
+# User routes moved to app.modules.users.router
+# get_users, read_user, create_user, update_user, delete_user
 
 
 @router.post("/rooms/", response_model=schemas.Room)

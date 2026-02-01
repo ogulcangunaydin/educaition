@@ -10,6 +10,7 @@ from .custom_session_middleware import CustomSessionMiddleware
 from .database import engine
 from .middleware import RateLimitMiddleware
 from .modules.auth import auth_router
+from .modules.users import users_router
 
 log_level = logging.DEBUG if settings.DEBUG else logging.INFO
 logging.basicConfig(level=log_level)
@@ -69,6 +70,7 @@ if not settings.is_development:
 
 # New modular routes
 app.include_router(auth_router, prefix="/api", tags=["auth"])
+app.include_router(users_router, prefix="/api", tags=["users"])
 
 # Legacy routes (will be migrated to modules)
 app.include_router(routers.router, prefix="/api")
