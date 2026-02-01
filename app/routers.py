@@ -11,7 +11,9 @@ from . import controllers, schemas
 from .config import settings
 from .dependencies import (
     AdminUser,
+    CurrentPlayer,
     CurrentProgramStudent,
+    CurrentTestParticipant,
     TeacherOrAdmin,
     get_current_active_user,
     get_db,
@@ -204,13 +206,40 @@ def delete_room(
     return controllers.delete_room(room_id, db)
 
 
-@router_without_auth.post("/players/", response_model=schemas.Player)
+@router_without_auth.post("/players/")
 def create_player(
     player_name: str = Form(...),
     room_id: int = Form(...),
     db: Session = Depends(get_db),
 ):
-    return controllers.create_player(player_name, room_id, db)
+    created_player = controllers.create_player(player_name, room_id, db)
+
+    token = create_participant_token(
+        participant_id=created_player.id,
+        participant_type=ParticipantType.PLAYER,
+        room_id=room_id,
+    )
+
+    response = JSONResponse(
+        content={
+            "player": schemas.Player.model_validate(created_player).model_dump(
+                mode="json"
+            ),
+            "session_token": token,
+            "expires_in": get_token_expiry_seconds(ParticipantType.PLAYER),
+        }
+    )
+
+    response.set_cookie(
+        key="participant_token",
+        value=token,
+        httponly=True,
+        secure=not settings.is_development,
+        samesite="strict",
+        max_age=get_token_expiry_seconds(ParticipantType.PLAYER),
+    )
+
+    return response
 
 
 @router_without_auth.get("/players/room/{room_id}", response_model=list[schemas.Player])
@@ -226,9 +255,11 @@ def get_players_by_room(
 @router_without_auth.post("/players/{player_id}/tactic", response_model=schemas.Player)
 def update_player_tactic(
     player_id: int,
+    participant: CurrentPlayer,
     player_tactic: str = Form(...),
     db: Session = Depends(get_db),
 ):
+    verify_participant_ownership(participant.participant_id, player_id)
     return controllers.update_player_tactic(player_id, player_tactic, db)
 
 
@@ -237,9 +268,11 @@ def update_player_tactic(
 )
 def update_player_personality_traits(
     player_id: int,
+    participant: CurrentPlayer,
     answers: str = Form(...),
     db: Session = Depends(get_db),
 ):
+    verify_participant_ownership(participant.participant_id, player_id)
     return controllers.update_player_personality_traits(player_id, answers, db)
 
 
@@ -286,16 +319,42 @@ def authenticate_user(request: Request, db: Session = Depends(get_db)):
     return controllers.authenticate(request, db)
 
 
-@router_without_auth.post(
-    "/dissonance_test_participants/", response_model=schemas.DissonanceTestParticipant
-)
+@router_without_auth.post("/dissonance_test_participants/")
 def create_dissonance_test_participant(
     participant: schemas.DissonanceTestParticipantCreate,
     db: Session = Depends(get_db),
 ):
-    return controllers.create_dissonance_test_participant(
+    created_participant = controllers.create_dissonance_test_participant(
         db=db, participant=participant
     )
+
+    # Use user_id as a pseudo room_id for dissonance tests
+    token = create_participant_token(
+        participant_id=created_participant.id,
+        participant_type=ParticipantType.DISSONANCE_TEST,
+        room_id=created_participant.user_id,
+    )
+
+    response = JSONResponse(
+        content={
+            "participant": schemas.DissonanceTestParticipant.model_validate(
+                created_participant
+            ).model_dump(mode="json"),
+            "session_token": token,
+            "expires_in": get_token_expiry_seconds(ParticipantType.DISSONANCE_TEST),
+        }
+    )
+
+    response.set_cookie(
+        key="participant_token",
+        value=token,
+        httponly=True,
+        secure=not settings.is_development,
+        samesite="strict",
+        max_age=get_token_expiry_seconds(ParticipantType.DISSONANCE_TEST),
+    )
+
+    return response
 
 
 @router_without_auth.get(
@@ -303,8 +362,11 @@ def create_dissonance_test_participant(
     response_model=schemas.DissonanceTestParticipantResult,
 )
 def read_dissonance_test_participant(
-    participant_id: int, db: Session = Depends(get_db)
+    participant_id: int,
+    participant: CurrentTestParticipant,
+    db: Session = Depends(get_db),
 ):
+    verify_participant_ownership(participant.participant_id, participant_id)
     return controllers.read_dissonance_test_participant(participant_id, db)
 
 
@@ -322,11 +384,13 @@ def get_dissonance_test_participants(request: Request, db: Session = Depends(get
 )
 def update_dissonance_test_participant(
     participant_id: int,
-    participant: schemas.DissonanceTestParticipantUpdateSecond,
+    participant_data: schemas.DissonanceTestParticipantUpdateSecond,
+    participant: CurrentTestParticipant,
     db: Session = Depends(get_db),
 ):
+    verify_participant_ownership(participant.participant_id, participant_id)
     return controllers.update_dissonance_test_participant(
-        participant_id, participant, db
+        participant_id, participant_data, db
     )
 
 
@@ -336,9 +400,11 @@ def update_dissonance_test_participant(
 )
 def update_dissonance_test_participant_personality_traits(
     participant_id: int,
+    participant: CurrentTestParticipant,
     answers: str = Form(...),
     db: Session = Depends(get_db),
 ):
+    verify_participant_ownership(participant.participant_id, participant_id)
     return controllers.update_dissonance_test_participant_personality_traits(
         participant_id, answers, db
     )
