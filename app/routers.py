@@ -33,84 +33,9 @@ router = APIRouter(dependencies=[Depends(get_current_active_user)])
 router_without_auth = APIRouter()
 
 
-def _create_auth_response(token_data: dict) -> JSONResponse:
-    response = JSONResponse(
-        content={
-            "access_token": token_data["access_token"],
-            "current_user_id": token_data["current_user_id"],
-            "token_type": "bearer",
-            "expires_in": token_data["expires_in"],
-            "role": token_data.get("role"),
-            "university": token_data.get("university"),
-        }
-    )
-
-    response.set_cookie(
-        key="refresh_token",
-        value=token_data["refresh_token"],
-        httponly=True,
-        secure=not settings.is_development,
-        samesite="strict",
-        max_age=TokenConfig.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
-        path="/api",
-    )
-
-    return response
-
-
-@router_without_auth.post("/authenticate")
-def login_for_access_token(
-    form_data: OAuth2PasswordRequestForm = Depends(),
-    db: Session = Depends(get_db),
-):
-    token_data = controllers.login_for_access_token(form_data, db)
-    return _create_auth_response(token_data)
-
-
-@router_without_auth.post("/refresh")
-def refresh_token(
-    refresh_token: str | None = Cookie(None),
-    body_refresh_token: schemas.TokenRefreshRequest | None = Body(None),
-):
-    token = refresh_token or (body_refresh_token.refresh_token if body_refresh_token else None)
-
-    if not token:
-        return JSONResponse(
-            status_code=401,
-            content={"detail": "Refresh token required"},
-        )
-
-    new_tokens = controllers.refresh_access_token(token)
-    return _create_auth_response(new_tokens)
-
-
-@router.post("/logout")
-def logout(
-    authorization: str = Header(..., description="Bearer token"),
-    refresh_token: str | None = Cookie(None),
-    body_refresh_token: str | None = Body(None, embed=True),
-):
-    access_token = authorization.replace("Bearer ", "")
-    token_to_revoke = refresh_token or body_refresh_token
-    result = controllers.logout_user(access_token, token_to_revoke)
-
-    response = JSONResponse(content=result)
-    response.delete_cookie(
-        key="refresh_token",
-        path="/api",
-        httponly=True,
-        secure=not settings.is_development,
-        samesite="strict",
-    )
-
-    return response
-
-
-@router_without_auth.get(
-    "/password-requirements", response_model=schemas.PasswordRequirements
-)
-def get_password_requirements():
-    return schemas.PasswordRequirements()
+# Auth routes moved to app.modules.auth.router
+# The following functions kept for backward compatibility but routes removed
+# _create_auth_response, login_for_access_token, refresh_token, logout, get_password_requirements
 
 
 @router.get("/users/", response_model=list[schemas.User])

@@ -8,6 +8,14 @@ from app.services.password_service import (
     validate_password_strength,
 )
 
+# Re-export auth schemas for backward compatibility
+from app.modules.auth.schemas import (
+    PasswordRequirements,
+    Token,
+    TokenRefreshRequest,
+    TokenRefreshResponse,
+)
+
 
 def _validate_password_field(password: str) -> str:
     is_valid, errors = validate_password_strength(password)
@@ -72,44 +80,17 @@ class User(UserBase):
         from_attributes = True
 
 
-class Token(BaseModel):
-    access_token: str
-    refresh_token: str
-    current_user_id: int
-    token_type: str = "bearer"
-    expires_in: int  # Access token expiry in seconds
-    role: str
-    university: str
+# Token, TokenRefreshRequest, TokenRefreshResponse, PasswordRequirements
+# moved to app.modules.auth.schemas (re-exported above for compatibility)
 
-
-class TokenRefreshRequest(BaseModel):
-    refresh_token: str
-
-
-class TokenRefreshResponse(BaseModel):
-    access_token: str
-    refresh_token: str
-    token_type: str = "bearer"
-    expires_in: int  # Access token expiry in seconds
 
 class ParticipantSessionResponse(BaseModel):
     participant_id: int
     session_token: str
     expires_in: int
 
-class PasswordRequirements(BaseModel):
-    min_length: int = PasswordConfig.MIN_LENGTH
-    max_length: int = PasswordConfig.MAX_LENGTH
-    require_uppercase: bool = PasswordConfig.REQUIRE_UPPERCASE
-    require_lowercase: bool = PasswordConfig.REQUIRE_LOWERCASE
-    require_digit: bool = PasswordConfig.REQUIRE_DIGIT
-    require_special: bool = PasswordConfig.REQUIRE_SPECIAL
-    special_characters: str = PasswordConfig.SPECIAL_CHARACTERS
-    message: str = (
-        f"Password must be {PasswordConfig.MIN_LENGTH}-{PasswordConfig.MAX_LENGTH} characters, "
-        "with at least one uppercase letter, one lowercase letter, "
-        "one digit, and one special character."
-    )
+
+# PasswordRequirements moved to app.modules.auth.schemas (re-exported above)
 
 
 class RoomBase(BaseModel):
