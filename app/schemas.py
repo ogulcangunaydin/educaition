@@ -42,6 +42,16 @@ from app.modules.players.schemas import (
     PlayerCreate,
 )
 
+# Re-export game schemas for backward compatibility
+from app.modules.games.schemas import (
+    Game,
+    GameBase,
+    GameCreate,
+    Round,
+    RoundBase,
+    RoundCreate,
+)
+
 
 def _validate_password_field(password: str) -> str:
     is_valid, errors = validate_password_strength(password)
@@ -62,51 +72,14 @@ def _validate_password_field(password: str) -> str:
 # Player, PlayerBase, PlayerCreate
 # moved to app.modules.players.schemas (re-exported above for compatibility)
 
+# Game, GameBase, GameCreate, Round, RoundBase, RoundCreate
+# moved to app.modules.games.schemas (re-exported above for compatibility)
+
 
 class ParticipantSessionResponse(BaseModel):
     participant_id: int
     session_token: str
     expires_in: int
-
-
-class GameBase(BaseModel):
-    home_player_id: int
-    away_player_id: int
-    home_player_score: int
-    away_player_score: int
-    session_id: int
-
-
-class GameCreate(GameBase):
-    pass
-
-
-class Game(GameBase):
-    id: int
-
-    class Config:
-        from_attributes = True
-
-
-class RoundBase(BaseModel):
-    round_number: int
-    home_choice: str
-    away_choice: str
-    game_id: int
-
-
-class RoundCreate(RoundBase):
-    pass
-
-
-class Round(RoundBase):
-    id: int
-
-    class Config:
-        from_attributes = True
-
-
-# SessionBase, SessionCreate moved to app.modules.rooms.schemas (re-exported above)
 
 
 class DissonanceTestParticipantBase(BaseModel):

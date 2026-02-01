@@ -46,10 +46,8 @@ router_without_auth = APIRouter()
 # Player routes moved to app.modules.players.router
 # create_player, get_players_by_room, update_player_tactic, update_player_personality_traits, get_players_by_ids, delete_player
 
-
-@router.get("/sessions/{session_id}", response_model=schemas.SessionCreate)
-def show_session(session_id: int, db: Session = Depends(get_db)):
-    return controllers.get_session(session_id, db)
+# Session routes moved to app.modules.games.router
+# show_session
 
 
 @router.get("/auth/", response_model=schemas.User)
