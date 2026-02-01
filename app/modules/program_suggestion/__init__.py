@@ -1,12 +1,3 @@
-"""
-Program Suggestion module - Student program recommendation system.
-
-This module handles:
-- Student CRUD and multi-step form updates
-- RIASEC personality assessment
-- Program and job suggestions
-"""
-
 from .router import (
     router as program_suggestion_router,
     program_suggestion_public_router,

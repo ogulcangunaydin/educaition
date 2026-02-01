@@ -1,7 +1,3 @@
-"""
-User service - Business logic for user management.
-"""
-
 import bleach
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
@@ -14,38 +10,13 @@ from .schemas import UserCreate, UserUpdate
 
 
 class UserService:
-    """Service class for user operations."""
 
     @staticmethod
     def get_users(db: Session, skip: int = 0, limit: int = 100) -> list:
-        """
-        Get all users with pagination.
-
-        Args:
-            db: Database session
-            skip: Number of records to skip
-            limit: Maximum number of records to return
-
-        Returns:
-            List of User objects
-        """
         return db.query(models.User).offset(skip).limit(limit).all()
 
     @staticmethod
     def get_user(db: Session, user_id: int):
-        """
-        Get a user by ID.
-
-        Args:
-            db: Database session
-            user_id: User ID
-
-        Returns:
-            User object
-
-        Raises:
-            HTTPException: If user not found
-        """
         db_user = db.query(models.User).get(user_id)
         if db_user is None:
             raise HTTPException(status_code=404, detail="User not found")
@@ -53,37 +24,13 @@ class UserService:
 
     @staticmethod
     def get_user_by_username(db: Session, username: str):
-        """
-        Get a user by username.
-
-        Args:
-            db: Database session
-            username: Username to search for
-
-        Returns:
-            User object or None
-        """
         return db.query(models.User).filter(models.User.username == username).first()
 
     @staticmethod
     def create_user(db: Session, user: UserCreate):
-        """
-        Create a new user.
-
-        Args:
-            db: Database session
-            user: User creation data
-
-        Returns:
-            Created User object
-
-        Raises:
-            HTTPException: If username or email already exists
-        """
         clean_name = bleach.clean(user.username, strip=True)
         clean_email = bleach.clean(user.email, strip=True) if user.email else None
 
-        # Check for existing user
         existing_user = (
             db.query(models.User)
             .filter(
@@ -98,7 +45,6 @@ class UserService:
                 raise HTTPException(status_code=400, detail="Username already exists")
             raise HTTPException(status_code=400, detail="Email already exists")
 
-        # Hash password
         try:
             hashed_password = get_password_hash(user.password)
         except PasswordValidationError as e:
@@ -107,7 +53,6 @@ class UserService:
                 detail={"message": "Password validation failed", "errors": e.errors},
             )
 
-        # Create user
         db_user = models.User(
             username=clean_name,
             email=clean_email,
@@ -124,26 +69,11 @@ class UserService:
 
     @staticmethod
     def update_user(db: Session, user_id: int, user: UserUpdate):
-        """
-        Update an existing user.
-
-        Args:
-            db: Database session
-            user_id: User ID to update
-            user: User update data
-
-        Returns:
-            Updated User object
-
-        Raises:
-            HTTPException: If user not found or username taken
-        """
         db_user = db.query(models.User).get(user_id)
 
         if db_user is None:
             raise HTTPException(status_code=404, detail="User not found")
 
-        # Check for username conflict
         if user.username:
             cleaned_username = bleach.clean(user.username, strip=True)
             existing_user = (
@@ -160,11 +90,9 @@ class UserService:
 
             db_user.username = cleaned_username
 
-        # Update email
         if user.email is not None:
             db_user.email = user.email
 
-        # Update password if provided
         if user.password:
             try:
                 hashed_password = get_password_hash(user.password)
@@ -175,13 +103,11 @@ class UserService:
                     detail={"message": "Password validation failed", "errors": e.errors},
                 )
 
-        # Update role
         if user.role:
             db_user.role = (
                 user.role.value if hasattr(user.role, "value") else user.role
             )
 
-        # Update university
         if user.university:
             db_user.university = (
                 user.university.value
@@ -194,19 +120,6 @@ class UserService:
 
     @staticmethod
     def delete_user(db: Session, user_id: int):
-        """
-        Delete a user.
-
-        Args:
-            db: Database session
-            user_id: User ID to delete
-
-        Returns:
-            Deleted User object
-
-        Raises:
-            HTTPException: If user not found
-        """
         db_user = db.query(models.User).get(user_id)
         if db_user is None:
             raise HTTPException(status_code=404, detail="User not found")

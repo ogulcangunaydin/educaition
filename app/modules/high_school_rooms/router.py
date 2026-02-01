@@ -1,7 +1,3 @@
-"""
-High school room router - API endpoints for high school rooms.
-"""
-
 from fastapi import APIRouter, Depends, Form
 from sqlalchemy.orm import Session
 from starlette.requests import Request
@@ -27,7 +23,6 @@ def create_high_school_room(
     high_school_code: str = Form(None),
     db: Session = Depends(get_db),
 ):
-    """Create a new high school room (teacher/admin only)."""
     return HighSchoolRoomService.create_room(
         high_school_name, high_school_code, request, db
     )
@@ -40,13 +35,11 @@ def get_high_school_rooms(
     limit: int = 100,
     db: Session = Depends(get_db),
 ):
-    """Get all high school rooms for the current user."""
     return HighSchoolRoomService.get_rooms_by_user(request, skip, limit, db)
 
 
 @router.get("/{room_id}", response_model=HighSchoolRoom)
 def get_high_school_room(room_id: int, db: Session = Depends(get_db)):
-    """Get a specific high school room by ID."""
     return HighSchoolRoomService.get_room(room_id, db)
 
 
@@ -54,11 +47,9 @@ def get_high_school_room(room_id: int, db: Session = Depends(get_db)):
 def delete_high_school_room(
     room_id: int, current_user: TeacherOrAdmin, db: Session = Depends(get_db)
 ):
-    """Delete a high school room (teacher/admin only)."""
     return HighSchoolRoomService.delete_room(room_id, db)
 
 
 @router.get("/{room_id}/students", response_model=list[ProgramSuggestionStudent])
 def get_high_school_room_students(room_id: int, db: Session = Depends(get_db)):
-    """Get all students in a high school room."""
     return HighSchoolRoomService.get_room_students(room_id, db)

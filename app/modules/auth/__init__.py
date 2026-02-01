@@ -1,12 +1,3 @@
-"""
-Auth module - Authentication and authorization.
-
-This module handles:
-- User login/logout
-- Token management (access/refresh tokens)
-- Password requirements
-"""
-
 from .router import router as auth_router
 from .schemas import (
     PasswordRequirements,

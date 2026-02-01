@@ -1,7 +1,3 @@
-"""
-Dissonance test service - Business logic for dissonance test operations.
-"""
-
 import json
 
 from fastapi import HTTPException, status
@@ -17,22 +13,9 @@ from .schemas import DissonanceTestParticipantCreate, DissonanceTestParticipantU
 
 
 class DissonanceTestService:
-    """Service class for dissonance test operations."""
 
     @staticmethod
-    def create_participant(
-        db: Session, participant: DissonanceTestParticipantCreate
-    ):
-        """
-        Create a new dissonance test participant.
-
-        Args:
-            db: Database session
-            participant: Participant creation data
-
-        Returns:
-            Created participant object
-        """
+    def create_participant(db: Session, participant: DissonanceTestParticipantCreate):
         db_participant = models.DissonanceTestParticipant(**participant.dict())
         db.add(db_participant)
         db.commit()
@@ -41,19 +24,6 @@ class DissonanceTestService:
 
     @staticmethod
     def get_participant(db: Session, participant_id: int):
-        """
-        Get a participant by ID.
-
-        Args:
-            db: Database session
-            participant_id: Participant ID
-
-        Returns:
-            Participant object
-
-        Raises:
-            HTTPException: If participant not found
-        """
         db_participant = (
             db.query(models.DissonanceTestParticipant)
             .filter(models.DissonanceTestParticipant.id == participant_id)
@@ -65,16 +35,6 @@ class DissonanceTestService:
 
     @staticmethod
     def get_participants_by_user(db: Session, request: Request):
-        """
-        Get all participants for the current user.
-
-        Args:
-            db: Database session
-            request: Request object (contains user session)
-
-        Returns:
-            List of participant objects
-        """
         user_id = request.session["current_user"]["id"]
         return (
             db.query(models.DissonanceTestParticipant)
@@ -88,20 +48,6 @@ class DissonanceTestService:
         participant_id: int,
         participant_data: DissonanceTestParticipantUpdateSecond,
     ):
-        """
-        Update participant's second round answers.
-
-        Args:
-            db: Database session
-            participant_id: Participant ID
-            participant_data: Second round answer data
-
-        Returns:
-            Updated participant object
-
-        Raises:
-            HTTPException: If participant not found
-        """
         db_participant = (
             db.query(models.DissonanceTestParticipant)
             .filter(models.DissonanceTestParticipant.id == participant_id)
@@ -119,23 +65,7 @@ class DissonanceTestService:
         return db_participant
 
     @staticmethod
-    def update_participant_personality_traits(
-        db: Session, participant_id: int, answers: str
-    ):
-        """
-        Update participant's personality traits based on test answers.
-
-        Args:
-            db: Database session
-            participant_id: Participant ID
-            answers: JSON string of personality test answers
-
-        Returns:
-            Updated participant object
-
-        Raises:
-            HTTPException: If participant not found
-        """
+    def update_participant_personality_traits(db: Session, participant_id: int, answers: str):
         db_participant = (
             db.query(models.DissonanceTestParticipant)
             .filter(models.DissonanceTestParticipant.id == participant_id)
@@ -153,10 +83,8 @@ class DissonanceTestService:
             f"q{i + 1}": int(answer) for i, answer in enumerate(parsed_answers)
         }
 
-        # Calculate personality scores
         personality_scores = calculate_personality_traits(parsed_answers)
 
-        # Get recommendations
         job_recommendation = get_job_recommendation(
             personality_scores,
             db_participant.gender,
@@ -167,7 +95,6 @@ class DissonanceTestService:
             personality_scores, db_participant.star_sign, db_participant.rising_sign
         )
 
-        # Update participant
         db_participant.extroversion = personality_scores["extroversion"]
         db_participant.agreeableness = personality_scores["agreeableness"]
         db_participant.conscientiousness = personality_scores["conscientiousness"]
@@ -183,19 +110,6 @@ class DissonanceTestService:
 
     @staticmethod
     def delete_participant(db: Session, participant_id: int):
-        """
-        Delete a participant.
-
-        Args:
-            db: Database session
-            participant_id: Participant ID
-
-        Returns:
-            Deleted participant object
-
-        Raises:
-            HTTPException: If participant not found
-        """
         db_participant = (
             db.query(models.DissonanceTestParticipant)
             .filter(models.DissonanceTestParticipant.id == participant_id)

@@ -1,7 +1,3 @@
-"""
-Dissonance test router - API endpoints for dissonance test.
-"""
-
 from fastapi import APIRouter, Depends, Form
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
@@ -27,13 +23,11 @@ from .schemas import (
 )
 from .service import DissonanceTestService
 
-# Public routes (no auth required, but some require participant token)
 dissonance_test_public_router = APIRouter(
     prefix="/dissonance_test_participants",
     tags=["dissonance_test"],
 )
 
-# Protected routes (require user auth)
 dissonance_test_protected_router = APIRouter(
     prefix="/dissonance_test_participants",
     tags=["dissonance_test"],
@@ -46,14 +40,8 @@ def create_participant(
     participant: DissonanceTestParticipantCreate,
     db: Session = Depends(get_db),
 ):
-    """
-    Create a new dissonance test participant (public).
-
-    Returns participant data with session token for subsequent requests.
-    """
     created_participant = DissonanceTestService.create_participant(db, participant)
 
-    # Create participant token
     token = create_participant_token(
         participant_id=created_participant.id,
         participant_type=ParticipantType.DISSONANCE_TEST,
@@ -91,7 +79,6 @@ def get_participant(
     participant: CurrentTestParticipant,
     db: Session = Depends(get_db),
 ):
-    """Get participant results (requires participant token)."""
     verify_participant_ownership(participant.participant_id, participant_id)
     return DissonanceTestService.get_participant(db, participant_id)
 
@@ -106,7 +93,6 @@ def update_participant_second_answers(
     participant: CurrentTestParticipant,
     db: Session = Depends(get_db),
 ):
-    """Update participant's second round answers (requires participant token)."""
     verify_participant_ownership(participant.participant_id, participant_id)
     return DissonanceTestService.update_participant_second_answers(
         db, participant_id, participant_data
@@ -123,7 +109,6 @@ def update_participant_personality_traits(
     answers: str = Form(...),
     db: Session = Depends(get_db),
 ):
-    """Update participant's personality traits (requires participant token)."""
     verify_participant_ownership(participant.participant_id, participant_id)
     return DissonanceTestService.update_participant_personality_traits(
         db, participant_id, answers
@@ -135,7 +120,6 @@ def update_participant_personality_traits(
     response_model=list[DissonanceTestParticipant],
 )
 def get_participants(request: Request, db: Session = Depends(get_db)):
-    """Get all participants for the current user (authenticated users only)."""
     return DissonanceTestService.get_participants_by_user(db, request)
 
 
@@ -148,11 +132,9 @@ def delete_participant(
     current_user: TeacherOrAdmin,
     db: Session = Depends(get_db),
 ):
-    """Delete a participant (teacher/admin only)."""
     return DissonanceTestService.delete_participant(db, participant_id)
 
 
-# Combined router for easy import
 router = APIRouter()
 router.include_router(dissonance_test_public_router)
 router.include_router(dissonance_test_protected_router)

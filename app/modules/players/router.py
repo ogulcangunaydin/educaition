@@ -1,7 +1,3 @@
-"""
-Player router - API endpoints for player management.
-"""
-
 from fastapi import APIRouter, Depends, Form
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
@@ -18,10 +14,7 @@ from app.services.participant_token_service import (
 from .schemas import Player
 from .service import PlayerService
 
-# Public routes (no auth required, but some require participant token)
 players_public_router = APIRouter(prefix="/players", tags=["players"])
-
-# Protected routes (require user auth)
 players_protected_router = APIRouter(
     prefix="/players",
     tags=["players"],
@@ -35,14 +28,8 @@ def create_player(
     room_id: int = Form(...),
     db: Session = Depends(get_db),
 ):
-    """
-    Create a new player in a room (public).
-
-    Returns player data with session token for subsequent requests.
-    """
     created_player = PlayerService.create_player(db, player_name, room_id)
 
-    # Create participant token
     token = create_participant_token(
         participant_id=created_player.id,
         participant_type=ParticipantType.PLAYER,
@@ -76,7 +63,6 @@ def get_players_by_room(
     limit: int = 100,
     db: Session = Depends(get_db),
 ):
-    """Get all players in a room (public)."""
     return PlayerService.get_players_by_room(db, room_id, skip, limit)
 
 
@@ -87,11 +73,6 @@ def update_player_tactic(
     player_tactic: str = Form(...),
     db: Session = Depends(get_db),
 ):
-    """
-    Update a player's tactic (requires participant token).
-
-    The participant token must match the player being updated.
-    """
     verify_participant_ownership(participant.participant_id, player_id)
     return PlayerService.update_player_tactic(db, player_id, player_tactic)
 
@@ -103,32 +84,20 @@ def update_player_personality_traits(
     answers: str = Form(...),
     db: Session = Depends(get_db),
 ):
-    """
-    Update a player's personality traits (requires participant token).
-
-    The participant token must match the player being updated.
-    """
     verify_participant_ownership(participant.participant_id, player_id)
     return PlayerService.update_player_personality_traits(db, player_id, answers)
 
 
 @players_protected_router.get("/{player_ids}", response_model=list[Player])
 def get_players_by_ids(player_ids: str, db: Session = Depends(get_db)):
-    """Get players by comma-separated IDs (authenticated users only)."""
     return PlayerService.get_players_by_ids(db, player_ids)
 
 
 @players_protected_router.post("/delete/{player_id}", response_model=Player)
-def delete_player(
-    player_id: int,
-    current_user: TeacherOrAdmin,
-    db: Session = Depends(get_db),
-):
-    """Delete a player (teacher/admin only)."""
+def delete_player(player_id: int, current_user: TeacherOrAdmin, db: Session = Depends(get_db)):
     return PlayerService.delete_player(db, player_id)
 
 
-# Combined router for easy import
 router = APIRouter()
 router.include_router(players_public_router)
 router.include_router(players_protected_router)

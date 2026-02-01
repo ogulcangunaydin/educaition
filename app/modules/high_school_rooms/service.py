@@ -1,7 +1,3 @@
-"""
-High school room service - Business logic for high school room operations.
-"""
-
 import bleach
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
@@ -11,7 +7,6 @@ from app import models
 
 
 class HighSchoolRoomService:
-    """Service class for high school room operations."""
 
     @staticmethod
     def create_room(
@@ -20,18 +15,6 @@ class HighSchoolRoomService:
         request: Request,
         db: Session,
     ):
-        """
-        Create a new high school room.
-
-        Args:
-            high_school_name: Name of the high school
-            high_school_code: Optional school code
-            request: Request object (contains user session)
-            db: Database session
-
-        Returns:
-            Created room object
-        """
         user_id = request.session["current_user"]["id"]
         clean_name = bleach.clean(high_school_name, strip=True)
         clean_code = (
@@ -47,21 +30,7 @@ class HighSchoolRoomService:
         return room
 
     @staticmethod
-    def get_rooms_by_user(
-        request: Request, skip: int, limit: int, db: Session
-    ):
-        """
-        Get all rooms for the current user.
-
-        Args:
-            request: Request object (contains user session)
-            skip: Number of records to skip
-            limit: Maximum number of records to return
-            db: Database session
-
-        Returns:
-            List of room objects
-        """
+    def get_rooms_by_user(request: Request, skip: int, limit: int, db: Session):
         user_id = request.session["current_user"]["id"]
         return (
             db.query(models.HighSchoolRoom)
@@ -73,19 +42,6 @@ class HighSchoolRoomService:
 
     @staticmethod
     def get_room(room_id: int, db: Session):
-        """
-        Get a room by ID.
-
-        Args:
-            room_id: Room ID
-            db: Database session
-
-        Returns:
-            Room object
-
-        Raises:
-            HTTPException: If room not found
-        """
         room = (
             db.query(models.HighSchoolRoom)
             .filter(models.HighSchoolRoom.id == room_id)
@@ -97,19 +53,6 @@ class HighSchoolRoomService:
 
     @staticmethod
     def delete_room(room_id: int, db: Session):
-        """
-        Delete a room.
-
-        Args:
-            room_id: Room ID
-            db: Database session
-
-        Returns:
-            Deleted room object
-
-        Raises:
-            HTTPException: If room not found
-        """
         room = (
             db.query(models.HighSchoolRoom)
             .filter(models.HighSchoolRoom.id == room_id)
@@ -123,47 +66,29 @@ class HighSchoolRoomService:
 
     @staticmethod
     def get_room_students(room_id: int, db: Session):
-        """
-        Get all students in a room, filtering out duplicate orphan records.
-
-        Args:
-            room_id: Room ID
-            db: Database session
-
-        Returns:
-            List of filtered student objects
-        """
-        # Get all students
         all_students = (
             db.query(models.ProgramSuggestionStudent)
             .filter(models.ProgramSuggestionStudent.high_school_room_id == room_id)
             .all()
         )
 
-        # Filter out orphaned 'started' records that have a sibling with same created_at
-        # This handles the duplicate issue caused by React StrictMode
-
-        # Group by created_at timestamp (within 2 second window)
         completed_times = set()
         for student in all_students:
             if student.status != "started" and student.created_at:
-                # Add a time window around completed records
                 completed_times.add(student.created_at)
 
         filtered_students = []
         for student in all_students:
-            # Keep all non-started records
             if student.status != "started":
                 filtered_students.append(student)
             else:
-                # For 'started' records, check if there's a completed sibling within 5 seconds
                 is_orphan_duplicate = False
                 if student.created_at:
                     for completed_time in completed_times:
                         time_diff = abs(
                             (student.created_at - completed_time).total_seconds()
                         )
-                        if time_diff <= 5:  # Within 5 seconds
+                        if time_diff <= 5:
                             is_orphan_duplicate = True
                             break
 

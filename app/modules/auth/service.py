@@ -1,7 +1,3 @@
-"""
-Auth service - Business logic for authentication.
-"""
-
 from fastapi import HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -16,26 +12,9 @@ from app.services.token_service import (
 
 
 class AuthService:
-    """Service class for authentication operations."""
 
     @staticmethod
-    def authenticate_user(
-        form_data: OAuth2PasswordRequestForm,
-        db: Session,
-    ) -> dict:
-        """
-        Authenticate user and return token data.
-
-        Args:
-            form_data: OAuth2 form with username and password
-            db: Database session
-
-        Returns:
-            Dict containing access_token, refresh_token, user info
-
-        Raises:
-            HTTPException: If credentials are invalid
-        """
+    def authenticate_user(form_data: OAuth2PasswordRequestForm, db: Session) -> dict:
         user = db_operations.authenticate_user(
             db, form_data.username, form_data.password
         )
@@ -61,18 +40,6 @@ class AuthService:
 
     @staticmethod
     def refresh_access_token(refresh_token: str) -> dict:
-        """
-        Refresh access token using refresh token.
-
-        Args:
-            refresh_token: Valid refresh token
-
-        Returns:
-            Dict containing new token pair
-
-        Raises:
-            HTTPException: If refresh token is invalid
-        """
         try:
             token_pair = refresh_tokens(refresh_token)
             return {
@@ -90,20 +57,7 @@ class AuthService:
             )
 
     @staticmethod
-    def logout_user(
-        access_token: str,
-        refresh_token: str | None = None,
-    ) -> dict:
-        """
-        Logout user by revoking tokens.
-
-        Args:
-            access_token: Current access token
-            refresh_token: Optional refresh token to revoke
-
-        Returns:
-            Dict with success message
-        """
+    def logout_user(access_token: str, refresh_token: str | None = None) -> dict:
         revoke_token(access_token)
 
         if refresh_token:

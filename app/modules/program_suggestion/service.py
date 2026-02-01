@@ -1,7 +1,3 @@
-"""
-Program suggestion service - Business logic for program suggestion operations.
-"""
-
 from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException
@@ -21,27 +17,9 @@ from .schemas import (
 
 
 class ProgramSuggestionService:
-    """Service class for program suggestion operations."""
 
     @staticmethod
     def create_student(high_school_room_id: int, db: Session):
-        """
-        Create a new student for program suggestions.
-
-        Handles race conditions from React StrictMode or double-clicks
-        by checking for recent duplicate records.
-
-        Args:
-            high_school_room_id: ID of the high school room
-            db: Database session
-
-        Returns:
-            Created or existing student object
-
-        Raises:
-            HTTPException: If room not found
-        """
-        # Verify room exists
         room = (
             db.query(models.HighSchoolRoom)
             .filter(models.HighSchoolRoom.id == high_school_room_id)
@@ -50,7 +28,6 @@ class ProgramSuggestionService:
         if room is None:
             raise HTTPException(status_code=404, detail="High school room not found")
 
-        # Check for duplicate records created within last 5 seconds with status 'started'
         five_seconds_ago = datetime.now(timezone.utc) - timedelta(seconds=5)
 
         recent_started = (
@@ -64,7 +41,6 @@ class ProgramSuggestionService:
             .all()
         )
 
-        # If there's a recent 'started' record, return it instead of creating new
         if recent_started:
             return recent_started[0]
 
@@ -78,19 +54,6 @@ class ProgramSuggestionService:
 
     @staticmethod
     def get_student(student_id: int, db: Session):
-        """
-        Get a student by ID.
-
-        Args:
-            student_id: Student ID
-            db: Database session
-
-        Returns:
-            Student object
-
-        Raises:
-            HTTPException: If student not found
-        """
         student = (
             db.query(models.ProgramSuggestionStudent)
             .filter(models.ProgramSuggestionStudent.id == student_id)
@@ -101,10 +64,7 @@ class ProgramSuggestionService:
         return student
 
     @staticmethod
-    def update_step1(
-        student_id: int, data: ProgramSuggestionStudentUpdateStep1, db: Session
-    ):
-        """Update student with step 1 data (personal info)."""
+    def update_step1(student_id: int, data: ProgramSuggestionStudentUpdateStep1, db: Session):
         student = ProgramSuggestionService.get_student(student_id, db)
 
         student.name = data.name
@@ -117,10 +77,7 @@ class ProgramSuggestionService:
         return student
 
     @staticmethod
-    def update_step2(
-        student_id: int, data: ProgramSuggestionStudentUpdateStep2, db: Session
-    ):
-        """Update student with step 2 data (academic info)."""
+    def update_step2(student_id: int, data: ProgramSuggestionStudentUpdateStep2, db: Session):
         student = ProgramSuggestionService.get_student(student_id, db)
 
         student.class_year = data.class_year
@@ -135,10 +92,7 @@ class ProgramSuggestionService:
         return student
 
     @staticmethod
-    def update_step3(
-        student_id: int, data: ProgramSuggestionStudentUpdateStep3, db: Session
-    ):
-        """Update student with step 3 data (score expectations)."""
+    def update_step3(student_id: int, data: ProgramSuggestionStudentUpdateStep3, db: Session):
         student = ProgramSuggestionService.get_student(student_id, db)
 
         student.expected_score_min = data.expected_score_min
@@ -155,10 +109,7 @@ class ProgramSuggestionService:
         return student
 
     @staticmethod
-    def update_step4(
-        student_id: int, data: ProgramSuggestionStudentUpdateStep4, db: Session
-    ):
-        """Update student with step 4 data (preferences)."""
+    def update_step4(student_id: int, data: ProgramSuggestionStudentUpdateStep4, db: Session):
         student = ProgramSuggestionService.get_student(student_id, db)
 
         student.preferred_language = data.preferred_language
@@ -171,10 +122,7 @@ class ProgramSuggestionService:
         return student
 
     @staticmethod
-    def _calculate_expected_score(
-        min_score: float, max_score: float, distribution: str
-    ) -> float:
-        """Calculate expected score based on distribution preference."""
+    def _calculate_expected_score(min_score: float, max_score: float, distribution: str) -> float:
         if not min_score or not max_score:
             return 0
 
@@ -184,30 +132,15 @@ class ProgramSuggestionService:
             return min_score + (range_val * 0.25)
         elif distribution == "high":
             return min_score + (range_val * 0.75)
-        else:  # medium or default
+        else:
             return min_score + (range_val * 0.5)
 
     @staticmethod
-    def update_riasec(
-        student_id: int, data: ProgramSuggestionStudentUpdateRiasec, db: Session
-    ):
-        """
-        Update student with RIASEC assessment and generate program suggestions.
-
-        Args:
-            student_id: Student ID
-            data: RIASEC answer data
-            db: Database session
-
-        Returns:
-            Updated student with suggestions
-        """
+    def update_riasec(student_id: int, data: ProgramSuggestionStudentUpdateRiasec, db: Session):
         student = ProgramSuggestionService.get_student(student_id, db)
 
-        # Calculate RIASEC scores
         riasec_scores = calculate_riasec_scores(data.riasec_answers)
 
-        # Calculate expected score (middle point based on distribution)
         expected_score = ProgramSuggestionService._calculate_expected_score(
             student.expected_score_min,
             student.expected_score_max,
@@ -222,7 +155,6 @@ class ProgramSuggestionService:
                 student.alternative_score_distribution,
             )
 
-        # Get program suggestions
         result = get_suggested_programs(
             riasec_scores=riasec_scores,
             expected_score=expected_score,
@@ -234,7 +166,6 @@ class ProgramSuggestionService:
             desired_cities=student.desired_cities,
         )
 
-        # Update student record
         student.riasec_answers = data.riasec_answers
         student.riasec_scores = result["riasec_scores"]
         student.suggested_jobs = result["suggested_jobs"]
@@ -249,7 +180,6 @@ class ProgramSuggestionService:
 
     @staticmethod
     def get_student_result(student_id: int, db: Session):
-        """Get student result data for display."""
         student = ProgramSuggestionService.get_student(student_id, db)
 
         return {
@@ -268,7 +198,6 @@ class ProgramSuggestionService:
 
     @staticmethod
     def get_student_debug(student_id: int, db: Session):
-        """Get student debug data for admin inspection."""
         student = ProgramSuggestionService.get_student(student_id, db)
 
         return {

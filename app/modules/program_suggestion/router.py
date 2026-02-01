@@ -1,7 +1,3 @@
-"""
-Program suggestion router - API endpoints for program suggestions.
-"""
-
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
@@ -31,13 +27,11 @@ from .schemas import (
 )
 from .service import ProgramSuggestionService
 
-# Public routes (no auth required, but some require participant token)
 program_suggestion_public_router = APIRouter(
     prefix="/program-suggestion/students",
     tags=["program_suggestion"],
 )
 
-# Protected routes (require user auth)
 program_suggestion_protected_router = APIRouter(
     prefix="/program-suggestion/students",
     tags=["program_suggestion"],
@@ -50,11 +44,6 @@ def create_student(
     student: ProgramSuggestionStudentCreate,
     db: Session = Depends(get_db),
 ):
-    """
-    Create a new student for program suggestions (public).
-
-    Returns student data with session token for subsequent requests.
-    """
     created_student = ProgramSuggestionService.create_student(
         student.high_school_room_id, db
     )
@@ -96,7 +85,6 @@ def get_student(
     participant: CurrentProgramStudent,
     db: Session = Depends(get_db),
 ):
-    """Get student data (requires participant token)."""
     verify_participant_ownership(participant.participant_id, student_id)
     return ProgramSuggestionService.get_student(student_id, db)
 
@@ -111,7 +99,6 @@ def update_student_step1(
     participant: CurrentProgramStudent,
     db: Session = Depends(get_db),
 ):
-    """Update student with step 1 data (requires participant token)."""
     verify_participant_ownership(participant.participant_id, student_id)
     return ProgramSuggestionService.update_step1(student_id, data, db)
 
@@ -126,7 +113,6 @@ def update_student_step2(
     participant: CurrentProgramStudent,
     db: Session = Depends(get_db),
 ):
-    """Update student with step 2 data (requires participant token)."""
     verify_participant_ownership(participant.participant_id, student_id)
     return ProgramSuggestionService.update_step2(student_id, data, db)
 
@@ -141,7 +127,6 @@ def update_student_step3(
     participant: CurrentProgramStudent,
     db: Session = Depends(get_db),
 ):
-    """Update student with step 3 data (requires participant token)."""
     verify_participant_ownership(participant.participant_id, student_id)
     return ProgramSuggestionService.update_step3(student_id, data, db)
 
@@ -156,7 +141,6 @@ def update_student_step4(
     participant: CurrentProgramStudent,
     db: Session = Depends(get_db),
 ):
-    """Update student with step 4 data (requires participant token)."""
     verify_participant_ownership(participant.participant_id, student_id)
     return ProgramSuggestionService.update_step4(student_id, data, db)
 
@@ -171,7 +155,6 @@ def update_student_riasec(
     participant: CurrentProgramStudent,
     db: Session = Depends(get_db),
 ):
-    """Update student with RIASEC assessment (requires participant token)."""
     verify_participant_ownership(participant.participant_id, student_id)
     return ProgramSuggestionService.update_riasec(student_id, data, db)
 
@@ -185,7 +168,6 @@ def get_student_result(
     participant: CurrentProgramStudent,
     db: Session = Depends(get_db),
 ):
-    """Get student result data (requires participant token)."""
     verify_participant_ownership(participant.participant_id, student_id)
     return ProgramSuggestionService.get_student_result(student_id, db)
 
@@ -197,11 +179,9 @@ def get_student_result(
 def get_student_debug(
     student_id: int, current_user: AdminUser, db: Session = Depends(get_db)
 ):
-    """Get student debug data (admin only)."""
     return ProgramSuggestionService.get_student_debug(student_id, db)
 
 
-# Combined router for easy import
 router = APIRouter()
 router.include_router(program_suggestion_public_router)
 router.include_router(program_suggestion_protected_router)

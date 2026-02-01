@@ -1,7 +1,3 @@
-"""
-Player service - Business logic for player management.
-"""
-
 import json
 
 import bleach
@@ -17,24 +13,9 @@ from app.services.update_player_tactic_and_test_code import (
 
 
 class PlayerService:
-    """Service class for player operations."""
 
     @staticmethod
-    def get_players_by_room(
-        db: Session, room_id: int, skip: int = 0, limit: int = 100
-    ):
-        """
-        Get all players in a room.
-
-        Args:
-            db: Database session
-            room_id: Room ID
-            skip: Number of records to skip
-            limit: Maximum number of records to return
-
-        Returns:
-            List of Player objects
-        """
+    def get_players_by_room(db: Session, room_id: int, skip: int = 0, limit: int = 100):
         return (
             db.query(models.Player)
             .filter(models.Player.room_id == room_id)
@@ -45,34 +26,11 @@ class PlayerService:
 
     @staticmethod
     def get_players_by_ids(db: Session, player_ids: str):
-        """
-        Get players by comma-separated IDs.
-
-        Args:
-            db: Database session
-            player_ids: Comma-separated player IDs
-
-        Returns:
-            List of Player objects
-        """
         ids = player_ids.split(",")
         return db.query(models.Player).filter(models.Player.id.in_(ids)).all()
 
     @staticmethod
     def get_player(db: Session, player_id: int):
-        """
-        Get a player by ID.
-
-        Args:
-            db: Database session
-            player_id: Player ID
-
-        Returns:
-            Player object
-
-        Raises:
-            HTTPException: If player not found
-        """
         player = db.query(models.Player).filter(models.Player.id == player_id).first()
         if player is None:
             raise HTTPException(
@@ -83,23 +41,8 @@ class PlayerService:
 
     @staticmethod
     def create_player(db: Session, player_name: str, room_id: int):
-        """
-        Create a new player in a room.
-
-        Args:
-            db: Database session
-            player_name: Player name
-            room_id: Room ID
-
-        Returns:
-            Created Player object
-
-        Raises:
-            HTTPException: If player name already exists in room
-        """
         clean_name = bleach.clean(player_name, strip=True)
 
-        # Check for existing player in room
         existing_player = (
             db.query(models.Player)
             .filter(
@@ -113,7 +56,6 @@ class PlayerService:
                 status_code=400, detail="Player name already exists in the room."
             )
 
-        # Create player
         player_function_name = create_player_function_name(clean_name)
         new_player = models.Player(
             player_name=clean_name,
@@ -127,20 +69,6 @@ class PlayerService:
 
     @staticmethod
     def update_player_tactic(db: Session, player_id: int, player_tactic: str):
-        """
-        Update a player's tactic.
-
-        Args:
-            db: Database session
-            player_id: Player ID
-            player_tactic: New tactic description
-
-        Returns:
-            Updated Player object
-
-        Raises:
-            HTTPException: If player not found or tactic invalid
-        """
         player = db.query(models.Player).filter(models.Player.id == player_id).first()
 
         if player is None:
@@ -168,20 +96,6 @@ class PlayerService:
 
     @staticmethod
     def update_player_personality_traits(db: Session, player_id: int, answers: str):
-        """
-        Update a player's personality traits based on test answers.
-
-        Args:
-            db: Database session
-            player_id: Player ID
-            answers: JSON string of personality test answers
-
-        Returns:
-            Updated Player object
-
-        Raises:
-            HTTPException: If player not found
-        """
         player = db.query(models.Player).filter(models.Player.id == player_id).first()
 
         if player is None:
@@ -190,11 +104,9 @@ class PlayerService:
                 detail="Player not found",
             )
 
-        # Calculate personality scores
         parsed_answers = json.loads(answers)
         personality_scores = calculate_personality_traits(parsed_answers)
 
-        # Update player
         player.extroversion = personality_scores["extroversion"]
         player.agreeableness = personality_scores["agreeableness"]
         player.conscientiousness = personality_scores["conscientiousness"]
@@ -206,19 +118,6 @@ class PlayerService:
 
     @staticmethod
     def delete_player(db: Session, player_id: int):
-        """
-        Delete a player.
-
-        Args:
-            db: Database session
-            player_id: Player ID
-
-        Returns:
-            Deleted Player object
-
-        Raises:
-            HTTPException: If player not found
-        """
         player = db.query(models.Player).get(player_id)
         if player is None:
             raise HTTPException(status_code=404, detail="Player not found")
