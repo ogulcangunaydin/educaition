@@ -52,12 +52,21 @@ class User(UserBase):
 
 class Token(BaseModel):
     access_token: str
+    refresh_token: str
     current_user_id: int
-    token_type: str
+    token_type: str = "bearer"
+    expires_in: int  # Access token expiry in seconds
 
 
-class TokenData(BaseModel):
-    username: str | None = None
+class TokenRefreshRequest(BaseModel):
+    refresh_token: str
+
+
+class TokenRefreshResponse(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+    expires_in: int  # Access token expiry in seconds
 
 
 class PasswordRequirements(BaseModel):

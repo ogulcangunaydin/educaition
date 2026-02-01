@@ -35,6 +35,21 @@ class User(Base):
     high_school_rooms = relationship("HighSchoolRoom", back_populates="user")
 
 
+class TokenBlacklist(Base):
+    __tablename__ = "token_blacklist"
+
+    id = Column(Integer, primary_key=True, index=True)
+    jti = Column(String, unique=True, index=True, nullable=False)  # JWT ID
+    token_type = Column(String, nullable=False)  # "access" or "refresh"
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False)  # For cleanup
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    user = relationship("User")
+
+
 class Room(Base):
     __tablename__ = "rooms"
 

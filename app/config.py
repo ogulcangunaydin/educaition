@@ -26,6 +26,9 @@ class Settings:
         self.ACCESS_TOKEN_EXPIRE_MINUTES: int = int(
             os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30")
         )
+        self.REFRESH_TOKEN_EXPIRE_DAYS: int = int(
+            os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7")
+        )
 
         self.DATABASE_URL: str | None = os.getenv("DATABASE_URL")
 
@@ -80,7 +83,8 @@ class Settings:
         return (
             f"Settings(APP_ENV={self.APP_ENV.value}, "
             f"DEBUG={self.DEBUG}, "
-            f"ACCESS_TOKEN_EXPIRE_MINUTES={self.ACCESS_TOKEN_EXPIRE_MINUTES})"
+            f"ACCESS_TOKEN_EXPIRE_MINUTES={self.ACCESS_TOKEN_EXPIRE_MINUTES}, "
+            f"REFRESH_TOKEN_EXPIRE_DAYS={self.REFRESH_TOKEN_EXPIRE_DAYS})"
         )
 
 

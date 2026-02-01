@@ -9,7 +9,6 @@ from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
-from app.config import settings
 from app.services.calculate_personality_traits import calculate_personality_traits
 from app.services.compatibility_analysis_service import get_compatibility_analysis
 from app.services.job_recommendation_service import get_job_recommendation
@@ -17,6 +16,12 @@ from app.services.password_service import PasswordValidationError
 from app.services.prisoners_dilemma import play_game
 from app.services.program_suggestion_service import get_suggested_programs
 from app.services.riasec_service import calculate_riasec_scores
+from app.services.token_service import (
+    TokenError,
+    create_token_pair,
+    refresh_tokens,
+    revoke_token,
+)
 from app.services.update_player_tactic_and_test_code import (
     update_player_tactic_and_test_code,
 )
@@ -115,22 +120,48 @@ def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(), db: Session = None
 ):
     user = db_operations.authenticate_user(db, form_data.username, form_data.password)
+
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = security.create_access_token(
-        data={"sub": user.username}, expires_delta=access_token_expires
-    )
+
+    token_pair = create_token_pair(user.username, user.id)
 
     return {
-        "access_token": access_token,
+        "access_token": token_pair.access_token,
+        "refresh_token": token_pair.refresh_token,
         "current_user_id": user.id,
         "token_type": "bearer",
+        "expires_in": token_pair.expires_in,
     }
+
+def refresh_access_token(refresh_token: str):
+    try:
+        token_pair = refresh_tokens(refresh_token)
+        return {
+            "access_token": token_pair.access_token,
+            "refresh_token": token_pair.refresh_token,
+            "token_type": "bearer",
+            "expires_in": token_pair.expires_in,
+        }
+    except TokenError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=e.message,
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+
+def logout_user(access_token: str, refresh_token: str | None = None):
+    revoke_token(access_token)
+
+    if refresh_token:
+        revoke_token(refresh_token)
+
+    return {"message": "Successfully logged out"}
 
 
 def create_room(name: str, request: None, db: Session):
@@ -551,7 +582,7 @@ def create_program_suggestion_student(high_school_room_id: int, db: Session):
 
     # Check for duplicate records created within last 5 seconds with status 'started'
     # This handles race conditions from React StrictMode or double-clicks
-    from datetime import datetime, timedelta, timezone
+    from datetime import datetime, timezone
 
     five_seconds_ago = datetime.now(timezone.utc) - timedelta(seconds=5)
 

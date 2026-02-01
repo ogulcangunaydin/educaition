@@ -1,7 +1,7 @@
 # routers.py
 
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Form
+from fastapi import APIRouter, BackgroundTasks, Body, Depends, Form, Header
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from starlette.requests import Request
@@ -19,6 +19,32 @@ def login_for_access_token(
     db: Session = Depends(db_operations.get_db),
 ):
     return controllers.login_for_access_token(form_data, db)
+
+
+@router_without_auth.post("/refresh", response_model=schemas.TokenRefreshResponse)
+def refresh_token(
+    request: schemas.TokenRefreshRequest,
+):
+    """
+    Get new access and refresh tokens using a valid refresh token.
+
+    The old refresh token is invalidated after use (one-time use).
+    """
+    return controllers.refresh_access_token(request.refresh_token)
+
+@router.post("/logout")
+def logout(
+    authorization: str = Header(..., description="Bearer token"),
+    refresh_token: str | None = Body(None, embed=True),
+):
+    """
+    Logout by invalidating the current access token and optionally the refresh token.
+
+    Both tokens will be blacklisted and cannot be reused.
+    """
+    # Extract token from "Bearer <token>" format
+    access_token = authorization.replace("Bearer ", "")
+    return controllers.logout_user(access_token, refresh_token)
 
 
 @router_without_auth.get(
