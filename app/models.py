@@ -1,3 +1,5 @@
+from enum import Enum as PyEnum
+
 from sqlalchemy import (
     Boolean,
     Column,
@@ -15,6 +17,21 @@ from sqlalchemy.sql import func
 from .database import Base
 
 
+class UserRole(str, PyEnum):
+    ADMIN = "admin"  # Full system access
+    TEACHER = "teacher"  # Can create rooms, manage students
+    STUDENT = "student"  # Can participate in tests/games
+    VIEWER = "viewer"  # Read-only access
+
+
+class UniversityKey(str, PyEnum):
+    HALIC = "halic"
+    IBNHALDUN = "ibnhaldun"
+    FSM = "fsm"
+    IZU = "izu"
+    MAYIS = "mayis"
+
+
 class User(Base):
     __tablename__ = "users"
 
@@ -23,6 +40,17 @@ class User(Base):
     email = Column(String, unique=True, index=True)
     hashed_password = Column(String)
     is_active = Column(Boolean, default=True)
+    role = Column(
+        String(20),
+        default=UserRole.STUDENT.value,
+        nullable=False,
+    )
+    # University the user belongs to (controls data access)
+    university = Column(
+        String(20),
+        default=UniversityKey.HALIC.value,
+        nullable=False,
+    )
     created_at = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

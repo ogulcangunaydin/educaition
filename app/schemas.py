@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, field_serializer, field_validator
 
@@ -15,6 +16,21 @@ def _validate_password_field(password: str) -> str:
     return password
 
 
+class UserRoleEnum(str, Enum):
+    ADMIN = "admin"
+    TEACHER = "teacher"
+    STUDENT = "student"
+    VIEWER = "viewer"
+
+
+class UniversityKeyEnum(str, Enum):
+    HALIC = "halic"
+    IBNHALDUN = "ibnhaldun"
+    FSM = "fsm"
+    IZU = "izu"
+    MAYIS = "mayis"
+
+
 class UserBase(BaseModel):
     username: str
     email: str | None = None
@@ -22,6 +38,8 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
+    role: UserRoleEnum = UserRoleEnum.STUDENT
+    university: UniversityKeyEnum = UniversityKeyEnum.HALIC
 
     @field_validator("password")
     @classmethod
@@ -33,6 +51,8 @@ class UserUpdate(BaseModel):
     username: str | None = None
     email: str | None = None
     password: str | None = None
+    role: UserRoleEnum | None = None
+    university: UniversityKeyEnum | None = None
 
     @field_validator("password")
     @classmethod
@@ -45,6 +65,8 @@ class UserUpdate(BaseModel):
 class User(UserBase):
     id: int
     is_active: bool
+    role: str
+    university: str
 
     class Config:
         from_attributes = True
@@ -56,6 +78,8 @@ class Token(BaseModel):
     current_user_id: int
     token_type: str = "bearer"
     expires_in: int  # Access token expiry in seconds
+    role: str
+    university: str
 
 
 class TokenRefreshRequest(BaseModel):

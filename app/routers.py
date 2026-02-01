@@ -10,9 +10,13 @@ from starlette.requests import Request
 from . import controllers, schemas
 from .config import settings
 from .dependencies import (
+    AdminUser,
     CurrentProgramStudent,
+    TeacherOrAdmin,
     get_current_active_user,
     get_db,
+    require_admin,
+    require_teacher_or_admin,
     verify_participant_ownership,
 )
 from .services.participant_token_service import (
@@ -34,6 +38,8 @@ def _create_auth_response(token_data: dict) -> JSONResponse:
             "current_user_id": token_data["current_user_id"],
             "token_type": "bearer",
             "expires_in": token_data["expires_in"],
+            "role": token_data.get("role"),
+            "university": token_data.get("university"),
         }
     )
 
@@ -106,45 +112,73 @@ def get_password_requirements():
 
 
 @router.get("/users/", response_model=list[schemas.User])
-def get_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+def get_users(
+    current_user: AdminUser,
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+):
     return controllers.read_users(skip, limit, db)
 
 
 @router.get("/users/{user_id}", response_model=schemas.User)
-def read_user(user_id: int, db: Session = Depends(get_db)):
+def read_user(user_id: int, current_user: AdminUser, db: Session = Depends(get_db)):
     return controllers.read_user(user_id, db)
 
 
 @router.post("/users/", response_model=schemas.User)
 def create_user(
+    current_user: AdminUser,
     username: str = Form(...),
     email: str = Form(...),
     password: str = Form(...),
+    role: str = Form("student"),
+    university: str = Form("halic"),
     db: Session = Depends(get_db),
 ):
-    user = schemas.UserCreate(username=username, email=email, password=password)
+    user = schemas.UserCreate(
+        username=username,
+        email=email,
+        password=password,
+        role=role,
+        university=university,
+    )
     return controllers.create_user(user, db)
 
 
 @router.put("/users/{user_id}", response_model=schemas.User)
 def update_user(
     user_id: int,
+    current_user: AdminUser,
     username: str = Form(...),
     email: str = Form(...),
-    password: str = Form(...),
+    password: str = Form(None),
+    role: str = Form(None),
+    university: str = Form(None),
     db: Session = Depends(get_db),
 ):
-    user = schemas.UserCreate(username=username, email=email, password=password)
+    user = schemas.UserUpdate(
+        username=username,
+        email=email,
+        password=password if password else None,
+        role=role,
+        university=university,
+    )
     return controllers.update_user(user_id, user, db)
 
 
 @router.delete("/users/{user_id}", response_model=schemas.User)
-def delete_user(user_id: int, db: Session = Depends(get_db)):
+def delete_user(user_id: int, current_user: AdminUser, db: Session = Depends(get_db)):
     return controllers.delete_user(user_id, db)
 
 
 @router.post("/rooms/", response_model=schemas.Room)
-def create_room(request: Request, name: str = Form(...), db: Session = Depends(get_db)):
+def create_room(
+    request: Request,
+    current_user: TeacherOrAdmin,
+    name: str = Form(...),
+    db: Session = Depends(get_db),
+):
     return controllers.create_room(name, request, db)
 
 
@@ -164,7 +198,9 @@ def read_room(room_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/rooms/delete/{room_id}", response_model=schemas.Room)
-def delete_room(room_id: int, db: Session = Depends(get_db)):
+def delete_room(
+    room_id: int, current_user: TeacherOrAdmin, db: Session = Depends(get_db)
+):
     return controllers.delete_room(room_id, db)
 
 
@@ -213,7 +249,9 @@ def get_players_by_ids(player_ids: str, db: Session = Depends(get_db)):
 
 
 @router.post("/players/delete/{player_id}", response_model=schemas.Player)
-def delete_player(player_id: int, db: Session = Depends(get_db)):
+def delete_player(
+    player_id: int, current_user: TeacherOrAdmin, db: Session = Depends(get_db)
+):
     return controllers.delete_player(player_id, db)
 
 
@@ -221,6 +259,7 @@ def delete_player(player_id: int, db: Session = Depends(get_db)):
 def start_game(
     room_id: int,
     background_tasks: BackgroundTasks,
+    current_user: TeacherOrAdmin,
     db: Session = Depends(get_db),
     name: str = Form(...),
 ):
@@ -310,7 +349,7 @@ def update_dissonance_test_participant_personality_traits(
     response_model=schemas.DissonanceTestParticipant,
 )
 def delete_dissonance_test_participant(
-    participant_id: int, db: Session = Depends(get_db)
+    participant_id: int, current_user: TeacherOrAdmin, db: Session = Depends(get_db)
 ):
     return controllers.delete_dissonance_test_participant(participant_id, db)
 
@@ -319,6 +358,7 @@ def delete_dissonance_test_participant(
 @router.post("/high-school-rooms/", response_model=schemas.HighSchoolRoom)
 def create_high_school_room(
     request: Request,
+    current_user: TeacherOrAdmin,
     high_school_name: str = Form(...),
     high_school_code: str = Form(None),
     db: Session = Depends(get_db),
@@ -344,7 +384,9 @@ def get_high_school_room(room_id: int, db: Session = Depends(get_db)):
 
 
 @router.delete("/high-school-rooms/{room_id}", response_model=schemas.HighSchoolRoom)
-def delete_high_school_room(room_id: int, db: Session = Depends(get_db)):
+def delete_high_school_room(
+    room_id: int, current_user: TeacherOrAdmin, db: Session = Depends(get_db)
+):
     return controllers.delete_high_school_room(room_id, db)
 
 
@@ -493,5 +535,7 @@ def get_student_result(
     "/program-suggestion/students/{student_id}/debug",
     response_model=schemas.ProgramSuggestionStudentDebug,
 )
-def get_student_debug(student_id: int, db: Session = Depends(get_db)):
+def get_student_debug(
+    student_id: int, current_user: AdminUser, db: Session = Depends(get_db)
+):
     return controllers.get_student_debug(student_id, db)

@@ -68,7 +68,13 @@ def create_user(user: schemas.UserCreate, db: Session = None):
         )
 
     db_user = models.User(
-        username=clean_name, email=clean_email, hashed_password=hashed_password
+        username=clean_name,
+        email=clean_email,
+        hashed_password=hashed_password,
+        role=user.role.value if hasattr(user, "role") and user.role else "student",
+        university=user.university.value
+        if hasattr(user, "university") and user.university
+        else "halic",
     )
     db.add(db_user)
     db.commit()
@@ -76,7 +82,7 @@ def create_user(user: schemas.UserCreate, db: Session = None):
     return db_user
 
 
-def update_user(user_id: int, user: schemas.UserCreate, db: Session = None):
+def update_user(user_id: int, user: schemas.UserUpdate, db: Session = None):
     db_user = db.query(models.User).get(user_id)
 
     if db_user is None:
@@ -93,16 +99,27 @@ def update_user(user_id: int, user: schemas.UserCreate, db: Session = None):
     if existing_user:
         raise HTTPException(status_code=400, detail="Username already exists")
 
-    try:
-        hashed_password = security.get_password_hash(user.password)
-    except PasswordValidationError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"message": "Password validation failed", "errors": e.errors},
-        )
+    # Only update password if provided
+    if user.password:
+        try:
+            hashed_password = security.get_password_hash(user.password)
+            db_user.hashed_password = hashed_password
+        except PasswordValidationError as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={"message": "Password validation failed", "errors": e.errors},
+            )
 
     db_user.username = cleaned_username
-    db_user.hashed_password = hashed_password
+    db_user.email = user.email
+
+    if user.role:
+        db_user.role = user.role.value if hasattr(user.role, "value") else user.role
+    if user.university:
+        db_user.university = (
+            user.university.value if hasattr(user.university, "value") else user.university
+        )
+
     db.commit()
     return db_user
 
@@ -136,6 +153,8 @@ def login_for_access_token(
         "current_user_id": user.id,
         "token_type": "bearer",
         "expires_in": token_pair.expires_in,
+        "role": user.role,
+        "university": user.university,
     }
 
 def refresh_access_token(refresh_token: str):

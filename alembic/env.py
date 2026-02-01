@@ -5,7 +5,23 @@ from sqlalchemy import pool
 
 from alembic import context
 
-from app.database import Base 
+from app.database import Base
+
+# Import all models so they register with Base.metadata
+# This is required for autogenerate to detect model changes
+from app.models import (  # noqa: F401
+    User,
+    UserRole,
+    TokenBlacklist,
+    Room,
+    Player,
+    Game,
+    Round,
+    Session,
+    DissonanceTestParticipant,
+    HighSchoolRoom,
+    ProgramSuggestionStudent,
+)
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
