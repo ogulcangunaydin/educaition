@@ -14,6 +14,7 @@ from .modules.users import users_router
 from .modules.rooms import rooms_router
 from .modules.players import players_router, players_public_router
 from .modules.games import games_router
+from .modules.dissonance_test import dissonance_test_router, dissonance_test_public_router
 
 log_level = logging.DEBUG if settings.DEBUG else logging.INFO
 logging.basicConfig(level=log_level)
@@ -77,6 +78,8 @@ app.include_router(users_router, prefix="/api", tags=["users"])
 app.include_router(rooms_router, prefix="/api", tags=["rooms"])
 app.include_router(players_router, prefix="/api", tags=["players"])
 app.include_router(games_router, prefix="/api", tags=["games"])
+app.include_router(dissonance_test_public_router, prefix="/api", tags=["dissonance_test"])
+app.include_router(dissonance_test_router, prefix="/api", tags=["dissonance_test"])
 
 # Legacy routes (will be migrated to modules)
 app.include_router(routers.router, prefix="/api")

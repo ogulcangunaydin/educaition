@@ -13,7 +13,6 @@ from .dependencies import (
     AdminUser,
     CurrentPlayer,
     CurrentProgramStudent,
-    CurrentTestParticipant,
     TeacherOrAdmin,
     get_current_active_user,
     get_db,
@@ -49,111 +48,15 @@ router_without_auth = APIRouter()
 # Session routes moved to app.modules.games.router
 # show_session
 
+# Dissonance test routes moved to app.modules.dissonance_test.router
+# create_dissonance_test_participant, read_dissonance_test_participant,
+# get_dissonance_test_participants, update_dissonance_test_participant,
+# update_dissonance_test_participant_personality_traits, delete_dissonance_test_participant
+
 
 @router.get("/auth/", response_model=schemas.User)
 def authenticate_user(request: Request, db: Session = Depends(get_db)):
     return controllers.authenticate(request, db)
-
-
-@router_without_auth.post("/dissonance_test_participants/")
-def create_dissonance_test_participant(
-    participant: schemas.DissonanceTestParticipantCreate,
-    db: Session = Depends(get_db),
-):
-    created_participant = controllers.create_dissonance_test_participant(
-        db=db, participant=participant
-    )
-
-    # Use user_id as a pseudo room_id for dissonance tests
-    token = create_participant_token(
-        participant_id=created_participant.id,
-        participant_type=ParticipantType.DISSONANCE_TEST,
-        room_id=created_participant.user_id,
-    )
-
-    response = JSONResponse(
-        content={
-            "participant": schemas.DissonanceTestParticipant.model_validate(
-                created_participant
-            ).model_dump(mode="json"),
-            "session_token": token,
-            "expires_in": get_token_expiry_seconds(ParticipantType.DISSONANCE_TEST),
-        }
-    )
-
-    response.set_cookie(
-        key="participant_token",
-        value=token,
-        httponly=True,
-        secure=not settings.is_development,
-        samesite="strict",
-        max_age=get_token_expiry_seconds(ParticipantType.DISSONANCE_TEST),
-    )
-
-    return response
-
-
-@router_without_auth.get(
-    "/dissonance_test_participants/{participant_id}",
-    response_model=schemas.DissonanceTestParticipantResult,
-)
-def read_dissonance_test_participant(
-    participant_id: int,
-    participant: CurrentTestParticipant,
-    db: Session = Depends(get_db),
-):
-    verify_participant_ownership(participant.participant_id, participant_id)
-    return controllers.read_dissonance_test_participant(participant_id, db)
-
-
-@router.get(
-    "/dissonance_test_participants/",
-    response_model=list[schemas.DissonanceTestParticipant],
-)
-def get_dissonance_test_participants(request: Request, db: Session = Depends(get_db)):
-    return controllers.get_dissonance_test_participants(request, db)
-
-
-@router_without_auth.post(
-    "/dissonance_test_participants/{participant_id}",
-    response_model=schemas.DissonanceTestParticipant,
-)
-def update_dissonance_test_participant(
-    participant_id: int,
-    participant_data: schemas.DissonanceTestParticipantUpdateSecond,
-    participant: CurrentTestParticipant,
-    db: Session = Depends(get_db),
-):
-    verify_participant_ownership(participant.participant_id, participant_id)
-    return controllers.update_dissonance_test_participant(
-        participant_id, participant_data, db
-    )
-
-
-@router_without_auth.post(
-    "/dissonance_test_participants/{participant_id}/personality",
-    response_model=schemas.DissonanceTestParticipant,
-)
-def update_dissonance_test_participant_personality_traits(
-    participant_id: int,
-    participant: CurrentTestParticipant,
-    answers: str = Form(...),
-    db: Session = Depends(get_db),
-):
-    verify_participant_ownership(participant.participant_id, participant_id)
-    return controllers.update_dissonance_test_participant_personality_traits(
-        participant_id, answers, db
-    )
-
-
-@router.post(
-    "/dissonance_test_participants/{participant_id}/delete",
-    response_model=schemas.DissonanceTestParticipant,
-)
-def delete_dissonance_test_participant(
-    participant_id: int, current_user: TeacherOrAdmin, db: Session = Depends(get_db)
-):
-    return controllers.delete_dissonance_test_participant(participant_id, db)
 
 
 # High School Room Routes
