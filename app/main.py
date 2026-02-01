@@ -1,40 +1,58 @@
-from dotenv import load_dotenv
 from fastapi.middleware.cors import CORSMiddleware
-from starlette.middleware.sessions import SessionMiddleware
 from fastapi import FastAPI
-from . import models, db_operations, routers
+from contextlib import asynccontextmanager
+from . import models, routers
 from .database import engine
-import os
+from .config import settings
+from .custom_session_middleware import CustomSessionMiddleware
 import logging
-from .custom_session_middleware import CustomSessionMiddleware  # Adjust the import based on your project structure
 
-# Set up logging
-logging.basicConfig(level=logging.INFO)
-load_dotenv()  # take environment variables from .env.
+log_level = logging.DEBUG if settings.DEBUG else logging.INFO
+logging.basicConfig(level=log_level)
+logger = logging.getLogger(__name__)
 
 models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logger.info(f"Starting Educaition API in {settings.APP_ENV.value} mode")
+    logger.info(f"Debug: {settings.DEBUG}")
+    
+    if settings.is_development:
+        logger.info("To seed the database, run: python -m app.seeds.seed")
+    
+    yield
+    
+    logger.info("Shutting down Educaition API")
 
-origins = [
-    "http://localhost:8080",
-    "http://192.168.1.106:8080",
-    "http://ec2-54-173-57-250.compute-1.amazonaws.com",
-    "http://educaition.com.tr"
-]
+
+app = FastAPI(
+    title="Educaition API",
+    description="EducAItional platform API",
+    version="1.0.0",
+    debug=settings.DEBUG,
+    lifespan=lifespan,
+)
+
+if settings.is_development:
+    origins = ["*"]
+else:
+    origins = [
+        "http://localhost:8080",
+        "http://192.168.1.106:8080",
+        "http://ec2-54-173-57-250.compute-1.amazonaws.com",
+        "http://educaition.com.tr",
+        "https://educaition.com.tr",
+    ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,  # Allows specified origins
+    allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],  # Allows all methods
-    allow_headers=["*"],  # Allows all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
-app.add_middleware(CustomSessionMiddleware, secret_key=os.getenv("SECRET_KEY"))
+app.add_middleware(CustomSessionMiddleware, secret_key=settings.SECRET_KEY)
 
 app.include_router(routers.router, prefix="/api")
 app.include_router(routers.router_without_auth, prefix="/api")
-
-@app.on_event("startup")
-async def startup_event():
-    db_operations.create_initial_user()

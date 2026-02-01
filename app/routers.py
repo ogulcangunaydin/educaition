@@ -19,6 +19,10 @@ router_without_auth = APIRouter()
 def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(db_operations.get_db)):
     return controllers.login_for_access_token(form_data, db)
 
+@router_without_auth.get("/password-requirements", response_model=schemas.PasswordRequirements)
+def get_password_requirements():
+    return schemas.PasswordRequirements()
+
 @router.get("/users/", response_model=List[schemas.User])
 def get_users(skip: int = 0, limit: int = 100, db: Session = Depends(db_operations.get_db)):
     return controllers.read_users(skip, limit, db)

@@ -1,7 +1,17 @@
-from pydantic import BaseModel, field_serializer, ConfigDict
+from pydantic import BaseModel, field_serializer, ConfigDict, field_validator
 from typing import Optional, Union, Dict, List
 from datetime import datetime
-import json
+
+from app.services.password_service import (
+    validate_password_strength,
+    PasswordConfig,
+)
+
+def _validate_password_field(password: str) -> str:
+    is_valid, errors = validate_password_strength(password)
+    if not is_valid:
+        raise ValueError('; '.join(errors))
+    return password
 
 class UserBase(BaseModel):
     username: str
@@ -9,6 +19,23 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
+    
+    @field_validator('password')
+    @classmethod
+    def password_strength(cls, v: str) -> str:
+        return _validate_password_field(v)
+
+class UserUpdate(BaseModel):
+    username: Optional[str] = None
+    email: Optional[str] = None
+    password: Optional[str] = None
+    
+    @field_validator('password')
+    @classmethod
+    def password_strength(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None:
+            return _validate_password_field(v)
+        return v
 
 class User(UserBase):
     id: int
@@ -21,9 +48,23 @@ class Token(BaseModel):
     access_token: str
     current_user_id: int
     token_type: str
-    
+
 class TokenData(BaseModel):
     username: Optional[str] = None
+
+class PasswordRequirements(BaseModel):
+    min_length: int = PasswordConfig.MIN_LENGTH
+    max_length: int = PasswordConfig.MAX_LENGTH
+    require_uppercase: bool = PasswordConfig.REQUIRE_UPPERCASE
+    require_lowercase: bool = PasswordConfig.REQUIRE_LOWERCASE
+    require_digit: bool = PasswordConfig.REQUIRE_DIGIT
+    require_special: bool = PasswordConfig.REQUIRE_SPECIAL
+    special_characters: str = PasswordConfig.SPECIAL_CHARACTERS
+    message: str = (
+        f"Password must be {PasswordConfig.MIN_LENGTH}-{PasswordConfig.MAX_LENGTH} characters, "
+        "with at least one uppercase letter, one lowercase letter, "
+        "one digit, and one special character."
+    )
 
 class RoomBase(BaseModel):
     pass

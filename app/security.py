@@ -1,29 +1,59 @@
-from passlib.context import CryptContext
 from jose import jwt
 from datetime import datetime, timedelta, timezone
-from dotenv import load_dotenv
-import os
+from typing import Optional
+from app.config import settings
 
-load_dotenv()  # take environment variables from .env.
+from app.services.password_service import (
+    hash_password,
+    verify_password,
+    validate_password_strength,
+    check_password_strength,
+    PasswordValidationError,
+    PasswordStrength
+)
 
-SECRET_KEY = os.getenv("SECRET_KEY")
-ALGORITHM = os.getenv("ALGORITHM")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+class SecurityConfig:
+    SECRET_KEY: str = settings.SECRET_KEY
+    ALGORITHM: str = settings.ALGORITHM
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = settings.ACCESS_TOKEN_EXPIRE_MINUTES
 
-def create_access_token(data: dict, expires_delta: timedelta = None):
+
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     to_encode = data.copy()
+    
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=int(ACCESS_TOKEN_EXPIRE_MINUTES))
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+        expire = datetime.now(timezone.utc) + timedelta(
+            minutes=SecurityConfig.ACCESS_TOKEN_EXPIRE_MINUTES
+        )
+    
+    to_encode.update({
+        "exp": expire,
+        "iat": datetime.now(timezone.utc),
+        "type": "access"
+    })
+    
+    encoded_jwt = jwt.encode(
+        to_encode, 
+        SecurityConfig.SECRET_KEY, 
+        algorithm=SecurityConfig.ALGORITHM
+    )
     return encoded_jwt
 
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
 
-def get_password_hash(password):
-    return pwd_context.hash(password)
+def get_password_hash(password: str, validate: bool = True) -> str:
+    return hash_password(password, validate=validate)
+
+
+__all__ = [
+    'create_access_token',
+    'get_password_hash',
+    'verify_password',
+    'validate_password_strength',
+    'check_password_strength',
+    'PasswordValidationError',
+    'PasswordStrength',
+    'SecurityConfig'
+]

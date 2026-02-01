@@ -14,7 +14,8 @@ from app.services.job_recommendation_service import get_job_recommendation
 from app.services.compatibility_analysis_service import get_compatibility_analysis
 from app.services.riasec_service import calculate_riasec_scores
 from app.services.program_suggestion_service import get_suggested_programs
-import os
+from app.services.password_service import PasswordValidationError
+from app.config import settings
 import bleach
 from .helpers import create_player_function_name
 
@@ -31,9 +32,31 @@ def read_user(user_id: int, db: Session = None):
 
 def create_user(user: schemas.UserCreate, db: Session = None):
     clean_name = bleach.clean(user.username, strip=True)
-    clean_email = bleach.clean(user.email, strip=True)
+    clean_email = bleach.clean(user.email, strip=True) if user.email else None
 
-    db_user = models.User(username=clean_name, email=clean_email, hashed_password=security.get_password_hash(user.password))
+    existing_user = db.query(models.User).filter(
+        (models.User.username == clean_name) | 
+        (models.User.email == clean_email)
+    ).first()
+    
+    if existing_user:
+        if existing_user.username == clean_name:
+            raise HTTPException(status_code=400, detail="Username already exists")
+        raise HTTPException(status_code=400, detail="Email already exists")
+
+    try:
+        hashed_password = security.get_password_hash(user.password)
+    except PasswordValidationError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"message": "Password validation failed", "errors": e.errors}
+        )
+
+    db_user = models.User(
+        username=clean_name, 
+        email=clean_email, 
+        hashed_password=hashed_password
+    )
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
@@ -41,12 +64,30 @@ def create_user(user: schemas.UserCreate, db: Session = None):
 
 def update_user(user_id: int, user: schemas.UserCreate, db: Session = None):
     db_user = db.query(models.User).get(user_id)
+
     if db_user is None:
         raise HTTPException(status_code=404, detail="User not found")
     
     cleaned_username = bleach.clean(user.username, strip=True)
+    
+    existing_user = db.query(models.User).filter(
+        models.User.username == cleaned_username,
+        models.User.id != user_id
+    ).first()
+
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Username already exists")
+    
+    try:
+        hashed_password = security.get_password_hash(user.password)
+    except PasswordValidationError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"message": "Password validation failed", "errors": e.errors}
+        )
+    
     db_user.username = cleaned_username
-    db_user.hashed_password = security.get_password_hash(user.password)
+    db_user.hashed_password = hashed_password
     db.commit()
     return db_user
 
@@ -66,7 +107,7 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token_expires = timedelta(minutes=int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES")))
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = security.create_access_token(
         data={"sub": user.username}, expires_delta=access_token_expires
     )
