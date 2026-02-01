@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, Form
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
-
 from app.core import settings
 from app.dependencies.auth import TeacherOrAdmin, get_current_active_user, get_db
 from app.dependencies.participant import CurrentPlayer, verify_participant_ownership
@@ -10,7 +9,6 @@ from app.services.participant_token_service import (
     create_participant_token,
     get_token_expiry_seconds,
 )
-
 from .schemas import Player
 from .service import PlayerService
 
@@ -21,7 +19,6 @@ players_protected_router = APIRouter(
     dependencies=[Depends(get_current_active_user)],
 )
 
-
 @players_public_router.post("/")
 def create_player(
     player_name: str = Form(...),
@@ -29,13 +26,11 @@ def create_player(
     db: Session = Depends(get_db),
 ):
     created_player = PlayerService.create_player(db, player_name, room_id)
-
     token = create_participant_token(
         participant_id=created_player.id,
         participant_type=ParticipantType.PLAYER,
         room_id=room_id,
     )
-
     response = JSONResponse(
         content={
             "player": Player.model_validate(created_player).model_dump(mode="json"),
@@ -43,7 +38,6 @@ def create_player(
             "expires_in": get_token_expiry_seconds(ParticipantType.PLAYER),
         }
     )
-
     response.set_cookie(
         key="participant_token",
         value=token,
@@ -55,7 +49,6 @@ def create_player(
 
     return response
 
-
 @players_public_router.get("/room/{room_id}", response_model=list[Player])
 def get_players_by_room(
     room_id: int,
@@ -64,7 +57,6 @@ def get_players_by_room(
     db: Session = Depends(get_db),
 ):
     return PlayerService.get_players_by_room(db, room_id, skip, limit)
-
 
 @players_public_router.post("/{player_id}/tactic", response_model=Player)
 def update_player_tactic(
@@ -76,7 +68,6 @@ def update_player_tactic(
     verify_participant_ownership(participant.participant_id, player_id)
     return PlayerService.update_player_tactic(db, player_id, player_tactic)
 
-
 @players_public_router.post("/{player_id}/personality", response_model=Player)
 def update_player_personality_traits(
     player_id: int,
@@ -87,16 +78,13 @@ def update_player_personality_traits(
     verify_participant_ownership(participant.participant_id, player_id)
     return PlayerService.update_player_personality_traits(db, player_id, answers)
 
-
 @players_protected_router.get("/{player_ids}", response_model=list[Player])
 def get_players_by_ids(player_ids: str, db: Session = Depends(get_db)):
     return PlayerService.get_players_by_ids(db, player_ids)
 
-
 @players_protected_router.post("/delete/{player_id}", response_model=Player)
 def delete_player(player_id: int, current_user: TeacherOrAdmin, db: Session = Depends(get_db)):
     return PlayerService.delete_player(db, player_id)
-
 
 router = APIRouter()
 router.include_router(players_public_router)

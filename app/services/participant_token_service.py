@@ -3,7 +3,7 @@ from enum import Enum
 from uuid import uuid4
 from jose import JWTError, jwt
 from pydantic import BaseModel
-from app.config import settings
+from app.core.config import settings
 
 class ParticipantType(str, Enum):
     PLAYER = "player"  # Game room players

@@ -1,32 +1,29 @@
 from fastapi import APIRouter, Depends, Form
 from sqlalchemy.orm import Session
-
-from app.dependencies.auth import AdminUser, get_db
-
+from app.dependencies.auth import get_db, require_admin
 from .schemas import User, UserCreate, UserUpdate
 from .service import UserService
 
-router = APIRouter(prefix="/users", tags=["users"])
-
+router = APIRouter(
+    prefix="/users",
+    tags=["users"],
+    dependencies=[Depends(require_admin)],
+)
 
 @router.get("/", response_model=list[User])
 def get_users(
-    current_user: AdminUser,
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
 ):
     return UserService.get_users(db, skip, limit)
 
-
 @router.get("/{user_id}", response_model=User)
-def get_user(user_id: int, current_user: AdminUser, db: Session = Depends(get_db)):
+def get_user(user_id: int, db: Session = Depends(get_db)):
     return UserService.get_user(db, user_id)
-
 
 @router.post("/", response_model=User)
 def create_user(
-    current_user: AdminUser,
     username: str = Form(...),
     email: str = Form(...),
     password: str = Form(...),
@@ -43,11 +40,9 @@ def create_user(
     )
     return UserService.create_user(db, user)
 
-
 @router.put("/{user_id}", response_model=User)
 def update_user(
     user_id: int,
-    current_user: AdminUser,
     username: str = Form(...),
     email: str = Form(...),
     password: str = Form(None),
@@ -64,7 +59,6 @@ def update_user(
     )
     return UserService.update_user(db, user_id, user)
 
-
 @router.delete("/{user_id}", response_model=User)
-def delete_user(user_id: int, current_user: AdminUser, db: Session = Depends(get_db)):
+def delete_user(user_id: int, db: Session = Depends(get_db)):
     return UserService.delete_user(db, user_id)

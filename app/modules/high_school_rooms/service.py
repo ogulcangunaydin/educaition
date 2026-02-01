@@ -1,21 +1,16 @@
 import bleach
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
-from starlette.requests import Request
-
 from app import models
 
-
 class HighSchoolRoomService:
-
     @staticmethod
     def create_room(
         high_school_name: str,
         high_school_code: str | None,
-        request: Request,
+        user_id: int,
         db: Session,
     ):
-        user_id = request.session["current_user"]["id"]
         clean_name = bleach.clean(high_school_name, strip=True)
         clean_code = (
             bleach.clean(high_school_code, strip=True) if high_school_code else None
@@ -30,8 +25,7 @@ class HighSchoolRoomService:
         return room
 
     @staticmethod
-    def get_rooms_by_user(request: Request, skip: int, limit: int, db: Session):
-        user_id = request.session["current_user"]["id"]
+    def get_rooms_by_user(user_id: int, skip: int, limit: int, db: Session):
         return (
             db.query(models.HighSchoolRoom)
             .filter(models.HighSchoolRoom.user_id == user_id)

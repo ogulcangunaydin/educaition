@@ -1,16 +1,12 @@
 import bleach
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
-
 from app import models
 from app.core.security import get_password_hash
 from app.services.password_service import PasswordValidationError
-
 from .schemas import UserCreate, UserUpdate
 
-
 class UserService:
-
     @staticmethod
     def get_users(db: Session, skip: int = 0, limit: int = 100) -> list:
         return db.query(models.User).offset(skip).limit(limit).all()

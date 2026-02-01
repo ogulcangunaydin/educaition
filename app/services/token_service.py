@@ -6,9 +6,9 @@ from uuid import uuid4
 from jose import JWTError, jwt
 from pydantic import BaseModel
 
-from app.config import settings
+from app.core.config import settings
 from app.core.database import SessionLocal
-from app.models import TokenBlacklist
+from app.modules.auth.models import TokenBlacklist
 
 
 class TokenType(str, Enum):

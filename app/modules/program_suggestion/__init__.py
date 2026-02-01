@@ -1,7 +1,3 @@
-from .router import (
-    router as program_suggestion_router,
-    program_suggestion_public_router,
-)
 from .schemas import (
     ProgramSuggestionStudent,
     ProgramSuggestionStudentBase,
@@ -17,8 +13,6 @@ from .schemas import (
 from .service import ProgramSuggestionService
 
 __all__ = [
-    "program_suggestion_router",
-    "program_suggestion_public_router",
     "ProgramSuggestionService",
     "ProgramSuggestionStudent",
     "ProgramSuggestionStudentBase",

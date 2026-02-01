@@ -59,7 +59,6 @@ async def get_current_participant(
             detail=e.message,
         )
 
-
 async def get_player(
     request: Request,
     token: str | None = Depends(_extract_participant_token),
@@ -90,7 +89,6 @@ async def get_player(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=e.message,
         )
-
 
 async def get_test_participant(
     request: Request,
@@ -123,7 +121,6 @@ async def get_test_participant(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=e.message,
         )
-
 
 async def get_program_student(
     request: Request,
@@ -158,7 +155,6 @@ async def get_program_student(
             detail=e.message,
         )
 
-
 CurrentParticipant = Annotated[
     ParticipantTokenPayload, Depends(get_current_participant)
 ]
@@ -167,7 +163,6 @@ CurrentTestParticipant = Annotated[
     ParticipantTokenPayload, Depends(get_test_participant)
 ]
 CurrentProgramStudent = Annotated[ParticipantTokenPayload, Depends(get_program_student)]
-
 
 def verify_participant_ownership(
     token_participant_id: int,
@@ -179,7 +174,6 @@ def verify_participant_ownership(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to access this participant's data",
         )
-
 
 __all__ = [
     "get_current_participant",

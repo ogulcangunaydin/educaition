@@ -2,14 +2,11 @@ from fastapi import APIRouter, Body, Cookie, Depends, Header
 from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from starlette.requests import Request
-
 from app.core import settings
 from app.dependencies.auth import get_current_active_user, get_db
-from app.models import User
+from app.modules.users.models import User
 from app.modules.users.schemas import User as UserSchema
 from app.services.token_service import TokenConfig
-
 from .schemas import PasswordRequirements
 from .service import AuthService
 
@@ -18,7 +15,6 @@ auth_protected_router = APIRouter(
     tags=["auth"],
     dependencies=[Depends(get_current_active_user)],
 )
-
 
 def _create_auth_response(token_data: dict) -> JSONResponse:
     response = JSONResponse(
@@ -31,7 +27,6 @@ def _create_auth_response(token_data: dict) -> JSONResponse:
             "university": token_data.get("university"),
         }
     )
-
     response.set_cookie(
         key="refresh_token",
         value=token_data["refresh_token"],
@@ -60,6 +55,7 @@ def refresh_token(
     body_refresh_token: dict | None = Body(None),
 ):
     token = refresh_token
+
     if not token and body_refresh_token:
         token = body_refresh_token.get("refresh_token")
 
@@ -72,7 +68,6 @@ def refresh_token(
     new_tokens = AuthService.refresh_access_token(token)
     return _create_auth_response(new_tokens)
 
-
 @auth_protected_router.post("/logout")
 def logout(
     authorization: str = Header(...),
@@ -82,7 +77,6 @@ def logout(
     access_token = authorization.replace("Bearer ", "")
     token_to_revoke = refresh_token or body_refresh_token
     result = AuthService.logout_user(access_token, token_to_revoke)
-
     response = JSONResponse(content=result)
     response.delete_cookie(
         key="refresh_token",
@@ -94,17 +88,15 @@ def logout(
 
     return response
 
-
 @auth_public_router.get("/password-requirements", response_model=PasswordRequirements)
 def get_password_requirements():
     return PasswordRequirements()
 
-
 @auth_protected_router.get("/auth/", response_model=UserSchema)
-def get_current_authenticated_user(request: Request, db: Session = Depends(get_db)):
-    user_id = request.session["current_user"]["id"]
-    return db.query(User).filter(User.id == user_id).first()
-
+def get_current_authenticated_user(
+    current_user: User = Depends(get_current_active_user),
+):
+    return current_user
 
 router = APIRouter()
 router.include_router(auth_public_router)

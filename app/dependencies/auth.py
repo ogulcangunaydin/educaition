@@ -1,11 +1,9 @@
 from typing import Annotated
-
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
-
-from app.core.database import SessionLocal
-from app.models import UniversityKey, User, UserRole
+from app.core.database import get_db
+from app.modules.users.models import UniversityKey, User, UserRole
 from app.services.token_service import (
     TokenBlacklistedError,
     TokenError,
@@ -15,22 +13,7 @@ from app.services.token_service import (
 )
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/authenticate")
-oauth2_scheme_optional = OAuth2PasswordBearer(
-    tokenUrl="/api/authenticate", auto_error=False
-)
-
-
-def get_db():
-    """Database session dependency."""
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
 DbSession = Annotated[Session, Depends(get_db)]
-
 
 async def get_current_user(
     request: Request,
@@ -90,7 +73,6 @@ async def get_current_user(
 
     return user
 
-
 async def get_current_active_user(
     current_user: User = Depends(get_current_user),
 ) -> User:
@@ -101,38 +83,8 @@ async def get_current_active_user(
         )
     return current_user
 
-
-async def get_current_user_optional(
-    request: Request,
-    token: str | None = Depends(oauth2_scheme_optional),
-    db: Session = Depends(get_db),
-) -> User | None:
-    """
-    Optional authentication dependency.
-    Returns the user if authenticated, None otherwise.
-    Does not raise exceptions for missing/invalid tokens.
-    Useful for endpoints that work differently for authenticated users.
-    """
-    if not token:
-        return None
-
-    try:
-        payload = verify_access_token(token)
-        user = db.query(User).filter(User.id == payload.user_id).first()
-
-        if user:
-            request.state.user_id = user.id
-            request.state.username = user.username
-
-        return user
-    except TokenError:
-        return None
-
-
 CurrentUser = Annotated[User, Depends(get_current_user)]
 CurrentActiveUser = Annotated[User, Depends(get_current_active_user)]
-OptionalUser = Annotated[User | None, Depends(get_current_user_optional)]
-
 
 def require_user_ownership(resource_user_id: int, current_user: User) -> None:
     if resource_user_id != current_user.id:
@@ -176,7 +128,6 @@ async def require_teacher_or_admin(
         )
     return current_user
 
-
 def require_university(*allowed_universities: UniversityKey):
     async def university_checker(
         current_user: User = Depends(get_current_active_user),
@@ -207,10 +158,8 @@ def require_same_university(resource_university: str) -> None:
             )
     return checker
 
-
 def is_admin(user: User) -> bool:
     return user.role == UserRole.ADMIN.value
-
 
 def is_teacher_or_admin(user: User) -> bool:
     return user.role in {UserRole.ADMIN.value, UserRole.TEACHER.value}
@@ -223,10 +172,8 @@ __all__ = [
     "DbSession",
     "get_current_user",
     "get_current_active_user",
-    "get_current_user_optional",
     "CurrentUser",
     "CurrentActiveUser",
-    "OptionalUser",
     "require_user_ownership",
     "oauth2_scheme",
     # role based dependencies

@@ -1,12 +1,9 @@
 from datetime import datetime, timedelta, timezone
-
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
-
 from app import models
 from app.services.program_suggestion_service import get_suggested_programs
 from app.services.riasec_service import calculate_riasec_scores
-
 from .schemas import (
     ProgramSuggestionStudentUpdateRiasec,
     ProgramSuggestionStudentUpdateStep1,
@@ -15,9 +12,7 @@ from .schemas import (
     ProgramSuggestionStudentUpdateStep4,
 )
 
-
 class ProgramSuggestionService:
-
     @staticmethod
     def create_student(high_school_room_id: int, db: Session):
         room = (

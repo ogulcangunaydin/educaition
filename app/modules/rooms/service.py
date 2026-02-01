@@ -1,17 +1,12 @@
 from fastapi import BackgroundTasks, HTTPException
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
-from starlette.requests import Request
-
 from app import models
 from app.services.prisoners_dilemma import play_game
 
-
 class RoomService:
-
     @staticmethod
-    def create_room(db: Session, name: str, request: Request):
-        user_id = request.session["current_user"]["id"]
+    def create_room(db: Session, name: str, user_id: int):
         room = models.Room(user_id=user_id, name=name)
         db.add(room)
         db.commit()
@@ -19,8 +14,7 @@ class RoomService:
         return room
 
     @staticmethod
-    def get_rooms(db: Session, request: Request, skip: int = 0, limit: int = 100):
-        user_id = request.session["current_user"]["id"]
+    def get_rooms(db: Session, user_id: int, skip: int = 0, limit: int = 100):
         return (
             db.query(models.Room)
             .filter(models.Room.user_id == user_id)

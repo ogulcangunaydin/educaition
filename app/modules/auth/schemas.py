@@ -1,15 +1,7 @@
-"""
-Auth schemas - Request/response models for authentication.
-"""
-
 from pydantic import BaseModel
-
 from app.services.password_service import PasswordConfig
 
-
 class Token(BaseModel):
-    """Response model for successful authentication."""
-
     access_token: str
     refresh_token: str
     current_user_id: int
@@ -18,25 +10,16 @@ class Token(BaseModel):
     role: str
     university: str
 
-
 class TokenRefreshRequest(BaseModel):
-    """Request model for token refresh (body alternative to cookie)."""
-
     refresh_token: str
 
-
 class TokenRefreshResponse(BaseModel):
-    """Response model for token refresh."""
-
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
     expires_in: int  # Access token expiry in seconds
 
-
 class PasswordRequirements(BaseModel):
-    """Response model for password requirements."""
-
     min_length: int = PasswordConfig.MIN_LENGTH
     max_length: int = PasswordConfig.MAX_LENGTH
     require_uppercase: bool = PasswordConfig.REQUIRE_UPPERCASE
@@ -50,8 +33,5 @@ class PasswordRequirements(BaseModel):
         "one digit, and one special character."
     )
 
-
 class LogoutResponse(BaseModel):
-    """Response model for logout."""
-
     message: str = "Successfully logged out"

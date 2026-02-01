@@ -2,20 +2,15 @@ import logging
 import time
 from collections import defaultdict
 from collections.abc import Callable
-
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
+from app.core.config import AUTH_ENDPOINTS
+
 logger = logging.getLogger(__name__)
 
-
 class RateLimitMiddleware(BaseHTTPMiddleware):
-    AUTH_PATHS = {
-        "/api/authenticate",
-        "/api/refresh",
-    }
-
     def __init__(
         self,
         app: Callable,
@@ -73,11 +68,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         )
         requests_last_hour = sum(1 for ts, _ in client_requests if ts > one_hour_ago)
 
-        if path in self.AUTH_PATHS:
+        if path in AUTH_ENDPOINTS:
             auth_requests_last_minute = sum(
                 1
                 for ts, p in client_requests
-                if ts > one_minute_ago and p in self.AUTH_PATHS
+                if ts > one_minute_ago and p in AUTH_ENDPOINTS
             )
             if auth_requests_last_minute >= self.auth_requests_per_minute:
                 return True, "Too many authentication attempts. Please try again later."

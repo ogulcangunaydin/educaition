@@ -1,22 +1,16 @@
 import json
-
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
-from starlette.requests import Request
-
 from app import models
 from app.services.calculate_personality_traits import calculate_personality_traits
 from app.services.compatibility_analysis_service import get_compatibility_analysis
 from app.services.job_recommendation_service import get_job_recommendation
-
 from .schemas import DissonanceTestParticipantCreate, DissonanceTestParticipantUpdateSecond
 
-
 class DissonanceTestService:
-
     @staticmethod
     def create_participant(db: Session, participant: DissonanceTestParticipantCreate):
-        db_participant = models.DissonanceTestParticipant(**participant.dict())
+        db_participant = models.DissonanceTestParticipant(**participant.model_dump())
         db.add(db_participant)
         db.commit()
         db.refresh(db_participant)
@@ -29,13 +23,14 @@ class DissonanceTestService:
             .filter(models.DissonanceTestParticipant.id == participant_id)
             .first()
         )
+
         if db_participant is None:
             raise HTTPException(status_code=404, detail="Participant not found")
+
         return db_participant
 
     @staticmethod
-    def get_participants_by_user(db: Session, request: Request):
-        user_id = request.session["current_user"]["id"]
+    def get_participants_by_user(db: Session, user_id: int):
         return (
             db.query(models.DissonanceTestParticipant)
             .filter(models.DissonanceTestParticipant.user_id == user_id)
@@ -53,10 +48,12 @@ class DissonanceTestService:
             .filter(models.DissonanceTestParticipant.id == participant_id)
             .first()
         )
+
         if db_participant is None:
             raise HTTPException(status_code=404, detail="Participant not found")
 
-        update_data = participant_data.dict(exclude_unset=True)
+        update_data = participant_data.model_dump(exclude_unset=True)
+
         for key, value in update_data.items():
             setattr(db_participant, key, value)
 
@@ -84,7 +81,6 @@ class DissonanceTestService:
         }
 
         personality_scores = calculate_personality_traits(parsed_answers)
-
         job_recommendation = get_job_recommendation(
             personality_scores,
             db_participant.gender,
@@ -109,10 +105,13 @@ class DissonanceTestService:
         return db_participant
 
     @staticmethod
-    def delete_participant(db: Session, participant_id: int):
+    def delete_participant(db: Session, participant_id: int, user_id: int):
         db_participant = (
             db.query(models.DissonanceTestParticipant)
-            .filter(models.DissonanceTestParticipant.id == participant_id)
+            .filter(
+                models.DissonanceTestParticipant.id == participant_id,
+                models.DissonanceTestParticipant.user_id == user_id,
+            )
             .first()
         )
         if db_participant is None:

@@ -1,29 +1,32 @@
 import logging
 from contextlib import asynccontextmanager
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-from . import models
-from .config import settings
-from .custom_session_middleware import CustomSessionMiddleware
-from .core.database import engine
+from .core.config import settings
+from .core.database import Base, engine
 from .middleware import RateLimitMiddleware
-from .modules.auth import auth_router
-from .modules.users import users_router
-from .modules.rooms import rooms_router
-from .modules.players import players_router, players_public_router
-from .modules.games import games_router
-from .modules.dissonance_test import dissonance_test_router, dissonance_test_public_router
-from .modules.high_school_rooms import high_school_rooms_router
-from .modules.program_suggestion import program_suggestion_router, program_suggestion_public_router
+from .modules.auth.router import router as auth_router
+from .modules.users.router import router as users_router
+from .modules.rooms.router import router as rooms_router
+from .modules.players.router import router as players_router, players_public_router
+from .modules.games.router import router as games_router
+from .modules.dissonance_test.router import (
+    router as dissonance_test_router,
+    dissonance_test_public_router,
+)
+from .modules.high_school_rooms.router import router as high_school_rooms_router
+from .modules.program_suggestion.router import (
+    router as program_suggestion_router,
+    program_suggestion_public_router,
+)
+from . import models
 
 log_level = logging.DEBUG if settings.DEBUG else logging.INFO
 logging.basicConfig(level=log_level)
 logger = logging.getLogger(__name__)
 
-models.Base.metadata.create_all(bind=engine)
-
+models.User  # Ensure models are loaded
+Base.metadata.create_all(bind=engine)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -36,7 +39,6 @@ async def lifespan(app: FastAPI):
     yield
 
     logger.info("Shutting down Educaition API")
-
 
 app = FastAPI(
     title="Educaition API",
@@ -64,7 +66,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-app.add_middleware(CustomSessionMiddleware, secret_key=settings.SECRET_KEY)
 
 if not settings.is_development:
     app.add_middleware(
@@ -74,7 +75,6 @@ if not settings.is_development:
         auth_requests_per_minute=10,
     )
 
-# New modular routes
 app.include_router(auth_router, prefix="/api", tags=["auth"])
 app.include_router(users_router, prefix="/api", tags=["users"])
 app.include_router(rooms_router, prefix="/api", tags=["rooms"])

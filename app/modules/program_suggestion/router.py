@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
-
 from app.core import settings
 from app.dependencies.auth import AdminUser, get_current_active_user, get_db
 from app.dependencies.participant import (
@@ -13,7 +12,6 @@ from app.services.participant_token_service import (
     create_participant_token,
     get_token_expiry_seconds,
 )
-
 from .schemas import (
     ProgramSuggestionStudent,
     ProgramSuggestionStudentCreate,
@@ -31,13 +29,11 @@ program_suggestion_public_router = APIRouter(
     prefix="/program-suggestion/students",
     tags=["program_suggestion"],
 )
-
 program_suggestion_protected_router = APIRouter(
     prefix="/program-suggestion/students",
     tags=["program_suggestion"],
     dependencies=[Depends(get_current_active_user)],
 )
-
 
 @program_suggestion_public_router.post("/")
 def create_student(
@@ -47,13 +43,11 @@ def create_student(
     created_student = ProgramSuggestionService.create_student(
         student.high_school_room_id, db
     )
-
     token = create_participant_token(
         participant_id=created_student.id,
         participant_type=ParticipantType.PROGRAM_SUGGESTION,
         room_id=student.high_school_room_id,
     )
-
     response = JSONResponse(
         content={
             "student": ProgramSuggestionStudent.model_validate(
@@ -63,7 +57,6 @@ def create_student(
             "expires_in": get_token_expiry_seconds(ParticipantType.PROGRAM_SUGGESTION),
         }
     )
-
     response.set_cookie(
         key="participant_token",
         value=token,
@@ -74,7 +67,6 @@ def create_student(
     )
 
     return response
-
 
 @program_suggestion_public_router.get(
     "/{student_id}",
@@ -180,7 +172,6 @@ def get_student_debug(
     student_id: int, current_user: AdminUser, db: Session = Depends(get_db)
 ):
     return ProgramSuggestionService.get_student_debug(student_id, db)
-
 
 router = APIRouter()
 router.include_router(program_suggestion_public_router)

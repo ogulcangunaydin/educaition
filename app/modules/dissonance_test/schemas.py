@@ -1,15 +1,7 @@
-"""
-Dissonance test schemas - Request/response models for dissonance test.
-"""
-
 from datetime import datetime
-
 from pydantic import BaseModel, ConfigDict, field_serializer
 
-
 class DissonanceTestParticipantBase(BaseModel):
-    """Base model for dissonance test participant."""
-
     email: str | None = None
     age: int | None = None
     gender: str | None = None
@@ -28,25 +20,16 @@ class DissonanceTestParticipantBase(BaseModel):
     rising_sign: str | None = None
     user_id: int
 
-
 class DissonanceTestParticipantCreate(DissonanceTestParticipantBase):
-    """Request model for creating a dissonance test participant."""
-
     pass
 
-
 class DissonanceTestParticipantUpdateSecond(BaseModel):
-    """Request model for updating second round answers."""
-
     fare_question_second_answer: int
     comfort_question_second_answer: int
     fare_question_displayed_average: float
     comfort_question_displayed_average: float
 
-
 class DissonanceTestParticipantResult(BaseModel):
-    """Response model for participant results."""
-
     compatibility_analysis: str | None = None
     job_recommendation: str | None = None
     extroversion: float | None = None
@@ -55,10 +38,7 @@ class DissonanceTestParticipantResult(BaseModel):
     negative_emotionality: float | None = None
     open_mindedness: float | None = None
 
-
 class DissonanceTestParticipant(DissonanceTestParticipantBase):
-    """Full response model for dissonance test participant."""
-
     model_config = ConfigDict(ser_json_timedelta="iso8601", from_attributes=True)
 
     id: int

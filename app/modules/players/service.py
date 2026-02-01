@@ -1,19 +1,36 @@
 import json
-
 import bleach
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
-
+import hashlib
+import re
+import unicodedata
+from keyword import iskeyword
 from app import models
-from app.helpers import create_player_function_name
 from app.services.calculate_personality_traits import calculate_personality_traits
 from app.services.update_player_tactic_and_test_code import (
     update_player_tactic_and_test_code,
 )
 
+def _create_player_function_name(clean_name: str) -> str:
+    ascii_normalized_name = (
+        unicodedata.normalize("NFKD", clean_name).encode("ASCII", "ignore").decode()
+    )
+    normalized_name = ascii_normalized_name.lower()
+    function_name = re.sub(r"\W|^(?=\d)", "_", normalized_name)
+
+    if not function_name[0].isalpha():
+        function_name = "_" + function_name
+
+    unique_identifier = hashlib.md5(clean_name.encode()).hexdigest()[:8]
+    function_name += "_" + unique_identifier
+
+    if iskeyword(function_name):
+        function_name += "_"
+
+    return function_name
 
 class PlayerService:
-
     @staticmethod
     def get_players_by_room(db: Session, room_id: int, skip: int = 0, limit: int = 100):
         return (
@@ -56,7 +73,7 @@ class PlayerService:
                 status_code=400, detail="Player name already exists in the room."
             )
 
-        player_function_name = create_player_function_name(clean_name)
+        player_function_name = _create_player_function_name(clean_name)
         new_player = models.Player(
             player_name=clean_name,
             player_function_name=player_function_name,

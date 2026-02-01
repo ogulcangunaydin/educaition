@@ -3,13 +3,12 @@ import logging
 from sqlalchemy.orm import Session
 
 from app import models
-from app.config import Environment, settings
+from app.core.config import Environment, settings
 from app.core.database import SessionLocal
 from app.core.security import get_password_hash
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
 
 class Seeder:
     def __init__(self, db: Session):
@@ -18,7 +17,6 @@ class Seeder:
     def run(self):
         """This error will raise if you forget to implement run method in subclass"""
         raise NotImplementedError
-
 
 class UserSeeder(Seeder):
     SEED_USERS = {
@@ -105,7 +103,6 @@ SEEDERS: list[type] = [
     # DefaultSettingsSeeder,
 ]
 
-
 def run_seeds(seeders: list[type] = None):
     logger.info(f"Starting database seeding for {settings.APP_ENV.value} environment")
     logger.info(f"Debug mode: {settings.DEBUG}")
@@ -128,7 +125,6 @@ def run_seeds(seeders: list[type] = None):
         raise
     finally:
         db.close()
-
 
 if __name__ == "__main__":
     """Allow running seeds directly: python -m app.seeds.seed"""

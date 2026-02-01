@@ -1,13 +1,3 @@
-"""
-Core module - Infrastructure and foundational components.
-
-This module contains:
-- config: Application settings and configuration
-- database: Database connection and session management
-- security: Authentication and password utilities
-- exceptions: Custom exception classes
-"""
-
 from .config import Environment, Settings, get_settings, settings
 from .database import Base, SessionLocal, engine, get_db
 from .exceptions import (
