@@ -1,0 +1,57 @@
+# Ruff Configuration
+# Docs: https://docs.astral.sh/ruff/
+
+[tool.ruff]
+target-version = "py310"
+
+line-length = 88
+
+exclude = [
+    ".git",
+    ".ruff_cache",
+    ".venv",
+    "env",
+    "venv",
+    "__pycache__",
+    "alembic/versions",
+    "build",
+    "dist",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # Pyflakes
+    "I",      # isort (import sorting)
+    "B",      # flake8-bugbear
+    "C4",     # flake8-comprehensions
+    "UP",     # pyupgrade
+    "SIM",    # flake8-simplify
+]
+
+ignore = [
+    "E501",   # Line too long (handled by formatter)
+    "B008",   # Do not perform function calls in argument defaults (needed for FastAPI Depends)
+    "B904",   # Within an except clause, raise exceptions with raise ... from err
+    "E741",   # Ambiguous variable name (will fix in Clean Architecture phase)
+    "SIM102", # Nested if statements (will fix in Clean Architecture phase)
+    "C414",   # Unnecessary list() in sorted() (will fix in Clean Architecture phase)
+]
+
+fixable = ["ALL"]
+unfixable = []
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+force-single-line = false
+combine-as-imports = true
+
+[tool.ruff.format]
+quote-style = "double"
+
+indent-style = "space"
+
+skip-magic-trailing-comma = false
+
+line-ending = "auto"

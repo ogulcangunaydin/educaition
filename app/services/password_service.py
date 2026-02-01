@@ -1,7 +1,7 @@
 import re
-from typing import Tuple, List
-from passlib.context import CryptContext
 from enum import Enum
+
+from passlib.context import CryptContext
 
 
 class PasswordStrength(str, Enum):
@@ -12,7 +12,7 @@ class PasswordStrength(str, Enum):
 
 
 class PasswordValidationError(Exception):
-    def __init__(self, errors: List[str]):
+    def __init__(self, errors: list[str]):
         self.errors = errors
         super().__init__(f"Password validation failed: {', '.join(errors)}")
 
@@ -25,47 +25,54 @@ class PasswordConfig:
     REQUIRE_DIGIT: bool = True
     REQUIRE_SPECIAL: bool = True
     SPECIAL_CHARACTERS: str = r"!@#$%^&*()_+-=[]{}|;:',.<>?/`~"
-    
+
     # 12 rounds = ~250ms hashing time
     BCRYPT_ROUNDS: int = 12
     BCRYPT_DEPRECATED: str = "auto"
 
+
 pwd_context = CryptContext(
     schemes=["bcrypt"],
     deprecated=PasswordConfig.BCRYPT_DEPRECATED,
-    bcrypt__rounds=PasswordConfig.BCRYPT_ROUNDS
+    bcrypt__rounds=PasswordConfig.BCRYPT_ROUNDS,
 )
 
 
-def validate_password_strength(password: str) -> Tuple[bool, List[str]]:
-    errors: List[str] = []
-    
+def validate_password_strength(password: str) -> tuple[bool, list[str]]:
+    errors: list[str] = []
+
     if len(password) < PasswordConfig.MIN_LENGTH:
-        errors.append(f"Password must be at least {PasswordConfig.MIN_LENGTH} characters long")
-    
+        errors.append(
+            f"Password must be at least {PasswordConfig.MIN_LENGTH} characters long"
+        )
+
     if len(password) > PasswordConfig.MAX_LENGTH:
-        errors.append(f"Password must not exceed {PasswordConfig.MAX_LENGTH} characters")
-    
-    if PasswordConfig.REQUIRE_UPPERCASE and not re.search(r'[A-Z]', password):
+        errors.append(
+            f"Password must not exceed {PasswordConfig.MAX_LENGTH} characters"
+        )
+
+    if PasswordConfig.REQUIRE_UPPERCASE and not re.search(r"[A-Z]", password):
         errors.append("Password must contain at least one uppercase letter")
-    
-    if PasswordConfig.REQUIRE_LOWERCASE and not re.search(r'[a-z]', password):
+
+    if PasswordConfig.REQUIRE_LOWERCASE and not re.search(r"[a-z]", password):
         errors.append("Password must contain at least one lowercase letter")
-    
-    if PasswordConfig.REQUIRE_DIGIT and not re.search(r'\d', password):
+
+    if PasswordConfig.REQUIRE_DIGIT and not re.search(r"\d", password):
         errors.append("Password must contain at least one digit")
-    
+
     if PasswordConfig.REQUIRE_SPECIAL:
-        special_pattern = f'[{re.escape(PasswordConfig.SPECIAL_CHARACTERS)}]'
+        special_pattern = f"[{re.escape(PasswordConfig.SPECIAL_CHARACTERS)}]"
         if not re.search(special_pattern, password):
-            errors.append("Password must contain at least one special character (!@#$%^&*()_+-=[]{}|;:',.<>?/`~)")
-    
+            errors.append(
+                "Password must contain at least one special character (!@#$%^&*()_+-=[]{}|;:',.<>?/`~)"
+            )
+
     return len(errors) == 0, errors
 
 
 def check_password_strength(password: str) -> PasswordStrength:
     score = 0
-    
+
     # Length scoring
     if len(password) >= 8:
         score += 1
@@ -73,18 +80,18 @@ def check_password_strength(password: str) -> PasswordStrength:
         score += 1
     if len(password) >= 16:
         score += 1
-    
-    if re.search(r'[a-z]', password):
+
+    if re.search(r"[a-z]", password):
         score += 1
-    if re.search(r'[A-Z]', password):
+    if re.search(r"[A-Z]", password):
         score += 1
-    if re.search(r'\d', password):
+    if re.search(r"\d", password):
         score += 1
-    if re.search(f'[{re.escape(PasswordConfig.SPECIAL_CHARACTERS)}]', password):
+    if re.search(f"[{re.escape(PasswordConfig.SPECIAL_CHARACTERS)}]", password):
         score += 1
-    if re.search(r'[a-zA-Z].*\d.*[^a-zA-Z0-9]', password):
+    if re.search(r"[a-zA-Z].*\d.*[^a-zA-Z0-9]", password):
         score += 1
-    
+
     if score <= 3:
         return PasswordStrength.WEAK
     elif score <= 5:
@@ -100,7 +107,7 @@ def hash_password(password: str, validate: bool = True) -> str:
         is_valid, errors = validate_password_strength(password)
         if not is_valid:
             raise PasswordValidationError(errors)
-    
+
     return pwd_context.hash(password)
 
 

@@ -1,25 +1,38 @@
-import requests
-import os
 import logging
-from typing import Optional
+import os
 
-def get_job_recommendation(personality_scores: dict, gender: str, age: int, education: str, workload: Optional[int] = None, career_start: Optional[int] = None, flexibility: Optional[int] = None) -> str:
+import requests
+
+
+def get_job_recommendation(
+    personality_scores: dict,
+    gender: str,
+    age: int,
+    education: str,
+    workload: int | None = None,
+    career_start: int | None = None,
+    flexibility: int | None = None,
+) -> str:
     def send_request_to_gpt(prompt):
         headers = {
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {os.getenv('OPENAI_API_KEY')}"
+            "Authorization": f"Bearer {os.getenv('OPENAI_API_KEY')}",
         }
         data = {
             "model": "gpt-4o",
             "messages": [{"role": "user", "content": prompt}],
             "temperature": 0.5,
-            "max_tokens": 1000
+            "max_tokens": 1000,
         }
-        response = requests.post(os.getenv('OPENAI_ENDPOINT'), headers=headers, json=data)
+        response = requests.post(
+            os.getenv("OPENAI_ENDPOINT"), headers=headers, json=data
+        )
         if response.status_code == 200:
-            return response.json()['choices'][0]['message']['content']
+            return response.json()["choices"][0]["message"]["content"]
         else:
-            logging.error(f"Failed to get response from GPT. Status code: {response.status_code}, Response: {response.text}")
+            logging.error(
+                f"Failed to get response from GPT. Status code: {response.status_code}, Response: {response.text}"
+            )
             return None
 
     prompt = (

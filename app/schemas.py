@@ -1,41 +1,46 @@
-from pydantic import BaseModel, field_serializer, ConfigDict, field_validator
-from typing import Optional, Union, Dict, List
 from datetime import datetime
 
+from pydantic import BaseModel, ConfigDict, field_serializer, field_validator
+
 from app.services.password_service import (
-    validate_password_strength,
     PasswordConfig,
+    validate_password_strength,
 )
+
 
 def _validate_password_field(password: str) -> str:
     is_valid, errors = validate_password_strength(password)
     if not is_valid:
-        raise ValueError('; '.join(errors))
+        raise ValueError("; ".join(errors))
     return password
+
 
 class UserBase(BaseModel):
     username: str
-    email: Optional[str] = None
+    email: str | None = None
+
 
 class UserCreate(UserBase):
     password: str
-    
-    @field_validator('password')
+
+    @field_validator("password")
     @classmethod
     def password_strength(cls, v: str) -> str:
         return _validate_password_field(v)
 
+
 class UserUpdate(BaseModel):
-    username: Optional[str] = None
-    email: Optional[str] = None
-    password: Optional[str] = None
-    
-    @field_validator('password')
+    username: str | None = None
+    email: str | None = None
+    password: str | None = None
+
+    @field_validator("password")
     @classmethod
-    def password_strength(cls, v: Optional[str]) -> Optional[str]:
+    def password_strength(cls, v: str | None) -> str | None:
         if v is not None:
             return _validate_password_field(v)
         return v
+
 
 class User(UserBase):
     id: int
@@ -44,13 +49,16 @@ class User(UserBase):
     class Config:
         from_attributes = True
 
+
 class Token(BaseModel):
     access_token: str
     current_user_id: int
     token_type: str
 
+
 class TokenData(BaseModel):
-    username: Optional[str] = None
+    username: str | None = None
+
 
 class PasswordRequirements(BaseModel):
     min_length: int = PasswordConfig.MIN_LENGTH
@@ -66,34 +74,40 @@ class PasswordRequirements(BaseModel):
         "one digit, and one special character."
     )
 
+
 class RoomBase(BaseModel):
     pass
+
 
 class RoomCreate(RoomBase):
     pass
 
+
 class Room(RoomBase):
     id: int
     user_id: int
-    name: Optional[str]
+    name: str | None
 
     class Config:
         from_attributes = True
 
+
 class PlayerBase(BaseModel):
     player_name: str
-    player_function_name: Optional[str] = None
-    player_tactic: Optional[str] = None
-    player_code: Optional[str] = None
-    short_tactic: Optional[str] = None
-    extroversion: Optional[float] = None
-    agreeableness: Optional[float] = None
-    conscientiousness: Optional[float] = None
-    negative_emotionality: Optional[float] = None
-    open_mindedness: Optional[float] = None
+    player_function_name: str | None = None
+    player_tactic: str | None = None
+    player_code: str | None = None
+    short_tactic: str | None = None
+    extroversion: float | None = None
+    agreeableness: float | None = None
+    conscientiousness: float | None = None
+    negative_emotionality: float | None = None
+    open_mindedness: float | None = None
+
 
 class PlayerCreate(PlayerBase):
     room_id: int
+
 
 class Player(PlayerBase):
     id: int
@@ -101,7 +115,8 @@ class Player(PlayerBase):
 
     class Config:
         from_attributes = True
-        
+
+
 class GameBase(BaseModel):
     home_player_id: int
     away_player_id: int
@@ -109,23 +124,28 @@ class GameBase(BaseModel):
     away_player_score: int
     session_id: int
 
+
 class GameCreate(GameBase):
     pass
+
 
 class Game(GameBase):
     id: int
 
     class Config:
         from_attributes = True
-        
+
+
 class RoundBase(BaseModel):
     round_number: int
     home_choice: str
     away_choice: str
     game_id: int
 
+
 class RoundCreate(RoundBase):
     pass
+
 
 class Round(RoundBase):
     id: int
@@ -133,8 +153,10 @@ class Round(RoundBase):
     class Config:
         from_attributes = True
 
+
 class SessionBase(BaseModel):
     pass
+
 
 class SessionCreate(SessionBase):
     id: int
@@ -143,29 +165,32 @@ class SessionCreate(SessionBase):
     status: str
     player_ids: str
     # TODO: This union is for getting also old data which is dict type
-    results: Optional[Union[str, dict]] = None
-    
+    results: str | dict | None = None
+
+
 class DissonanceTestParticipantBase(BaseModel):
-    email: Optional[str] = None
-    age: Optional[int] = None
-    gender: Optional[str] = None
-    education: Optional[str] = None
-    sentiment: Optional[int] = None
-    comfort_question_first_answer: Optional[int] = None
-    fare_question_first_answer: Optional[int] = None
-    comfort_question_second_answer: Optional[int] = None
-    fare_question_second_answer: Optional[int] = None
-    fare_question_displayed_average: Optional[float] = None
-    comfort_question_displayed_average: Optional[float] = None
-    workload: Optional[int] = None
-    career_start: Optional[int] = None
-    flexibility: Optional[int] = None
-    star_sign: Optional[str] = None
-    rising_sign: Optional[str] = None
+    email: str | None = None
+    age: int | None = None
+    gender: str | None = None
+    education: str | None = None
+    sentiment: int | None = None
+    comfort_question_first_answer: int | None = None
+    fare_question_first_answer: int | None = None
+    comfort_question_second_answer: int | None = None
+    fare_question_second_answer: int | None = None
+    fare_question_displayed_average: float | None = None
+    comfort_question_displayed_average: float | None = None
+    workload: int | None = None
+    career_start: int | None = None
+    flexibility: int | None = None
+    star_sign: str | None = None
+    rising_sign: str | None = None
     user_id: int
+
 
 class DissonanceTestParticipantCreate(DissonanceTestParticipantBase):
     pass
+
 
 class DissonanceTestParticipantUpdateSecond(BaseModel):
     fare_question_second_answer: int
@@ -173,143 +198,155 @@ class DissonanceTestParticipantUpdateSecond(BaseModel):
     fare_question_displayed_average: float
     comfort_question_displayed_average: float
 
+
 class DissonanceTestParticipantResult(BaseModel):
-    compatibility_analysis: Optional[str] = None
-    job_recommendation: Optional[str] = None
-    extroversion: Optional[float] = None
-    agreeableness: Optional[float] = None
-    conscientiousness: Optional[float] = None
-    negative_emotionality: Optional[float] = None
-    open_mindedness: Optional[float] = None
+    compatibility_analysis: str | None = None
+    job_recommendation: str | None = None
+    extroversion: float | None = None
+    agreeableness: float | None = None
+    conscientiousness: float | None = None
+    negative_emotionality: float | None = None
+    open_mindedness: float | None = None
+
 
 class DissonanceTestParticipant(DissonanceTestParticipantBase):
-    model_config = ConfigDict(ser_json_timedelta='iso8601', from_attributes=True)
+    model_config = ConfigDict(ser_json_timedelta="iso8601", from_attributes=True)
 
     id: int
     created_at: datetime
-    extroversion: Optional[float] = None
-    agreeableness: Optional[float] = None
-    conscientiousness: Optional[float] = None
-    negative_emotionality: Optional[float] = None
-    open_mindedness: Optional[float] = None
-    personality_test_answers: Optional[Dict[str, int]] = None
-        
-    @field_serializer('created_at')
+    extroversion: float | None = None
+    agreeableness: float | None = None
+    conscientiousness: float | None = None
+    negative_emotionality: float | None = None
+    open_mindedness: float | None = None
+    personality_test_answers: dict[str, int] | None = None
+
+    @field_serializer("created_at")
     def serialize_created_at(self, created_at: datetime, _info):
-        return created_at.strftime('%d/%m/%Y  %H:%M:%S')
+        return created_at.strftime("%d/%m/%Y  %H:%M:%S")
 
 
 # High School Room Schemas
 class HighSchoolRoomBase(BaseModel):
     high_school_name: str
-    high_school_code: Optional[str] = None
+    high_school_code: str | None = None
+
 
 class HighSchoolRoomCreate(HighSchoolRoomBase):
     pass
 
+
 class HighSchoolRoom(HighSchoolRoomBase):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: int
     user_id: int
     created_at: datetime
-    
-    @field_serializer('created_at')
+
+    @field_serializer("created_at")
     def serialize_created_at(self, created_at: datetime, _info):
-        return created_at.strftime('%d/%m/%Y  %H:%M:%S')
+        return created_at.strftime("%d/%m/%Y  %H:%M:%S")
 
 
 # Program Suggestion Student Schemas
 class ProgramSuggestionStudentBase(BaseModel):
-    name: Optional[str] = None
-    birth_year: Optional[int] = None
-    gender: Optional[str] = None
-    class_year: Optional[str] = None
-    will_take_exam: Optional[bool] = True
-    average_grade: Optional[float] = None
-    area: Optional[str] = None
-    wants_foreign_language: Optional[bool] = False
-    expected_score_min: Optional[float] = None
-    expected_score_max: Optional[float] = None
-    expected_score_distribution: Optional[str] = None
-    alternative_area: Optional[str] = None
-    alternative_score_min: Optional[float] = None
-    alternative_score_max: Optional[float] = None
-    alternative_score_distribution: Optional[str] = None
-    preferred_language: Optional[str] = None
-    desired_universities: Optional[List[str]] = None
-    desired_cities: Optional[List[str]] = None
+    name: str | None = None
+    birth_year: int | None = None
+    gender: str | None = None
+    class_year: str | None = None
+    will_take_exam: bool | None = True
+    average_grade: float | None = None
+    area: str | None = None
+    wants_foreign_language: bool | None = False
+    expected_score_min: float | None = None
+    expected_score_max: float | None = None
+    expected_score_distribution: str | None = None
+    alternative_area: str | None = None
+    alternative_score_min: float | None = None
+    alternative_score_max: float | None = None
+    alternative_score_distribution: str | None = None
+    preferred_language: str | None = None
+    desired_universities: list[str] | None = None
+    desired_cities: list[str] | None = None
+
 
 class ProgramSuggestionStudentCreate(BaseModel):
     high_school_room_id: int
+
 
 class ProgramSuggestionStudentUpdateStep1(BaseModel):
     name: str
     birth_year: int
     gender: str
 
+
 class ProgramSuggestionStudentUpdateStep2(BaseModel):
     class_year: str
     will_take_exam: bool
-    average_grade: Optional[float] = None
+    average_grade: float | None = None
     area: str
     wants_foreign_language: bool
+
 
 class ProgramSuggestionStudentUpdateStep3(BaseModel):
     expected_score_min: float
     expected_score_max: float
     expected_score_distribution: str
-    alternative_area: Optional[str] = None
-    alternative_score_min: Optional[float] = None
-    alternative_score_max: Optional[float] = None
-    alternative_score_distribution: Optional[str] = None
+    alternative_area: str | None = None
+    alternative_score_min: float | None = None
+    alternative_score_max: float | None = None
+    alternative_score_distribution: str | None = None
+
 
 class ProgramSuggestionStudentUpdateStep4(BaseModel):
     preferred_language: str
-    desired_universities: Optional[List[str]] = None
-    desired_cities: List[str]
+    desired_universities: list[str] | None = None
+    desired_cities: list[str]
+
 
 class ProgramSuggestionStudentUpdateRiasec(BaseModel):
-    riasec_answers: Dict[str, int]  # {question_id: score}
+    riasec_answers: dict[str, int]  # {question_id: score}
+
 
 class ProgramSuggestionStudent(ProgramSuggestionStudentBase):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: int
     high_school_room_id: int
-    riasec_answers: Optional[Dict[str, int]] = None
-    riasec_scores: Optional[Dict[str, float]] = None
-    suggested_jobs: Optional[List[Dict]] = None
-    suggested_programs: Optional[List[Dict]] = None
+    riasec_answers: dict[str, int] | None = None
+    riasec_scores: dict[str, float] | None = None
+    suggested_jobs: list[dict] | None = None
+    suggested_programs: list[dict] | None = None
     status: str
     created_at: datetime
-    
-    @field_serializer('created_at')
+
+    @field_serializer("created_at")
     def serialize_created_at(self, created_at: datetime, _info):
-        return created_at.strftime('%d/%m/%Y  %H:%M:%S')
+        return created_at.strftime("%d/%m/%Y  %H:%M:%S")
+
 
 class ProgramSuggestionStudentResult(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: int
-    name: Optional[str] = None
-    riasec_scores: Optional[Dict[str, float]] = None
-    suggested_jobs: Optional[List[Dict]] = None
-    suggested_programs: Optional[List[Dict]] = None
-    area: Optional[str] = None
-    expected_score_min: Optional[float] = None
-    expected_score_max: Optional[float] = None
-    alternative_area: Optional[str] = None
-    alternative_score_min: Optional[float] = None
-    alternative_score_max: Optional[float] = None
+    name: str | None = None
+    riasec_scores: dict[str, float] | None = None
+    suggested_jobs: list[dict] | None = None
+    suggested_programs: list[dict] | None = None
+    area: str | None = None
+    expected_score_min: float | None = None
+    expected_score_max: float | None = None
+    alternative_area: str | None = None
+    alternative_score_min: float | None = None
+    alternative_score_max: float | None = None
 
 
 class ProgramSuggestionStudentDebug(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: int
-    name: Optional[str] = None
-    riasec_scores: Optional[Dict[str, float]] = None
-    suggested_jobs: Optional[List[Dict]] = None
-    gpt_prompt: Optional[str] = None
-    gpt_response: Optional[str] = None
+    name: str | None = None
+    riasec_scores: dict[str, float] | None = None
+    suggested_jobs: list[dict] | None = None
+    gpt_prompt: str | None = None
+    gpt_response: str | None = None

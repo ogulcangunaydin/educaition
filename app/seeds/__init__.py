@@ -1,3 +1,3 @@
-from .seed import run_seeds, SEEDERS
+from .seed import SEEDERS, run_seeds
 
 __all__ = ["run_seeds", "SEEDERS"]

@@ -1,11 +1,13 @@
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI
+import logging
 from contextlib import asynccontextmanager
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
 from . import models, routers
-from .database import engine
 from .config import settings
 from .custom_session_middleware import CustomSessionMiddleware
-import logging
+from .database import engine
 
 log_level = logging.DEBUG if settings.DEBUG else logging.INFO
 logging.basicConfig(level=log_level)
@@ -13,16 +15,17 @@ logger = logging.getLogger(__name__)
 
 models.Base.metadata.create_all(bind=engine)
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info(f"Starting Educaition API in {settings.APP_ENV.value} mode")
     logger.info(f"Debug: {settings.DEBUG}")
-    
+
     if settings.is_development:
         logger.info("To seed the database, run: python -m app.seeds.seed")
-    
+
     yield
-    
+
     logger.info("Shutting down Educaition API")
 
 

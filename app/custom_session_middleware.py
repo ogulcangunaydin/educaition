@@ -1,15 +1,17 @@
+import json
+import uuid
+from datetime import datetime
+
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.requests import Request
-from starlette.responses import Response
-import json
-from datetime import datetime
-import uuid
+
 
 class CustomJSONEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, datetime):
             return obj.isoformat()
         return super().default(obj)
+
 
 class CustomSessionMiddleware(SessionMiddleware):
     def __init__(self, app, secret_key: str):

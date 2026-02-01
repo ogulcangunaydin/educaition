@@ -1,14 +1,15 @@
-from sqlalchemy.orm import Session
-from jose import JWTError, jwt
-from typing import Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError, jwt
+from sqlalchemy.orm import Session
+from starlette.requests import Request
+
 from . import models, schemas, security
 from .database import SessionLocal
-from starlette.requests import Request
 from .helpers import to_dict
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
 
 def get_db():
     db = SessionLocal()
@@ -19,9 +20,7 @@ def get_db():
 
 
 async def get_current_user(
-    request: Request, 
-    token: str = Depends(oauth2_scheme), 
-    db: Session = Depends(get_db)
+    request: Request, token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
 ):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -31,11 +30,11 @@ async def get_current_user(
 
     try:
         payload = jwt.decode(
-            token, 
-            security.SecurityConfig.SECRET_KEY, 
-            algorithms=[security.SecurityConfig.ALGORITHM]
+            token,
+            security.SecurityConfig.SECRET_KEY,
+            algorithms=[security.SecurityConfig.ALGORITHM],
         )
-        username: Optional[str] = payload.get("sub")
+        username: str | None = payload.get("sub")
         if username is None:
             raise credentials_exception
         token_data = schemas.TokenData(username=username)
@@ -46,7 +45,7 @@ async def get_current_user(
 
     if user is None:
         raise credentials_exception
-    
+
     request.session["current_user"] = to_dict(user)
     return user
 
@@ -69,7 +68,10 @@ def get_user_by_email(db: Session, email: str):
 
 
 def get_user_by_username_or_email(db: Session, identifier: str):
-    return db.query(models.User).filter(
-        (models.User.username == identifier) | 
-        (models.User.email == identifier)
-    ).first()
+    return (
+        db.query(models.User)
+        .filter(
+            (models.User.username == identifier) | (models.User.email == identifier)
+        )
+        .first()
+    )
