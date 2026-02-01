@@ -8,6 +8,7 @@ from . import models, routers
 from .config import settings
 from .custom_session_middleware import CustomSessionMiddleware
 from .database import engine
+from .middleware import RateLimitMiddleware
 
 log_level = logging.DEBUG if settings.DEBUG else logging.INFO
 logging.basicConfig(level=log_level)
@@ -56,6 +57,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.add_middleware(CustomSessionMiddleware, secret_key=settings.SECRET_KEY)
+
+if not settings.is_development:
+    app.add_middleware(
+        RateLimitMiddleware,
+        requests_per_minute=60,
+        requests_per_hour=1000,
+        auth_requests_per_minute=10,
+    )
 
 app.include_router(routers.router, prefix="/api")
 app.include_router(routers.router_without_auth, prefix="/api")

@@ -1,50 +1,101 @@
 # routers.py
 
 
-from fastapi import APIRouter, BackgroundTasks, Body, Depends, Form, Header
+from fastapi import APIRouter, BackgroundTasks, Body, Cookie, Depends, Form, Header
+from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from starlette.requests import Request
 
-from . import controllers, db_operations, schemas
+from . import controllers, schemas
+from .config import settings
+from .dependencies import (
+    CurrentProgramStudent,
+    get_current_active_user,
+    get_db,
+    verify_participant_ownership,
+)
+from .services.participant_token_service import (
+    ParticipantType,
+    create_participant_token,
+    get_token_expiry_seconds,
+)
+from .services.token_service import TokenConfig
 
-router = APIRouter(dependencies=[Depends(db_operations.get_current_user)])
+router = APIRouter(dependencies=[Depends(get_current_active_user)])
 
 router_without_auth = APIRouter()
 
 
-@router_without_auth.post("/authenticate", response_model=schemas.Token)
+def _create_auth_response(token_data: dict) -> JSONResponse:
+    response = JSONResponse(
+        content={
+            "access_token": token_data["access_token"],
+            "current_user_id": token_data["current_user_id"],
+            "token_type": "bearer",
+            "expires_in": token_data["expires_in"],
+        }
+    )
+
+    response.set_cookie(
+        key="refresh_token",
+        value=token_data["refresh_token"],
+        httponly=True,
+        secure=not settings.is_development,
+        samesite="strict",
+        max_age=TokenConfig.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
+        path="/api",
+    )
+
+    return response
+
+
+@router_without_auth.post("/authenticate")
 def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(),
-    db: Session = Depends(db_operations.get_db),
+    db: Session = Depends(get_db),
 ):
-    return controllers.login_for_access_token(form_data, db)
+    token_data = controllers.login_for_access_token(form_data, db)
+    return _create_auth_response(token_data)
 
 
-@router_without_auth.post("/refresh", response_model=schemas.TokenRefreshResponse)
+@router_without_auth.post("/refresh")
 def refresh_token(
-    request: schemas.TokenRefreshRequest,
+    refresh_token: str | None = Cookie(None),
+    body_refresh_token: schemas.TokenRefreshRequest | None = Body(None),
 ):
-    """
-    Get new access and refresh tokens using a valid refresh token.
+    token = refresh_token or (body_refresh_token.refresh_token if body_refresh_token else None)
 
-    The old refresh token is invalidated after use (one-time use).
-    """
-    return controllers.refresh_access_token(request.refresh_token)
+    if not token:
+        return JSONResponse(
+            status_code=401,
+            content={"detail": "Refresh token required"},
+        )
+
+    new_tokens = controllers.refresh_access_token(token)
+    return _create_auth_response(new_tokens)
+
 
 @router.post("/logout")
 def logout(
     authorization: str = Header(..., description="Bearer token"),
-    refresh_token: str | None = Body(None, embed=True),
+    refresh_token: str | None = Cookie(None),
+    body_refresh_token: str | None = Body(None, embed=True),
 ):
-    """
-    Logout by invalidating the current access token and optionally the refresh token.
-
-    Both tokens will be blacklisted and cannot be reused.
-    """
-    # Extract token from "Bearer <token>" format
     access_token = authorization.replace("Bearer ", "")
-    return controllers.logout_user(access_token, refresh_token)
+    token_to_revoke = refresh_token or body_refresh_token
+    result = controllers.logout_user(access_token, token_to_revoke)
+
+    response = JSONResponse(content=result)
+    response.delete_cookie(
+        key="refresh_token",
+        path="/api",
+        httponly=True,
+        secure=not settings.is_development,
+        samesite="strict",
+    )
+
+    return response
 
 
 @router_without_auth.get(
@@ -55,14 +106,12 @@ def get_password_requirements():
 
 
 @router.get("/users/", response_model=list[schemas.User])
-def get_users(
-    skip: int = 0, limit: int = 100, db: Session = Depends(db_operations.get_db)
-):
+def get_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     return controllers.read_users(skip, limit, db)
 
 
 @router.get("/users/{user_id}", response_model=schemas.User)
-def read_user(user_id: int, db: Session = Depends(db_operations.get_db)):
+def read_user(user_id: int, db: Session = Depends(get_db)):
     return controllers.read_user(user_id, db)
 
 
@@ -71,7 +120,7 @@ def create_user(
     username: str = Form(...),
     email: str = Form(...),
     password: str = Form(...),
-    db: Session = Depends(db_operations.get_db),
+    db: Session = Depends(get_db),
 ):
     user = schemas.UserCreate(username=username, email=email, password=password)
     return controllers.create_user(user, db)
@@ -83,21 +132,19 @@ def update_user(
     username: str = Form(...),
     email: str = Form(...),
     password: str = Form(...),
-    db: Session = Depends(db_operations.get_db),
+    db: Session = Depends(get_db),
 ):
     user = schemas.UserCreate(username=username, email=email, password=password)
     return controllers.update_user(user_id, user, db)
 
 
 @router.delete("/users/{user_id}", response_model=schemas.User)
-def delete_user(user_id: int, db: Session = Depends(db_operations.get_db)):
+def delete_user(user_id: int, db: Session = Depends(get_db)):
     return controllers.delete_user(user_id, db)
 
 
 @router.post("/rooms/", response_model=schemas.Room)
-def create_room(
-    request: Request, name: str = Form(...), db: Session = Depends(db_operations.get_db)
-):
+def create_room(request: Request, name: str = Form(...), db: Session = Depends(get_db)):
     return controllers.create_room(name, request, db)
 
 
@@ -106,18 +153,18 @@ def get_rooms(
     request: Request,
     skip: int = 0,
     limit: int = 100,
-    db: Session = Depends(db_operations.get_db),
+    db: Session = Depends(get_db),
 ):
     return controllers.get_rooms(request, skip, limit, db)
 
 
 @router.get("/rooms/{room_id}", response_model=schemas.Room)
-def read_room(room_id: int, db: Session = Depends(db_operations.get_db)):
+def read_room(room_id: int, db: Session = Depends(get_db)):
     return controllers.read_room(room_id, db)
 
 
 @router.post("/rooms/delete/{room_id}", response_model=schemas.Room)
-def delete_room(room_id: int, db: Session = Depends(db_operations.get_db)):
+def delete_room(room_id: int, db: Session = Depends(get_db)):
     return controllers.delete_room(room_id, db)
 
 
@@ -125,7 +172,7 @@ def delete_room(room_id: int, db: Session = Depends(db_operations.get_db)):
 def create_player(
     player_name: str = Form(...),
     room_id: int = Form(...),
-    db: Session = Depends(db_operations.get_db),
+    db: Session = Depends(get_db),
 ):
     return controllers.create_player(player_name, room_id, db)
 
@@ -135,7 +182,7 @@ def get_players_by_room(
     room_id: int,
     skip: int = 0,
     limit: int = 100,
-    db: Session = Depends(db_operations.get_db),
+    db: Session = Depends(get_db),
 ):
     return controllers.get_players_by_room(room_id, skip, limit, db)
 
@@ -144,7 +191,7 @@ def get_players_by_room(
 def update_player_tactic(
     player_id: int,
     player_tactic: str = Form(...),
-    db: Session = Depends(db_operations.get_db),
+    db: Session = Depends(get_db),
 ):
     return controllers.update_player_tactic(player_id, player_tactic, db)
 
@@ -155,18 +202,18 @@ def update_player_tactic(
 def update_player_personality_traits(
     player_id: int,
     answers: str = Form(...),
-    db: Session = Depends(db_operations.get_db),
+    db: Session = Depends(get_db),
 ):
     return controllers.update_player_personality_traits(player_id, answers, db)
 
 
 @router.get("/players/{player_ids}", response_model=list[schemas.Player])
-def get_players_by_ids(player_ids: str, db: Session = Depends(db_operations.get_db)):
+def get_players_by_ids(player_ids: str, db: Session = Depends(get_db)):
     return controllers.get_players_by_ids(player_ids, db)
 
 
 @router.post("/players/delete/{player_id}", response_model=schemas.Player)
-def delete_player(player_id: int, db: Session = Depends(db_operations.get_db)):
+def delete_player(player_id: int, db: Session = Depends(get_db)):
     return controllers.delete_player(player_id, db)
 
 
@@ -174,29 +221,29 @@ def delete_player(player_id: int, db: Session = Depends(db_operations.get_db)):
 def start_game(
     room_id: int,
     background_tasks: BackgroundTasks,
-    db: Session = Depends(db_operations.get_db),
+    db: Session = Depends(get_db),
     name: str = Form(...),
 ):
     return controllers.start_game(room_id, name, db, background_tasks)
 
 
 @router.get("/rooms/{session_id}/results", response_model=schemas.Room)
-def get_game_results(session_id: int, db: Session = Depends(db_operations.get_db)):
+def get_game_results(session_id: int, db: Session = Depends(get_db)):
     return controllers.get_game_results(session_id, db)
 
 
 @router.get("/rooms/{room_id}/sessions", response_model=list[schemas.SessionCreate])
-def get_sessions_by_room(room_id: int, db: Session = Depends(db_operations.get_db)):
+def get_sessions_by_room(room_id: int, db: Session = Depends(get_db)):
     return controllers.get_sessions_by_room(room_id, db)
 
 
 @router.get("/sessions/{session_id}", response_model=schemas.SessionCreate)
-def show_session(session_id: int, db: Session = Depends(db_operations.get_db)):
+def show_session(session_id: int, db: Session = Depends(get_db)):
     return controllers.get_session(session_id, db)
 
 
 @router.get("/auth/", response_model=schemas.User)
-def authenticate_user(request: Request, db: Session = Depends(db_operations.get_db)):
+def authenticate_user(request: Request, db: Session = Depends(get_db)):
     return controllers.authenticate(request, db)
 
 
@@ -205,7 +252,7 @@ def authenticate_user(request: Request, db: Session = Depends(db_operations.get_
 )
 def create_dissonance_test_participant(
     participant: schemas.DissonanceTestParticipantCreate,
-    db: Session = Depends(db_operations.get_db),
+    db: Session = Depends(get_db),
 ):
     return controllers.create_dissonance_test_participant(
         db=db, participant=participant
@@ -217,7 +264,7 @@ def create_dissonance_test_participant(
     response_model=schemas.DissonanceTestParticipantResult,
 )
 def read_dissonance_test_participant(
-    participant_id: int, db: Session = Depends(db_operations.get_db)
+    participant_id: int, db: Session = Depends(get_db)
 ):
     return controllers.read_dissonance_test_participant(participant_id, db)
 
@@ -226,9 +273,7 @@ def read_dissonance_test_participant(
     "/dissonance_test_participants/",
     response_model=list[schemas.DissonanceTestParticipant],
 )
-def get_dissonance_test_participants(
-    request: Request, db: Session = Depends(db_operations.get_db)
-):
+def get_dissonance_test_participants(request: Request, db: Session = Depends(get_db)):
     return controllers.get_dissonance_test_participants(request, db)
 
 
@@ -239,7 +284,7 @@ def get_dissonance_test_participants(
 def update_dissonance_test_participant(
     participant_id: int,
     participant: schemas.DissonanceTestParticipantUpdateSecond,
-    db: Session = Depends(db_operations.get_db),
+    db: Session = Depends(get_db),
 ):
     return controllers.update_dissonance_test_participant(
         participant_id, participant, db
@@ -253,7 +298,7 @@ def update_dissonance_test_participant(
 def update_dissonance_test_participant_personality_traits(
     participant_id: int,
     answers: str = Form(...),
-    db: Session = Depends(db_operations.get_db),
+    db: Session = Depends(get_db),
 ):
     return controllers.update_dissonance_test_participant_personality_traits(
         participant_id, answers, db
@@ -265,7 +310,7 @@ def update_dissonance_test_participant_personality_traits(
     response_model=schemas.DissonanceTestParticipant,
 )
 def delete_dissonance_test_participant(
-    participant_id: int, db: Session = Depends(db_operations.get_db)
+    participant_id: int, db: Session = Depends(get_db)
 ):
     return controllers.delete_dissonance_test_participant(participant_id, db)
 
@@ -276,7 +321,7 @@ def create_high_school_room(
     request: Request,
     high_school_name: str = Form(...),
     high_school_code: str = Form(None),
-    db: Session = Depends(db_operations.get_db),
+    db: Session = Depends(get_db),
 ):
     return controllers.create_high_school_room(
         high_school_name, high_school_code, request, db
@@ -288,18 +333,18 @@ def get_high_school_rooms(
     request: Request,
     skip: int = 0,
     limit: int = 100,
-    db: Session = Depends(db_operations.get_db),
+    db: Session = Depends(get_db),
 ):
     return controllers.get_high_school_rooms(request, skip, limit, db)
 
 
 @router.get("/high-school-rooms/{room_id}", response_model=schemas.HighSchoolRoom)
-def get_high_school_room(room_id: int, db: Session = Depends(db_operations.get_db)):
+def get_high_school_room(room_id: int, db: Session = Depends(get_db)):
     return controllers.get_high_school_room(room_id, db)
 
 
 @router.delete("/high-school-rooms/{room_id}", response_model=schemas.HighSchoolRoom)
-def delete_high_school_room(room_id: int, db: Session = Depends(db_operations.get_db)):
+def delete_high_school_room(room_id: int, db: Session = Depends(get_db)):
     return controllers.delete_high_school_room(room_id, db)
 
 
@@ -307,23 +352,45 @@ def delete_high_school_room(room_id: int, db: Session = Depends(db_operations.ge
     "/high-school-rooms/{room_id}/students",
     response_model=list[schemas.ProgramSuggestionStudent],
 )
-def get_high_school_room_students(
-    room_id: int, db: Session = Depends(db_operations.get_db)
-):
+def get_high_school_room_students(room_id: int, db: Session = Depends(get_db)):
     return controllers.get_high_school_room_students(room_id, db)
 
 
-# Program Suggestion Student Routes (without auth - anonymous students)
-@router_without_auth.post(
-    "/program-suggestion/students/", response_model=schemas.ProgramSuggestionStudent
-)
+@router_without_auth.post("/program-suggestion/students/")
 def create_program_suggestion_student(
     student: schemas.ProgramSuggestionStudentCreate,
-    db: Session = Depends(db_operations.get_db),
+    db: Session = Depends(get_db),
 ):
-    return controllers.create_program_suggestion_student(
+    created_student = controllers.create_program_suggestion_student(
         student.high_school_room_id, db
     )
+
+    token = create_participant_token(
+        participant_id=created_student.id,
+        participant_type=ParticipantType.PROGRAM_SUGGESTION,
+        room_id=student.high_school_room_id,
+    )
+
+    response = JSONResponse(
+        content={
+            "student": schemas.ProgramSuggestionStudent.model_validate(
+                created_student
+            ).model_dump(mode="json"),
+            "session_token": token,
+            "expires_in": get_token_expiry_seconds(ParticipantType.PROGRAM_SUGGESTION),
+        }
+    )
+
+    response.set_cookie(
+        key="participant_token",
+        value=token,
+        httponly=True,
+        secure=True,
+        samesite="strict",
+        max_age=get_token_expiry_seconds(ParticipantType.PROGRAM_SUGGESTION),
+    )
+
+    return response
 
 
 @router_without_auth.get(
@@ -331,8 +398,11 @@ def create_program_suggestion_student(
     response_model=schemas.ProgramSuggestionStudent,
 )
 def get_program_suggestion_student(
-    student_id: int, db: Session = Depends(db_operations.get_db)
+    student_id: int,
+    participant: CurrentProgramStudent,
+    db: Session = Depends(get_db),
 ):
+    verify_participant_ownership(participant.participant_id, student_id)
     return controllers.get_program_suggestion_student(student_id, db)
 
 
@@ -343,8 +413,10 @@ def get_program_suggestion_student(
 def update_student_step1(
     student_id: int,
     data: schemas.ProgramSuggestionStudentUpdateStep1,
-    db: Session = Depends(db_operations.get_db),
+    participant: CurrentProgramStudent,
+    db: Session = Depends(get_db),
 ):
+    verify_participant_ownership(participant.participant_id, student_id)
     return controllers.update_student_step1(student_id, data, db)
 
 
@@ -355,8 +427,10 @@ def update_student_step1(
 def update_student_step2(
     student_id: int,
     data: schemas.ProgramSuggestionStudentUpdateStep2,
-    db: Session = Depends(db_operations.get_db),
+    participant: CurrentProgramStudent,
+    db: Session = Depends(get_db),
 ):
+    verify_participant_ownership(participant.participant_id, student_id)
     return controllers.update_student_step2(student_id, data, db)
 
 
@@ -367,8 +441,10 @@ def update_student_step2(
 def update_student_step3(
     student_id: int,
     data: schemas.ProgramSuggestionStudentUpdateStep3,
-    db: Session = Depends(db_operations.get_db),
+    participant: CurrentProgramStudent,
+    db: Session = Depends(get_db),
 ):
+    verify_participant_ownership(participant.participant_id, student_id)
     return controllers.update_student_step3(student_id, data, db)
 
 
@@ -379,8 +455,10 @@ def update_student_step3(
 def update_student_step4(
     student_id: int,
     data: schemas.ProgramSuggestionStudentUpdateStep4,
-    db: Session = Depends(db_operations.get_db),
+    participant: CurrentProgramStudent,
+    db: Session = Depends(get_db),
 ):
+    verify_participant_ownership(participant.participant_id, student_id)
     return controllers.update_student_step4(student_id, data, db)
 
 
@@ -391,8 +469,10 @@ def update_student_step4(
 def update_student_riasec(
     student_id: int,
     data: schemas.ProgramSuggestionStudentUpdateRiasec,
-    db: Session = Depends(db_operations.get_db),
+    participant: CurrentProgramStudent,
+    db: Session = Depends(get_db),
 ):
+    verify_participant_ownership(participant.participant_id, student_id)
     return controllers.update_student_riasec(student_id, data, db)
 
 
@@ -400,7 +480,12 @@ def update_student_riasec(
     "/program-suggestion/students/{student_id}/result",
     response_model=schemas.ProgramSuggestionStudentResult,
 )
-def get_student_result(student_id: int, db: Session = Depends(db_operations.get_db)):
+def get_student_result(
+    student_id: int,
+    participant: CurrentProgramStudent,
+    db: Session = Depends(get_db),
+):
+    verify_participant_ownership(participant.participant_id, student_id)
     return controllers.get_student_result(student_id, db)
 
 
@@ -408,5 +493,5 @@ def get_student_result(student_id: int, db: Session = Depends(db_operations.get_
     "/program-suggestion/students/{student_id}/debug",
     response_model=schemas.ProgramSuggestionStudentDebug,
 )
-def get_student_debug(student_id: int, db: Session = Depends(db_operations.get_db)):
+def get_student_debug(student_id: int, db: Session = Depends(get_db)):
     return controllers.get_student_debug(student_id, db)

@@ -68,6 +68,10 @@ class TokenRefreshResponse(BaseModel):
     token_type: str = "bearer"
     expires_in: int  # Access token expiry in seconds
 
+class ParticipantSessionResponse(BaseModel):
+    participant_id: int
+    session_token: str
+    expires_in: int
 
 class PasswordRequirements(BaseModel):
     min_length: int = PasswordConfig.MIN_LENGTH
