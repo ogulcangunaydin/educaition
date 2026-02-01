@@ -2,7 +2,8 @@ from fastapi import HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
-from app import db_operations
+from app import models
+from app.core.security import verify_password
 from app.services.token_service import (
     TokenError,
     create_token_pair,
@@ -11,13 +12,30 @@ from app.services.token_service import (
 )
 
 
+def _get_user_by_username_or_email(db: Session, identifier: str):
+    return (
+        db.query(models.User)
+        .filter(
+            (models.User.username == identifier) | (models.User.email == identifier)
+        )
+        .first()
+    )
+
+
+def _verify_user_credentials(db: Session, username: str, password: str):
+    user = _get_user_by_username_or_email(db, username)
+    if not user:
+        return False
+    if not verify_password(password, user.hashed_password):
+        return False
+    return user
+
+
 class AuthService:
 
     @staticmethod
     def authenticate_user(form_data: OAuth2PasswordRequestForm, db: Session) -> dict:
-        user = db_operations.authenticate_user(
-            db, form_data.username, form_data.password
-        )
+        user = _verify_user_credentials(db, form_data.username, form_data.password)
 
         if not user:
             raise HTTPException(

@@ -10,8 +10,7 @@ from math import factorial
 from sqlalchemy.exc import SQLAlchemyError
 
 from app import models
-
-from ..database import SessionLocal
+from app.core.database import SessionLocal
 
 GAMES_PLAYED_WITH_EACH_OTHER = 100
 MAXIMUM_NUMBER_OF_ROUNDS = 1000

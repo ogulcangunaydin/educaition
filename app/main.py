@@ -4,10 +4,10 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from . import models, routers
+from . import models
 from .config import settings
 from .custom_session_middleware import CustomSessionMiddleware
-from .database import engine
+from .core.database import engine
 from .middleware import RateLimitMiddleware
 from .modules.auth import auth_router
 from .modules.users import users_router
@@ -85,7 +85,3 @@ app.include_router(dissonance_test_router, prefix="/api", tags=["dissonance_test
 app.include_router(high_school_rooms_router, prefix="/api", tags=["high_school_rooms"])
 app.include_router(program_suggestion_public_router, prefix="/api", tags=["program_suggestion"])
 app.include_router(program_suggestion_router, prefix="/api", tags=["program_suggestion"])
-
-# Legacy routes (will be migrated to modules)
-app.include_router(routers.router, prefix="/api")
-app.include_router(routers.router_without_auth, prefix="/api")

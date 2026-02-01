@@ -7,7 +7,7 @@ from jose import JWTError, jwt
 from pydantic import BaseModel
 
 from app.config import settings
-from app.database import SessionLocal
+from app.core.database import SessionLocal
 from app.models import TokenBlacklist
 
 

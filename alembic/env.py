@@ -5,7 +5,7 @@ from sqlalchemy import pool
 
 from alembic import context
 
-from app.database import Base
+from app.core.database import Base
 
 # Import all models so they register with Base.metadata
 # This is required for autogenerate to detect model changes

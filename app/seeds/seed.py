@@ -2,9 +2,10 @@ import logging
 
 from sqlalchemy.orm import Session
 
-from app import models, security
+from app import models
 from app.config import Environment, settings
-from app.database import SessionLocal
+from app.core.database import SessionLocal
+from app.core.security import get_password_hash
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -74,9 +75,9 @@ class UserSeeder(Seeder):
             logger.info(f"User '{user_data['username']}' already exists, skipping")
             return
 
-        hashed_password = security.get_password_hash(
+        hashed_password = get_password_hash(
             user_data["password"],
-            validate=False,  # Skip validation for controlled seed passwords
+            validate=False,
         )
 
         user = models.User(
