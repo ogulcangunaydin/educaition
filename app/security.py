@@ -1,47 +1,19 @@
-from datetime import datetime, timedelta, timezone
+"""
+DEPRECATED: Import from app.core.security instead.
 
-from jose import jwt
+This module re-exports from app.core.security for backward compatibility.
+"""
 
-from app.config import settings
-from app.services.password_service import (
+from app.core.security import (
     PasswordStrength,
     PasswordValidationError,
+    SecurityConfig,
     check_password_strength,
-    hash_password,
+    create_access_token,
+    get_password_hash,
     validate_password_strength,
     verify_password,
 )
-
-
-class SecurityConfig:
-    SECRET_KEY: str = settings.SECRET_KEY
-    ALGORITHM: str = settings.ALGORITHM
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = settings.ACCESS_TOKEN_EXPIRE_MINUTES
-
-
-def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
-    to_encode = data.copy()
-
-    if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
-    else:
-        expire = datetime.now(timezone.utc) + timedelta(
-            minutes=SecurityConfig.ACCESS_TOKEN_EXPIRE_MINUTES
-        )
-
-    to_encode.update(
-        {"exp": expire, "iat": datetime.now(timezone.utc), "type": "access"}
-    )
-
-    encoded_jwt = jwt.encode(
-        to_encode, SecurityConfig.SECRET_KEY, algorithm=SecurityConfig.ALGORITHM
-    )
-    return encoded_jwt
-
-
-def get_password_hash(password: str, validate: bool = True) -> str:
-    return hash_password(password, validate=validate)
-
 
 __all__ = [
     "create_access_token",

@@ -1,10 +1,9 @@
-from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+"""
+DEPRECATED: Import from app.core.database instead.
 
-DATABASE_URL = "postgresql://ogi:hebele@localhost/educaition"
+This module re-exports from app.core.database for backward compatibility.
+"""
 
-engine = create_engine(DATABASE_URL, pool_size=10, max_overflow=20, pool_recycle=3600)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+from app.core.database import Base, SessionLocal, engine, get_db
 
-Base = declarative_base()
+__all__ = ["Base", "SessionLocal", "engine", "get_db"]
