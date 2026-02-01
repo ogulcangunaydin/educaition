@@ -26,6 +26,22 @@ from app.modules.users.schemas import (
     UniversityKeyEnum,
 )
 
+# Re-export room schemas for backward compatibility
+from app.modules.rooms.schemas import (
+    Room,
+    RoomBase,
+    RoomCreate,
+    SessionBase,
+    SessionCreate,
+)
+
+# Re-export player schemas for backward compatibility
+from app.modules.players.schemas import (
+    Player,
+    PlayerBase,
+    PlayerCreate,
+)
+
 
 def _validate_password_field(password: str) -> str:
     is_valid, errors = validate_password_strength(password)
@@ -37,60 +53,20 @@ def _validate_password_field(password: str) -> str:
 # UserRoleEnum, UniversityKeyEnum, UserBase, UserCreate, UserUpdate, User
 # moved to app.modules.users.schemas (re-exported above for compatibility)
 
-
 # Token, TokenRefreshRequest, TokenRefreshResponse, PasswordRequirements
 # moved to app.modules.auth.schemas (re-exported above for compatibility)
+
+# Room, RoomBase, RoomCreate, SessionBase, SessionCreate
+# moved to app.modules.rooms.schemas (re-exported above for compatibility)
+
+# Player, PlayerBase, PlayerCreate
+# moved to app.modules.players.schemas (re-exported above for compatibility)
 
 
 class ParticipantSessionResponse(BaseModel):
     participant_id: int
     session_token: str
     expires_in: int
-
-
-# PasswordRequirements moved to app.modules.auth.schemas (re-exported above)
-
-
-class RoomBase(BaseModel):
-    pass
-
-
-class RoomCreate(RoomBase):
-    pass
-
-
-class Room(RoomBase):
-    id: int
-    user_id: int
-    name: str | None
-
-    class Config:
-        from_attributes = True
-
-
-class PlayerBase(BaseModel):
-    player_name: str
-    player_function_name: str | None = None
-    player_tactic: str | None = None
-    player_code: str | None = None
-    short_tactic: str | None = None
-    extroversion: float | None = None
-    agreeableness: float | None = None
-    conscientiousness: float | None = None
-    negative_emotionality: float | None = None
-    open_mindedness: float | None = None
-
-
-class PlayerCreate(PlayerBase):
-    room_id: int
-
-
-class Player(PlayerBase):
-    id: int
-    room_id: int
-
-    class Config:
-        from_attributes = True
 
 
 class GameBase(BaseModel):
@@ -130,18 +106,7 @@ class Round(RoundBase):
         from_attributes = True
 
 
-class SessionBase(BaseModel):
-    pass
-
-
-class SessionCreate(SessionBase):
-    id: int
-    room_id: int
-    name: str
-    status: str
-    player_ids: str
-    # TODO: This union is for getting also old data which is dict type
-    results: str | dict | None = None
+# SessionBase, SessionCreate moved to app.modules.rooms.schemas (re-exported above)
 
 
 class DissonanceTestParticipantBase(BaseModel):
