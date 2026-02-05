@@ -19,6 +19,7 @@ from .modules.program_suggestion.router import (
     router as program_suggestion_router,
     program_suggestion_public_router,
 )
+from .modules.universities import router as universities_router, programs_router
 from . import models
 
 log_level = logging.DEBUG if settings.DEBUG else logging.INFO
@@ -85,3 +86,5 @@ app.include_router(dissonance_test_router, prefix="/api", tags=["dissonance_test
 app.include_router(high_school_rooms_router, prefix="/api", tags=["high_school_rooms"])
 app.include_router(program_suggestion_public_router, prefix="/api", tags=["program_suggestion"])
 app.include_router(program_suggestion_router, prefix="/api", tags=["program_suggestion"])
+app.include_router(universities_router, prefix="/api", tags=["universities"])
+app.include_router(programs_router, prefix="/api", tags=["programs"])
