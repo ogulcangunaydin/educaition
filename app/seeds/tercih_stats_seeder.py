@@ -19,9 +19,6 @@ from app.modules.tercih_stats.models import (
 
 DATA_DIR = Path(__file__).parent.parent / "data" / "tercih"
 
-# University prefix mappings
-UNIVERSITY_PREFIXES = ["halic", "fsm", "ibnhaldun", "izu", "mayis"]
-
 
 def parse_turkish_number(value: str) -> Optional[float]:
     """Parse Turkish number format (comma as decimal separator)."""
@@ -201,32 +198,31 @@ def seed_tercih_istatistikleri(db: Session) -> int:
 
 
 def seed_tercih_preferences(db: Session) -> int:
-    """Seed tercih preferences from university-specific CSV files."""
+    """Seed tercih preferences from consolidated CSV files."""
     count = 0
     
-    for prefix in UNIVERSITY_PREFIXES:
-        # Process city preferences
-        cities_file = DATA_DIR / f"{prefix}_tercih_edilen_iller.csv"
-        if cities_file.exists():
-            count += _seed_preference_file(db, cities_file, prefix, "city")
-        
-        # Process university preferences
-        unis_file = DATA_DIR / f"{prefix}_tercih_edilen_universiteler.csv"
-        if unis_file.exists():
-            count += _seed_preference_file(db, unis_file, prefix, "university")
-        
-        # Process program preferences
-        progs_file = DATA_DIR / f"{prefix}_tercih_edilen_programlar.csv"
-        if progs_file.exists():
-            count += _seed_preference_file(db, progs_file, prefix, "program")
+    # Process city preferences from consolidated file
+    cities_file = DATA_DIR / "all_universities_tercih_edilen_iller.csv"
+    if cities_file.exists():
+        count += _seed_consolidated_preference_file(db, cities_file, "city")
+    
+    # Process university preferences from consolidated file
+    unis_file = DATA_DIR / "all_universities_tercih_edilen_universiteler.csv"
+    if unis_file.exists():
+        count += _seed_consolidated_preference_file(db, unis_file, "university")
+    
+    # Process program preferences from consolidated file
+    progs_file = DATA_DIR / "all_universities_tercih_edilen_programlar.csv"
+    if progs_file.exists():
+        count += _seed_consolidated_preference_file(db, progs_file, "program")
     
     db.commit()
     print(f"Seeded {count} tercih preferences")
     return count
 
 
-def _seed_preference_file(db: Session, csv_path: Path, source_uni: str, pref_type: str) -> int:
-    """Seed preferences from a specific CSV file."""
+def _seed_consolidated_preference_file(db: Session, csv_path: Path, pref_type: str) -> int:
+    """Seed preferences from a consolidated CSV file with source_university column."""
     count = 0
     
     # Map column names based on preference type
@@ -239,12 +235,13 @@ def _seed_preference_file(db: Session, csv_path: Path, source_uni: str, pref_typ
     with open(csv_path, "r", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
+            source_uni = row.get("source_university", "").strip()
             yop_kodu = row.get("yop_kodu", "").split(".")[0]
             year = parse_int(row.get("year", ""))
             preferred_item = row.get(item_col, "").strip()
             tercih_sayisi = parse_int(row.get("tercih_sayisi", ""))
             
-            if not yop_kodu or not year or not preferred_item or not tercih_sayisi:
+            if not source_uni or not yop_kodu or not year or not preferred_item or not tercih_sayisi:
                 continue
             
             pref = TercihPreference(
