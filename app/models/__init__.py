@@ -7,6 +7,7 @@ from app.modules.dissonance_test.models import DissonanceTestParticipant
 from app.modules.high_school_rooms.models import HighSchoolRoom
 from app.modules.program_suggestion.models import ProgramSuggestionStudent
 from app.modules.reference_data.models import RiasecJobScore, ScoreDistribution
+from app.modules.universities.models import University, Program, ProgramYearlyStats
 
 __all__ = [
     "User",
@@ -23,4 +24,7 @@ __all__ = [
     "ProgramSuggestionStudent",
     "RiasecJobScore",
     "ScoreDistribution",
+    "University",
+    "Program",
+    "ProgramYearlyStats",
 ]

@@ -23,6 +23,9 @@ from app.models import (  # noqa: F401
     ProgramSuggestionStudent,
     RiasecJobScore,
     ScoreDistribution,
+    University,
+    Program,
+    ProgramYearlyStats,
 )
 
 # this is the Alembic Config object, which provides
