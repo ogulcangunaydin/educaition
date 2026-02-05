@@ -14,6 +14,12 @@ from app.modules.tercih_stats.models import (
     TercihIstatistikleri,
     TercihPreference,
 )
+from app.modules.lise.models import (
+    Lise,
+    LisePlacement,
+    LisePlacement2025,
+    ScoreRankingDistribution,
+)
 
 __all__ = [
     "User",
@@ -37,4 +43,8 @@ __all__ = [
     "TercihStats",
     "TercihIstatistikleri",
     "TercihPreference",
+    "Lise",
+    "LisePlacement",
+    "LisePlacement2025",
+    "ScoreRankingDistribution",
 ]

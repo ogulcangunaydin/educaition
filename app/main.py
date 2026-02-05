@@ -21,6 +21,7 @@ from .modules.program_suggestion.router import (
 )
 from .modules.universities import router as universities_router, programs_router
 from .modules.tercih_stats import tercih_stats_router
+from .modules.lise.router import router as lise_router
 from . import models
 
 log_level = logging.DEBUG if settings.DEBUG else logging.INFO
@@ -90,3 +91,4 @@ app.include_router(program_suggestion_router, prefix="/api", tags=["program_sugg
 app.include_router(universities_router, prefix="/api", tags=["universities"])
 app.include_router(programs_router, prefix="/api", tags=["programs"])
 app.include_router(tercih_stats_router, prefix="/api", tags=["tercih_stats"])
+app.include_router(lise_router, prefix="/api", tags=["lise"])

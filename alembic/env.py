@@ -30,6 +30,10 @@ from app.models import (  # noqa: F401
     TercihStats,
     TercihIstatistikleri,
     TercihPreference,
+    Lise,
+    LisePlacement,
+    LisePlacement2025,
+    ScoreRankingDistribution,
 )
 
 # this is the Alembic Config object, which provides
