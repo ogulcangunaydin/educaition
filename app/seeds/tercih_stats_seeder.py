@@ -1,24 +1,13 @@
 """
 Seeder for tercih statistics data.
-Loads data from CSV files into the database.
+Loads pre-cleaned CSV files into the database using bulk inserts.
 
-File locations:
-- prices/2024-2025/prices_processed.csv
-- tercih/2022-2024/ (historical data)
-  - combined_stats.csv
-  - istatistikleri.csv
-  - kullanma_oranlari.csv
-  - preferences/selected_universities_*.csv
-- tercih/2025/ (current year data)
-  - combined_stats.csv
-  - istatistikleri.csv
-  - kullanma_oranlari.csv
-  - preferences/selected_universities_*.csv
+Note: CSV files should be pre-cleaned using scripts/clean_tercih_csvs.py
 """
 
 import csv
 from pathlib import Path
-from typing import Optional
+from typing import Any
 
 from sqlalchemy.orm import Session
 
@@ -35,333 +24,180 @@ TERCIH_DIR_2022_2024 = DATA_DIR / "tercih" / "2022-2024"
 TERCIH_DIR_2025 = DATA_DIR / "tercih" / "2025"
 PRICES_DIR = DATA_DIR / "prices" / "2024-2025"
 
+BATCH_SIZE = 5000
 
-def parse_turkish_number(value: str) -> Optional[float]:
-    """Parse Turkish number format (comma as decimal separator)."""
-    if not value or value.strip() in ("", "nan", "None"):
+
+def _val(value: str, dtype: str = "float") -> Any:
+    """Convert CSV value to appropriate type."""
+    if not value or value in ("", "nan", "None"):
         return None
-    
-    # Handle Turkish format: "6,0" -> 6.0
-    value = value.strip().replace(".", "").replace(",", ".")
     try:
+        if dtype == "int":
+            return int(float(value))
+        elif dtype == "bool":
+            return value.lower() == "true"
         return float(value)
     except ValueError:
         return None
 
 
-def parse_float(value: str) -> Optional[float]:
-    """Parse a float value, returning None for empty/invalid values."""
-    if not value or value.strip() in ("", "nan", "None"):
-        return None
-    try:
-        return float(value.strip())
-    except ValueError:
-        return None
+def _load_csv(path: Path) -> list[dict]:
+    """Load CSV file as list of dicts."""
+    if not path.exists():
+        print(f"Warning: {path} not found")
+        return []
+    with open(path, "r", encoding="utf-8") as f:
+        return list(csv.DictReader(f))
 
 
-def parse_int(value: str) -> Optional[int]:
-    """Parse an integer value, returning None for empty/invalid values."""
-    if not value or value.strip() in ("", "nan", "None"):
-        return None
-    try:
-        # Handle float strings like "101710027.0"
-        return int(float(value.strip()))
-    except ValueError:
-        return None
+def _bulk_insert(db: Session, model, records: list[dict]):
+    """Bulk insert records."""
+    if not records:
+        return
+    db.bulk_insert_mappings(model, records)
+    db.commit()
 
 
 def seed_program_prices(db: Session) -> int:
-    """Seed program prices from prices/2024-2025/prices_processed.csv."""
-    csv_path = PRICES_DIR / "prices_processed.csv"
-    if not csv_path.exists():
-        print(f"Warning: {csv_path} not found, skipping program prices")
-        return 0
+    """Seed program prices."""
+    rows = _load_csv(PRICES_DIR / "prices_processed.csv")
+    records = []
     
-    count = 0
-    with open(csv_path, "r", encoding="utf-8") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            yop_kodu = row.get("yop_kodu", "").split(".")[0]  # Remove decimal
-            if not yop_kodu:
-                continue
-            
-            price = ProgramPrice(
-                yop_kodu=yop_kodu,
-                is_english=row.get("is_english", "").lower() == "true",
-                scholarship_pct=parse_float(row.get("scholarship_pct", "")),
-                full_price_2024=parse_float(row.get("full_price_2024", "")),
-                full_price_2025=parse_float(row.get("full_price_2025", "")),
-                discounted_price_2024=parse_float(row.get("discounted_price_2024", "")),
-                discounted_price_2025=parse_float(row.get("discounted_price_2025", "")),
-            )
-            db.add(price)
-            count += 1
-            
-            if count % 1000 == 0:
-                db.flush()
+    for row in rows:
+        if not row.get("yop_kodu"):
+            continue
+        records.append({
+            "yop_kodu": row["yop_kodu"],
+            "is_english": _val(row.get("is_english", ""), "bool"),
+            "scholarship_pct": _val(row.get("scholarship_pct", "")),
+            "full_price_2024": _val(row.get("full_price_2024", "")),
+            "full_price_2025": _val(row.get("full_price_2025", "")),
+            "discounted_price_2024": _val(row.get("discounted_price_2024", "")),
+            "discounted_price_2025": _val(row.get("discounted_price_2025", "")),
+        })
     
-    db.commit()
-    print(f"Seeded {count} program prices")
-    return count
-
-
-def _seed_tercih_stats_from_file(db: Session, csv_path: Path) -> int:
-    """Seed tercih stats from a combined_stats.csv file."""
-    if not csv_path.exists():
-        print(f"Warning: {csv_path} not found, skipping")
-        return 0
-    
-    count = 0
-    with open(csv_path, "r", encoding="utf-8") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            yop_kodu = row.get("yop_kodu", "").split(".")[0]
-            year = parse_int(row.get("year", ""))
-            if not yop_kodu or not year:
-                continue
-            
-            stat = TercihStats(
-                yop_kodu=yop_kodu,
-                year=year,
-                ortalama_tercih_edilme_sirasi=parse_float(row.get("ortalama_tercih_edilme_sirasi_A", "")),
-                ortalama_yerlesen_tercih_sirasi=parse_float(row.get("ortalama_yerlesen_tercih_sirasi_B", "")),
-                marka_etkinlik_degeri=parse_float(row.get("marka_etkinlik_degeri_A_div_B", "")),
-            )
-            db.add(stat)
-            count += 1
-            
-            if count % 1000 == 0:
-                db.flush()
-    
-    return count
+    _bulk_insert(db, ProgramPrice, records)
+    print(f"Seeded {len(records)} program prices")
+    return len(records)
 
 
 def seed_tercih_stats(db: Session) -> int:
-    """Seed tercih stats from all year folders."""
-    count = 0
+    """Seed tercih stats from combined_stats.csv files."""
+    records = []
     
-    # Seed 2022-2024 data
-    count += _seed_tercih_stats_from_file(db, TERCIH_DIR_2022_2024 / "combined_stats.csv")
+    for csv_path in [TERCIH_DIR_2022_2024 / "combined_stats.csv", TERCIH_DIR_2025 / "combined_stats.csv"]:
+        for row in _load_csv(csv_path):
+            yop_kodu = row.get("yop_kodu", "")
+            year = _val(row.get("year", ""), "int")
+            if not yop_kodu or not year:
+                continue
+            records.append({
+                "yop_kodu": yop_kodu,
+                "year": year,
+                "ortalama_tercih_edilme_sirasi": _val(row.get("ortalama_tercih_edilme_sirasi_A", "")),
+                "ortalama_yerlesen_tercih_sirasi": _val(row.get("ortalama_yerlesen_tercih_sirasi_B", "")),
+                "marka_etkinlik_degeri": _val(row.get("marka_etkinlik_degeri_A_div_B", "")),
+            })
     
-    # Seed 2025 data
-    count += _seed_tercih_stats_from_file(db, TERCIH_DIR_2025 / "combined_stats.csv")
-    
-    db.commit()
-    print(f"Seeded {count} tercih stats")
-    return count
+    _bulk_insert(db, TercihStats, records)
+    print(f"Seeded {len(records)} tercih stats")
+    return len(records)
 
 
 def seed_tercih_istatistikleri(db: Session) -> int:
-    """Seed detailed tercih istatistikleri from both year folders."""
-    count = 0
+    """Seed tercih istatistikleri - auto-map float columns from CSV headers."""
+    # Define which columns are floats (all numeric columns)
+    float_cols = [
+        "bir_kontenjana_talip_olan_aday_sayisi_2022",
+        "bir_kontenjana_talip_olan_aday_sayisi_2023",
+        "bir_kontenjana_talip_olan_aday_sayisi_2024",
+        "bir_kontenjana_talip_olan_aday_sayisi_2025",
+        "ilk_uc_sirada_tercih_eden_sayisi_2022",
+        "ilk_uc_sirada_tercih_eden_sayisi_2023",
+        "ilk_uc_sirada_tercih_eden_sayisi_2024",
+        "ilk_uc_sirada_tercih_eden_sayisi_2025",
+        "ilk_uc_sirada_tercih_eden_orani_2022",
+        "ilk_uc_sirada_tercih_eden_orani_2023",
+        "ilk_uc_sirada_tercih_eden_orani_2024",
+        "ilk_uc_sirada_tercih_eden_orani_2025",
+        "ilk_uc_tercih_olarak_yerlesen_sayisi_2022",
+        "ilk_uc_tercih_olarak_yerlesen_sayisi_2023",
+        "ilk_uc_tercih_olarak_yerlesen_sayisi_2024",
+        "ilk_uc_tercih_olarak_yerlesen_sayisi_2025",
+        "ilk_uc_tercih_olarak_yerlesen_orani_2022",
+        "ilk_uc_tercih_olarak_yerlesen_orani_2023",
+        "ilk_uc_tercih_olarak_yerlesen_orani_2024",
+        "ilk_uc_tercih_olarak_yerlesen_orani_2025",
+    ]
     
-    # First, seed from 2022-2024 file
-    csv_path_2022_2024 = TERCIH_DIR_2022_2024 / "istatistikleri.csv"
-    if csv_path_2022_2024.exists():
-        with open(csv_path_2022_2024, "r", encoding="utf-8") as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                yop_kodu = row.get("yop_kodu", "").split(".")[0]
-                if not yop_kodu:
-                    continue
-                
-                istat = TercihIstatistikleri(
-                    yop_kodu=yop_kodu,
-                    bir_kontenjana_talip_olan_aday_sayisi_2022=parse_turkish_number(
-                        row.get("bir_kontenjana_talip_olan_aday_sayisi_2022", "")
-                    ),
-                    bir_kontenjana_talip_olan_aday_sayisi_2023=parse_turkish_number(
-                        row.get("bir_kontenjana_talip_olan_aday_sayisi_2023", "")
-                    ),
-                    bir_kontenjana_talip_olan_aday_sayisi_2024=parse_turkish_number(
-                        row.get("bir_kontenjana_talip_olan_aday_sayisi_2024", "")
-                    ),
-                    ilk_uc_sirada_tercih_eden_sayisi_2022=parse_float(
-                        row.get("ilk_uc_sirada_tercih_eden_sayisi_2022", "")
-                    ),
-                    ilk_uc_sirada_tercih_eden_sayisi_2023=parse_float(
-                        row.get("ilk_uc_sirada_tercih_eden_sayisi_2023", "")
-                    ),
-                    ilk_uc_sirada_tercih_eden_sayisi_2024=parse_float(
-                        row.get("ilk_uc_sirada_tercih_eden_sayisi_2024", "")
-                    ),
-                    ilk_uc_sirada_tercih_eden_orani_2022=parse_turkish_number(
-                        row.get("ilk_uc_sirada_tercih_eden_orani_2022", "")
-                    ),
-                    ilk_uc_sirada_tercih_eden_orani_2023=parse_turkish_number(
-                        row.get("ilk_uc_sirada_tercih_eden_orani_2023", "")
-                    ),
-                    ilk_uc_sirada_tercih_eden_orani_2024=parse_turkish_number(
-                        row.get("ilk_uc_sirada_tercih_eden_orani_2024", "")
-                    ),
-                    ilk_uc_tercih_olarak_yerlesen_sayisi_2022=parse_float(
-                        row.get("ilk_uc_tercih_olarak_yerlesen_sayisi_2022", "")
-                    ),
-                    ilk_uc_tercih_olarak_yerlesen_sayisi_2023=parse_float(
-                        row.get("ilk_uc_tercih_olarak_yerlesen_sayisi_2023", "")
-                    ),
-                    ilk_uc_tercih_olarak_yerlesen_sayisi_2024=parse_float(
-                        row.get("ilk_uc_tercih_olarak_yerlesen_sayisi_2024", "")
-                    ),
-                    ilk_uc_tercih_olarak_yerlesen_orani_2022=parse_turkish_number(
-                        row.get("ilk_uc_tercih_olarak_yerlesen_orani_2022", "")
-                    ),
-                    ilk_uc_tercih_olarak_yerlesen_orani_2023=parse_turkish_number(
-                        row.get("ilk_uc_tercih_olarak_yerlesen_orani_2023", "")
-                    ),
-                    ilk_uc_tercih_olarak_yerlesen_orani_2024=parse_turkish_number(
-                        row.get("ilk_uc_tercih_olarak_yerlesen_orani_2024", "")
-                    ),
-                )
-                db.add(istat)
-                count += 1
-                
-                if count % 1000 == 0:
-                    db.flush()
-        
-        db.commit()
+    # Merge data from both files by yop_kodu
+    merged = {}
     
-    # Then, update with 2025 data
-    csv_path_2025 = TERCIH_DIR_2025 / "istatistikleri.csv"
-    if csv_path_2025.exists():
-        updated_count = 0
-        with open(csv_path_2025, "r", encoding="utf-8") as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                yop_kodu = row.get("yop_kodu", "").split(".")[0]
-                if not yop_kodu:
-                    continue
-                
-                # Try to find existing record
-                istat = db.query(TercihIstatistikleri).filter_by(yop_kodu=yop_kodu).first()
-                
-                if istat:
-                    # Update existing record with 2025 data
-                    istat.bir_kontenjana_talip_olan_aday_sayisi_2025 = parse_turkish_number(
-                        row.get("bir_kontenjana_talip_olan_aday_sayisi_2025", "")
-                    )
-                    istat.ilk_uc_sirada_tercih_eden_sayisi_2025 = parse_float(
-                        row.get("ilk_uc_sirada_tercih_eden_sayisi_2025", "")
-                    )
-                    istat.ilk_uc_sirada_tercih_eden_orani_2025 = parse_turkish_number(
-                        row.get("ilk_uc_sirada_tercih_eden_orani_2025", "")
-                    )
-                    istat.ilk_uc_tercih_olarak_yerlesen_sayisi_2025 = parse_float(
-                        row.get("ilk_uc_tercih_olarak_yerlesen_sayisi_2025", "")
-                    )
-                    istat.ilk_uc_tercih_olarak_yerlesen_orani_2025 = parse_turkish_number(
-                        row.get("ilk_uc_tercih_olarak_yerlesen_orani_2025", "")
-                    )
-                    updated_count += 1
-                else:
-                    # Create new record for 2025-only programs
-                    istat = TercihIstatistikleri(
-                        yop_kodu=yop_kodu,
-                        bir_kontenjana_talip_olan_aday_sayisi_2025=parse_turkish_number(
-                            row.get("bir_kontenjana_talip_olan_aday_sayisi_2025", "")
-                        ),
-                        ilk_uc_sirada_tercih_eden_sayisi_2025=parse_float(
-                            row.get("ilk_uc_sirada_tercih_eden_sayisi_2025", "")
-                        ),
-                        ilk_uc_sirada_tercih_eden_orani_2025=parse_turkish_number(
-                            row.get("ilk_uc_sirada_tercih_eden_orani_2025", "")
-                        ),
-                        ilk_uc_tercih_olarak_yerlesen_sayisi_2025=parse_float(
-                            row.get("ilk_uc_tercih_olarak_yerlesen_sayisi_2025", "")
-                        ),
-                        ilk_uc_tercih_olarak_yerlesen_orani_2025=parse_turkish_number(
-                            row.get("ilk_uc_tercih_olarak_yerlesen_orani_2025", "")
-                        ),
-                    )
-                    db.add(istat)
-                    count += 1
-                
-                if updated_count % 1000 == 0:
-                    db.flush()
-        
-        db.commit()
-        print(f"Updated {updated_count} tercih istatistikleri with 2025 data")
+    for csv_path in [TERCIH_DIR_2022_2024 / "istatistikleri.csv", TERCIH_DIR_2025 / "istatistikleri.csv"]:
+        for row in _load_csv(csv_path):
+            yop_kodu = row.get("yop_kodu", "")
+            if not yop_kodu:
+                continue
+            
+            if yop_kodu not in merged:
+                merged[yop_kodu] = {"yop_kodu": yop_kodu}
+            
+            # Auto-map all float columns present in the row
+            for col in float_cols:
+                if col in row and row[col]:
+                    merged[yop_kodu][col] = _val(row[col])
     
-    print(f"Seeded {count} tercih istatistikleri total")
-    return count
-
-
-def _seed_preferences_from_dir(db: Session, preferences_dir: Path) -> int:
-    """Seed tercih preferences from a preferences directory."""
-    count = 0
-    
-    # Process city preferences from consolidated file
-    cities_file = preferences_dir / "selected_universities_iller.csv"
-    if cities_file.exists():
-        count += _seed_consolidated_preference_file(db, cities_file, "city")
-    
-    # Process university preferences from consolidated file
-    unis_file = preferences_dir / "selected_universities_universiteler.csv"
-    if unis_file.exists():
-        count += _seed_consolidated_preference_file(db, unis_file, "university")
-    
-    # Process program preferences from consolidated file
-    progs_file = preferences_dir / "selected_universities_programlar.csv"
-    if progs_file.exists():
-        count += _seed_consolidated_preference_file(db, progs_file, "program")
-    
-    return count
+    records = list(merged.values())
+    _bulk_insert(db, TercihIstatistikleri, records)
+    print(f"Seeded {len(records)} tercih istatistikleri")
+    return len(records)
 
 
 def seed_tercih_preferences(db: Session) -> int:
-    """Seed tercih preferences from all year folders."""
-    count = 0
+    """Seed tercih preferences from all preference files."""
+    pref_config = [
+        ("selected_universities_iller.csv", "city", "il"),
+        ("selected_universities_universiteler.csv", "university", "universite"),
+        ("selected_universities_programlar.csv", "program", "program"),
+    ]
     
-    # Seed from 2022-2024
-    count += _seed_preferences_from_dir(db, TERCIH_DIR_2022_2024 / "preferences")
+    records = []
     
-    # Seed from 2025
-    count += _seed_preferences_from_dir(db, TERCIH_DIR_2025 / "preferences")
+    for pref_dir in [TERCIH_DIR_2022_2024 / "preferences", TERCIH_DIR_2025 / "preferences"]:
+        for filename, pref_type, item_col in pref_config:
+            for row in _load_csv(pref_dir / filename):
+                source_uni = row.get("source_university", "").strip()
+                yop_kodu = row.get("yop_kodu", "")
+                year = _val(row.get("year", ""), "int")
+                preferred_item = row.get(item_col, "").strip()
+                tercih_sayisi = _val(row.get("tercih_sayisi", ""), "int")
+                
+                if not all([source_uni, yop_kodu, year, preferred_item, tercih_sayisi]):
+                    continue
+                
+                record = {
+                    "source_university": source_uni,
+                    "yop_kodu": yop_kodu,
+                    "year": year,
+                    "preference_type": pref_type,
+                    "preferred_item": preferred_item,
+                    "tercih_sayisi": tercih_sayisi,
+                }
+                if pref_type == "university":
+                    record["university_type"] = row.get("university_type", "").strip() or None
+                
+                records.append(record)
+                
+                # Batch insert to avoid memory issues
+                if len(records) >= BATCH_SIZE:
+                    _bulk_insert(db, TercihPreference, records)
+                    records = []
     
-    db.commit()
-    print(f"Seeded {count} tercih preferences")
-    return count
-
-
-def _seed_consolidated_preference_file(db: Session, csv_path: Path, pref_type: str) -> int:
-    """Seed preferences from a consolidated CSV file with source_university column."""
-    count = 0
-    
-    # Map column names based on preference type
-    item_col = {
-        "city": "il",
-        "university": "universite",
-        "program": "program",
-    }[pref_type]
-    
-    with open(csv_path, "r", encoding="utf-8") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            source_uni = row.get("source_university", "").strip()
-            yop_kodu = row.get("yop_kodu", "").split(".")[0]
-            year = parse_int(row.get("year", ""))
-            preferred_item = row.get(item_col, "").strip()
-            tercih_sayisi = parse_int(row.get("tercih_sayisi", ""))
-            
-            if not source_uni or not yop_kodu or not year or not preferred_item or not tercih_sayisi:
-                continue
-            
-            pref = TercihPreference(
-                source_university=source_uni,
-                yop_kodu=yop_kodu,
-                year=year,
-                preference_type=pref_type,
-                preferred_item=preferred_item,
-                tercih_sayisi=tercih_sayisi,
-                university_type=row.get("university_type", "").strip() if pref_type == "university" else None,
-            )
-            db.add(pref)
-            count += 1
-            
-            if count % 2000 == 0:
-                db.flush()
-    
-    return count
+    # Insert remaining
+    _bulk_insert(db, TercihPreference, records)
+    total = db.query(TercihPreference).count()
+    print(f"Seeded {total} tercih preferences")
+    return total
 
 
 def clear_tercih_data(db: Session):
