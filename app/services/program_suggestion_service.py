@@ -4,6 +4,7 @@ import logging
 import os
 
 from .riasec_service import find_top_matching_jobs, get_program_suggestions_from_gpt
+from sqlalchemy.orm import Session
 
 
 def load_programs_from_csv(csv_path: str = None) -> list[dict]:
@@ -357,6 +358,7 @@ def get_suggested_programs(
     preferred_language: str | None = None,
     desired_universities: list[str] | None = None,
     desired_cities: list[str] | None = None,
+    db: Session = None,
     riasec_csv_path: str = None,
     programs_csv_path: str = None,
     distribution_json_path: str = None,
@@ -364,6 +366,10 @@ def get_suggested_programs(
     """
     Main function to get program suggestions for a student.
     Uses ranking-based filtering to ensure at least 30 programs for GPT.
+
+    Args:
+        db: Database session (preferred for RIASEC data)
+        riasec_csv_path: CSV path (fallback, deprecated)
 
     Returns:
         {
@@ -376,7 +382,7 @@ def get_suggested_programs(
     """
     # Step 1: Find top 3 matching jobs
     suggested_jobs = find_top_matching_jobs(
-        riasec_scores, top_n=3, csv_path=riasec_csv_path
+        riasec_scores, top_n=3, db=db, csv_path=riasec_csv_path
     )
 
     if not suggested_jobs:

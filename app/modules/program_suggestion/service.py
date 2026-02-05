@@ -159,6 +159,7 @@ class ProgramSuggestionService:
             preferred_language=student.preferred_language,
             desired_universities=student.desired_universities,
             desired_cities=student.desired_cities,
+            db=db,
         )
 
         student.riasec_answers = data.riasec_answers

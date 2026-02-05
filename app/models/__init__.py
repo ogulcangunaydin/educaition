@@ -6,6 +6,7 @@ from app.modules.games.models import Game, Round, Session
 from app.modules.dissonance_test.models import DissonanceTestParticipant
 from app.modules.high_school_rooms.models import HighSchoolRoom
 from app.modules.program_suggestion.models import ProgramSuggestionStudent
+from app.modules.reference_data.models import RiasecJobScore, ScoreDistribution
 
 __all__ = [
     "User",
@@ -20,4 +21,6 @@ __all__ = [
     "DissonanceTestParticipant",
     "HighSchoolRoom",
     "ProgramSuggestionStudent",
+    "RiasecJobScore",
+    "ScoreDistribution",
 ]

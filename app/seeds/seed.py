@@ -6,6 +6,7 @@ from app import models
 from app.core.config import Environment, settings
 from app.core.database import SessionLocal
 from app.core.security import get_password_hash
+from app.seeds.reference_data_seeder import ReferenceDataSeeder
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -97,6 +98,7 @@ class UserSeeder(Seeder):
 
 SEEDERS: list[type] = [
     UserSeeder,
+    ReferenceDataSeeder,
     # Add more seeders as needed:
     # RoleSeeder,
     # PermissionSeeder,

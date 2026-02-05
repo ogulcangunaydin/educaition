@@ -4,6 +4,7 @@ import math
 import os
 
 import requests
+from sqlalchemy.orm import Session
 
 # RIASEC Score mapping
 SCORE_MAP = {
@@ -142,6 +143,7 @@ def get_question_type_map() -> dict[str, str]:
 def load_job_riasec_scores(csv_path: str = None) -> dict[str, dict[str, float]]:
     """
     Load job RIASEC scores from CSV file.
+    DEPRECATED: Use load_job_riasec_scores_from_db() instead.
     Returns: {job_title: {R: score, I: score, ...}}
     """
     if csv_path is None:
@@ -176,6 +178,26 @@ def load_job_riasec_scores(csv_path: str = None) -> dict[str, dict[str, float]]:
                     jobs[title][letter] = value
     except Exception as e:
         logging.error(f"Error loading job RIASEC scores: {e}")
+        jobs = {}
+
+    return jobs
+
+
+def load_job_riasec_scores_from_db(db: Session) -> dict[str, dict[str, float]]:
+    """
+    Load job RIASEC scores from database.
+    Returns: {job_title: {R: score, I: score, ...}}
+    """
+    # Import here to avoid circular import
+    from app.modules.reference_data.models import RiasecJobScore
+
+    jobs = {}
+    try:
+        records = db.query(RiasecJobScore).all()
+        for record in records:
+            jobs[record.job_title] = record.to_dict()
+    except Exception as e:
+        logging.error(f"Error loading job RIASEC scores from DB: {e}")
         jobs = {}
 
     return jobs
@@ -302,14 +324,27 @@ def calculate_profile_match_score(
 
 
 def find_top_matching_jobs(
-    student_scores: dict[str, float], top_n: int = 3, csv_path: str = None
+    student_scores: dict[str, float],
+    top_n: int = 3,
+    db: Session = None,
+    csv_path: str = None,
 ) -> list[dict]:
     """
     Find top N jobs that best match student's RIASEC profile.
     Uses combined profile matching (cosine similarity + Holland code).
     Returns list of {job: title, distance: score, riasec_scores: {...}}
+    
+    Args:
+        student_scores: Student's RIASEC scores {R: x, I: x, ...}
+        top_n: Number of top matches to return
+        db: Database session (preferred, uses DB)
+        csv_path: CSV file path (fallback, deprecated)
     """
-    jobs = load_job_riasec_scores(csv_path)
+    # Prefer database, fallback to CSV
+    if db is not None:
+        jobs = load_job_riasec_scores_from_db(db)
+    else:
+        jobs = load_job_riasec_scores(csv_path)
 
     student_holland = get_holland_code(student_scores, 3)
     logging.info(f"Student Holland code: {student_holland}")
