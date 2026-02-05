@@ -116,6 +116,6 @@ class DissonanceTestService:
         )
         if db_participant is None:
             raise HTTPException(status_code=404, detail="Participant not found")
-        db.delete(db_participant)
+        db_participant.soft_delete()
         db.commit()
         return db_participant

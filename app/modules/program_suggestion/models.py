@@ -4,9 +4,10 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from app.core.database import Base
+from app.core.mixins import SoftDeleteMixin
 
 
-class ProgramSuggestionStudent(Base):
+class ProgramSuggestionStudent(Base, SoftDeleteMixin):
     __tablename__ = "program_suggestion_students"
 
     id = Column(Integer, primary_key=True, index=True)

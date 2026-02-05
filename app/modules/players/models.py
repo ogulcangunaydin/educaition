@@ -2,8 +2,10 @@ from sqlalchemy import Column, DateTime, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
+from app.core.mixins import SoftDeleteMixin
 
-class Player(Base):
+
+class Player(Base, SoftDeleteMixin):
     __tablename__ = "players"
 
     id = Column(Integer, primary_key=True, index=True)

@@ -120,6 +120,6 @@ class UserService:
         if db_user is None:
             raise HTTPException(status_code=404, detail="User not found")
 
-        db.delete(db_user)
+        db_user.soft_delete()
         db.commit()
         return db_user

@@ -3,6 +3,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
+from app.core.mixins import SoftDeleteMixin
 
 class Game(Base):
     __tablename__ = "games"
@@ -38,7 +39,7 @@ class Round(Base):
 
     game = relationship("Game", back_populates="rounds")
 
-class Session(Base):
+class Session(Base, SoftDeleteMixin):
     __tablename__ = "sessions"
 
     id = Column(Integer, primary_key=True, index=True)

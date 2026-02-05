@@ -54,7 +54,8 @@ class HighSchoolRoomService:
         )
         if room is None:
             raise HTTPException(status_code=404, detail="High school room not found")
-        db.delete(room)
+        
+        room.soft_delete()  # Automatically cascades to students
         db.commit()
         return room
 

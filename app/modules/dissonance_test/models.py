@@ -3,8 +3,10 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
+from app.core.mixins import SoftDeleteMixin
 
-class DissonanceTestParticipant(Base):
+
+class DissonanceTestParticipant(Base, SoftDeleteMixin):
     __tablename__ = "dissonance_test_participants"
 
     id = Column(Integer, primary_key=True, autoincrement=True)

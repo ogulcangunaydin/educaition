@@ -138,6 +138,6 @@ class PlayerService:
         player = db.query(models.Player).get(player_id)
         if player is None:
             raise HTTPException(status_code=404, detail="Player not found")
-        db.delete(player)
+        player.soft_delete()
         db.commit()
         return player

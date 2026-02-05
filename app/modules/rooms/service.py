@@ -35,7 +35,8 @@ class RoomService:
         room = db.query(models.Room).get(room_id)
         if room is None:
             raise HTTPException(status_code=404, detail="Room not found")
-        db.delete(room)
+        
+        room.soft_delete()  # Automatically cascades to players and sessions
         db.commit()
         return room
 
