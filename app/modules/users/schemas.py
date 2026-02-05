@@ -1,7 +1,6 @@
-from enum import Enum
-
 from pydantic import BaseModel, Field, field_validator
 
+from app.core.enums import UniversityKey, UserRole
 from app.core.validators import (
     EmailStrOptional,
     FieldLimits,
@@ -18,30 +17,13 @@ def _validate_password_field(password: str) -> str:
     return password
 
 
-class UserRoleEnum(str, Enum):
-    ADMIN = "admin"
-    TEACHER = "teacher"
-    STUDENT = "student"
-    VIEWER = "viewer"
-
-
-class UniversityKeyEnum(str, Enum):
-    HALIC = "halic"
-    IBNHALDUN = "ibnhaldun"
-    FSM = "fsm"
-    IZU = "izu"
-    MAYIS = "mayis"
-
-
 class UserBase(BaseModel):
     username: UsernameStr = Field(
         min_length=FieldLimits.USERNAME_MIN,
         max_length=FieldLimits.USERNAME_MAX,
         description="Username must start with a letter and contain only letters, numbers, and underscores",
     )
-    email: EmailStrOptional = Field(
-        default=None, max_length=FieldLimits.EMAIL_MAX
-    )
+    email: EmailStrOptional = Field(default=None, max_length=FieldLimits.EMAIL_MAX)
 
 
 class UserCreate(UserBase):
@@ -49,8 +31,8 @@ class UserCreate(UserBase):
         min_length=FieldLimits.PASSWORD_MIN,
         max_length=FieldLimits.PASSWORD_MAX,
     )
-    role: UserRoleEnum = UserRoleEnum.STUDENT
-    university: UniversityKeyEnum = UniversityKeyEnum.HALIC
+    role: UserRole = UserRole.STUDENT
+    university: UniversityKey = UniversityKey.HALIC
 
     @field_validator("password")
     @classmethod
@@ -64,16 +46,14 @@ class UserUpdate(BaseModel):
         min_length=FieldLimits.USERNAME_MIN,
         max_length=FieldLimits.USERNAME_MAX,
     )
-    email: EmailStrOptional = Field(
-        default=None, max_length=FieldLimits.EMAIL_MAX
-    )
+    email: EmailStrOptional = Field(default=None, max_length=FieldLimits.EMAIL_MAX)
     password: str | None = Field(
         default=None,
         min_length=FieldLimits.PASSWORD_MIN,
         max_length=FieldLimits.PASSWORD_MAX,
     )
-    role: UserRoleEnum | None = None
-    university: UniversityKeyEnum | None = None
+    role: UserRole | None = None
+    university: UniversityKey | None = None
 
     @field_validator("password")
     @classmethod

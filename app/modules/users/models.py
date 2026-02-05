@@ -1,22 +1,11 @@
-from enum import Enum as PyEnum
 from sqlalchemy import Boolean, Column, DateTime, Integer, String
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+
 from app.core.database import Base
+from app.core.enums import UniversityKey, UserRole
 from app.core.mixins import SoftDeleteMixin
 
-class UserRole(str, PyEnum):
-    ADMIN = "admin"
-    TEACHER = "teacher"
-    STUDENT = "student"
-    VIEWER = "viewer"
-
-class UniversityKey(str, PyEnum):
-    HALIC = "halic"
-    IBNHALDUN = "ibnhaldun"
-    FSM = "fsm"
-    IZU = "izu"
-    MAYIS = "mayis"
 
 class User(Base, SoftDeleteMixin):
     __tablename__ = "users"
