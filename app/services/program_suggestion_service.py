@@ -1,34 +1,19 @@
-import csv
 import json
 import logging
 import os
 
-from .riasec_service import find_top_matching_jobs, get_program_suggestions_from_gpt
 from sqlalchemy.orm import Session
 
+from .riasec_service import find_top_matching_jobs, get_program_suggestions_from_gpt
 
-def load_programs_from_csv(csv_path: str = None) -> list[dict]:
+
+def load_programs_from_db(db: Session) -> list[dict]:
     """
-    Load all programs from the master CSV file.
+    Load all programs from the database.
     """
-    if csv_path is None:
-        csv_path = os.path.join(
-            os.path.dirname(__file__),
-            "..",
-            "data",
-            "all_universities_programs_master.csv",
-        )
+    from app.modules.universities.service import ProgramService
 
-    programs = []
-    try:
-        with open(csv_path, encoding="utf-8") as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                programs.append(row)
-    except Exception as e:
-        logging.error(f"Error loading programs: {e}")
-
-    return programs
+    return ProgramService.get_all_programs_as_dicts(db)
 
 
 def load_score_distribution(json_path: str = None) -> dict:
@@ -79,25 +64,35 @@ def estimate_ranking_from_score(
     return distribution[closest_idx]["avgRanking"]
 
 
-def parse_score(score_str: str) -> float | None:
-    """Parse Turkish score format to float (comma as decimal)."""
-    if not score_str or score_str == "Dolmadı":
+def parse_score(score_val) -> float | None:
+    """Parse score to float. Handles both string (from CSV) and numeric (from DB) values."""
+    if score_val is None:
+        return None
+    if isinstance(score_val, (int, float)):
+        return float(score_val) if score_val != 0 else None
+    # Handle string values (legacy CSV format)
+    if not score_val or score_val == "Dolmadı":
         return None
     try:
         # Score uses comma as decimal separator
-        cleaned = score_str.replace(",", ".")
+        cleaned = str(score_val).replace(",", ".")
         return float(cleaned)
     except ValueError:
         return None
 
 
-def parse_ranking(ranking_str: str) -> int | None:
-    """Parse Turkish ranking format to int (dot as thousands separator)."""
-    if not ranking_str or ranking_str == "Dolmadı":
+def parse_ranking(ranking_val) -> int | None:
+    """Parse ranking to int. Handles both string (from CSV) and numeric (from DB) values."""
+    if ranking_val is None:
+        return None
+    if isinstance(ranking_val, (int, float)):
+        return int(ranking_val) if ranking_val != 0 else None
+    # Handle string values (legacy CSV format)
+    if not ranking_val or ranking_val == "Dolmadı":
         return None
     try:
         # Ranking uses dot as thousands separator
-        cleaned = ranking_str.replace(".", "")
+        cleaned = str(ranking_val).replace(".", "")
         return int(cleaned)
     except ValueError:
         return None
@@ -359,8 +354,6 @@ def get_suggested_programs(
     desired_universities: list[str] | None = None,
     desired_cities: list[str] | None = None,
     db: Session = None,
-    riasec_csv_path: str = None,
-    programs_csv_path: str = None,
     distribution_json_path: str = None,
 ) -> dict:
     """
@@ -368,8 +361,8 @@ def get_suggested_programs(
     Uses ranking-based filtering to ensure at least 30 programs for GPT.
 
     Args:
-        db: Database session (preferred for RIASEC data)
-        riasec_csv_path: CSV path (fallback, deprecated)
+        db: Database session (required for loading programs and RIASEC data)
+        distribution_json_path: Path to score distribution JSON file
 
     Returns:
         {
@@ -382,7 +375,7 @@ def get_suggested_programs(
     """
     # Step 1: Find top 3 matching jobs
     suggested_jobs = find_top_matching_jobs(
-        riasec_scores, top_n=3, db=db, csv_path=riasec_csv_path
+        riasec_scores, top_n=3, db=db
     )
 
     if not suggested_jobs:
@@ -421,7 +414,10 @@ def get_suggested_programs(
         expected_ranking = max(1, expected_ranking)
 
     # Step 3: Filter programs by ranking and preferences
-    all_programs = load_programs_from_csv(programs_csv_path)
+    # Load programs from database if db session provided, otherwise raise error
+    if db is None:
+        raise ValueError("Database session is required to load programs")
+    all_programs = load_programs_from_db(db)
     filtered_programs = filter_programs_by_ranking_and_area(
         programs=all_programs,
         expected_ranking=expected_ranking,

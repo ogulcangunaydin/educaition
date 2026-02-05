@@ -302,3 +302,13 @@ class ProgramService:
             flat_programs.append(flat)
 
         return flat_programs
+
+    @staticmethod
+    def get_all_programs_as_dicts(db: Session) -> list[dict]:
+        """
+        Get all programs as dictionaries.
+        This method is for backward compatibility with code that expects
+        the old CSV structure with string values.
+        """
+        flat_programs = ProgramService.get_all_programs_flat(db)
+        return [p.model_dump() for p in flat_programs]
