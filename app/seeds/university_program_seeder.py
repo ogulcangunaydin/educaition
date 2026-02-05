@@ -22,28 +22,10 @@ logger = logging.getLogger(__name__)
 class UniversityProgramSeeder:
     """Seeds university and program data from CSV files."""
 
-    # Path to the frontend data files (source of truth for seeding)
-    # Projects are siblings: /Projects/educaition and /Projects/educaition-react
-    DATA_DIR_2024 = os.path.join(
-        os.path.dirname(__file__),
-        "..",
-        "..",
-        "..",
-        "educaition-react",
-        "public",
-        "assets",
-        "data",
-    )
-    DATA_DIR_2025 = os.path.join(
-        os.path.dirname(__file__),
-        "..",
-        "..",
-        "..",
-        "educaition-react",
-        "public",
-        "assets",
-        "data_2025",
-    )
+    # Path to the backend data files (source of truth for seeding)
+    DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
+    DATA_DIR_2024 = os.path.join(DATA_DIR, "2024")
+    DATA_DIR_2025 = os.path.join(DATA_DIR, "2025")
 
     def __init__(self, db: Session):
         self.db = db
