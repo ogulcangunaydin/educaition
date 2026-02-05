@@ -4,10 +4,16 @@ Loads data from CSV files into the database.
 
 File locations:
 - prices/2024-2025/prices_processed.csv
-- tercih/2022-2024/combined_stats.csv
-- tercih/2022-2024/istatistikleri.csv
-- tercih/2022-2024/kullanma_oranlari.csv
-- tercih/2022-2024/preferences/selected_universities_*.csv
+- tercih/2022-2024/ (historical data)
+  - combined_stats.csv
+  - istatistikleri.csv
+  - kullanma_oranlari.csv
+  - preferences/selected_universities_*.csv
+- tercih/2025/ (current year data)
+  - combined_stats.csv
+  - istatistikleri.csv
+  - kullanma_oranlari.csv
+  - preferences/selected_universities_*.csv
 """
 
 import csv
@@ -25,7 +31,8 @@ from app.modules.tercih_stats.models import (
 
 
 DATA_DIR = Path(__file__).parent.parent / "data"
-TERCIH_DIR = DATA_DIR / "tercih" / "2022-2024"
+TERCIH_DIR_2022_2024 = DATA_DIR / "tercih" / "2022-2024"
+TERCIH_DIR_2025 = DATA_DIR / "tercih" / "2025"
 PRICES_DIR = DATA_DIR / "prices" / "2024-2025"
 
 
@@ -98,11 +105,10 @@ def seed_program_prices(db: Session) -> int:
     return count
 
 
-def seed_tercih_stats(db: Session) -> int:
-    """Seed tercih stats from tercih/2022-2024/combined_stats.csv."""
-    csv_path = TERCIH_DIR / "combined_stats.csv"
+def _seed_tercih_stats_from_file(db: Session, csv_path: Path) -> int:
+    """Seed tercih stats from a combined_stats.csv file."""
     if not csv_path.exists():
-        print(f"Warning: {csv_path} not found, skipping tercih stats")
+        print(f"Warning: {csv_path} not found, skipping")
         return 0
     
     count = 0
@@ -127,89 +133,162 @@ def seed_tercih_stats(db: Session) -> int:
             if count % 1000 == 0:
                 db.flush()
     
+    return count
+
+
+def seed_tercih_stats(db: Session) -> int:
+    """Seed tercih stats from all year folders."""
+    count = 0
+    
+    # Seed 2022-2024 data
+    count += _seed_tercih_stats_from_file(db, TERCIH_DIR_2022_2024 / "combined_stats.csv")
+    
+    # Seed 2025 data
+    count += _seed_tercih_stats_from_file(db, TERCIH_DIR_2025 / "combined_stats.csv")
+    
     db.commit()
     print(f"Seeded {count} tercih stats")
     return count
 
 
 def seed_tercih_istatistikleri(db: Session) -> int:
-    """Seed detailed tercih istatistikleri from tercih/2022-2024/istatistikleri.csv."""
-    csv_path = TERCIH_DIR / "istatistikleri.csv"
-    if not csv_path.exists():
-        print(f"Warning: {csv_path} not found, skipping tercih istatistikleri")
-        return 0
-    
+    """Seed detailed tercih istatistikleri from both year folders."""
     count = 0
-    with open(csv_path, "r", encoding="utf-8") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            yop_kodu = row.get("yop_kodu", "").split(".")[0]
-            if not yop_kodu:
-                continue
-            
-            istat = TercihIstatistikleri(
-                yop_kodu=yop_kodu,
-                bir_kontenjana_talip_olan_aday_sayisi_2022=parse_turkish_number(
-                    row.get("bir_kontenjana_talip_olan_aday_sayisi_2022", "")
-                ),
-                bir_kontenjana_talip_olan_aday_sayisi_2023=parse_turkish_number(
-                    row.get("bir_kontenjana_talip_olan_aday_sayisi_2023", "")
-                ),
-                bir_kontenjana_talip_olan_aday_sayisi_2024=parse_turkish_number(
-                    row.get("bir_kontenjana_talip_olan_aday_sayisi_2024", "")
-                ),
-                ilk_uc_sirada_tercih_eden_sayisi_2022=parse_float(
-                    row.get("ilk_uc_sirada_tercih_eden_sayisi_2022", "")
-                ),
-                ilk_uc_sirada_tercih_eden_sayisi_2023=parse_float(
-                    row.get("ilk_uc_sirada_tercih_eden_sayisi_2023", "")
-                ),
-                ilk_uc_sirada_tercih_eden_sayisi_2024=parse_float(
-                    row.get("ilk_uc_sirada_tercih_eden_sayisi_2024", "")
-                ),
-                ilk_uc_sirada_tercih_eden_orani_2022=parse_turkish_number(
-                    row.get("ilk_uc_sirada_tercih_eden_orani_2022", "")
-                ),
-                ilk_uc_sirada_tercih_eden_orani_2023=parse_turkish_number(
-                    row.get("ilk_uc_sirada_tercih_eden_orani_2023", "")
-                ),
-                ilk_uc_sirada_tercih_eden_orani_2024=parse_turkish_number(
-                    row.get("ilk_uc_sirada_tercih_eden_orani_2024", "")
-                ),
-                ilk_uc_tercih_olarak_yerlesen_sayisi_2022=parse_float(
-                    row.get("ilk_uc_tercih_olarak_yerlesen_sayisi_2022", "")
-                ),
-                ilk_uc_tercih_olarak_yerlesen_sayisi_2023=parse_float(
-                    row.get("ilk_uc_tercih_olarak_yerlesen_sayisi_2023", "")
-                ),
-                ilk_uc_tercih_olarak_yerlesen_sayisi_2024=parse_float(
-                    row.get("ilk_uc_tercih_olarak_yerlesen_sayisi_2024", "")
-                ),
-                ilk_uc_tercih_olarak_yerlesen_orani_2022=parse_turkish_number(
-                    row.get("ilk_uc_tercih_olarak_yerlesen_orani_2022", "")
-                ),
-                ilk_uc_tercih_olarak_yerlesen_orani_2023=parse_turkish_number(
-                    row.get("ilk_uc_tercih_olarak_yerlesen_orani_2023", "")
-                ),
-                ilk_uc_tercih_olarak_yerlesen_orani_2024=parse_turkish_number(
-                    row.get("ilk_uc_tercih_olarak_yerlesen_orani_2024", "")
-                ),
-            )
-            db.add(istat)
-            count += 1
-            
-            if count % 1000 == 0:
-                db.flush()
     
-    db.commit()
-    print(f"Seeded {count} tercih istatistikleri")
+    # First, seed from 2022-2024 file
+    csv_path_2022_2024 = TERCIH_DIR_2022_2024 / "istatistikleri.csv"
+    if csv_path_2022_2024.exists():
+        with open(csv_path_2022_2024, "r", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                yop_kodu = row.get("yop_kodu", "").split(".")[0]
+                if not yop_kodu:
+                    continue
+                
+                istat = TercihIstatistikleri(
+                    yop_kodu=yop_kodu,
+                    bir_kontenjana_talip_olan_aday_sayisi_2022=parse_turkish_number(
+                        row.get("bir_kontenjana_talip_olan_aday_sayisi_2022", "")
+                    ),
+                    bir_kontenjana_talip_olan_aday_sayisi_2023=parse_turkish_number(
+                        row.get("bir_kontenjana_talip_olan_aday_sayisi_2023", "")
+                    ),
+                    bir_kontenjana_talip_olan_aday_sayisi_2024=parse_turkish_number(
+                        row.get("bir_kontenjana_talip_olan_aday_sayisi_2024", "")
+                    ),
+                    ilk_uc_sirada_tercih_eden_sayisi_2022=parse_float(
+                        row.get("ilk_uc_sirada_tercih_eden_sayisi_2022", "")
+                    ),
+                    ilk_uc_sirada_tercih_eden_sayisi_2023=parse_float(
+                        row.get("ilk_uc_sirada_tercih_eden_sayisi_2023", "")
+                    ),
+                    ilk_uc_sirada_tercih_eden_sayisi_2024=parse_float(
+                        row.get("ilk_uc_sirada_tercih_eden_sayisi_2024", "")
+                    ),
+                    ilk_uc_sirada_tercih_eden_orani_2022=parse_turkish_number(
+                        row.get("ilk_uc_sirada_tercih_eden_orani_2022", "")
+                    ),
+                    ilk_uc_sirada_tercih_eden_orani_2023=parse_turkish_number(
+                        row.get("ilk_uc_sirada_tercih_eden_orani_2023", "")
+                    ),
+                    ilk_uc_sirada_tercih_eden_orani_2024=parse_turkish_number(
+                        row.get("ilk_uc_sirada_tercih_eden_orani_2024", "")
+                    ),
+                    ilk_uc_tercih_olarak_yerlesen_sayisi_2022=parse_float(
+                        row.get("ilk_uc_tercih_olarak_yerlesen_sayisi_2022", "")
+                    ),
+                    ilk_uc_tercih_olarak_yerlesen_sayisi_2023=parse_float(
+                        row.get("ilk_uc_tercih_olarak_yerlesen_sayisi_2023", "")
+                    ),
+                    ilk_uc_tercih_olarak_yerlesen_sayisi_2024=parse_float(
+                        row.get("ilk_uc_tercih_olarak_yerlesen_sayisi_2024", "")
+                    ),
+                    ilk_uc_tercih_olarak_yerlesen_orani_2022=parse_turkish_number(
+                        row.get("ilk_uc_tercih_olarak_yerlesen_orani_2022", "")
+                    ),
+                    ilk_uc_tercih_olarak_yerlesen_orani_2023=parse_turkish_number(
+                        row.get("ilk_uc_tercih_olarak_yerlesen_orani_2023", "")
+                    ),
+                    ilk_uc_tercih_olarak_yerlesen_orani_2024=parse_turkish_number(
+                        row.get("ilk_uc_tercih_olarak_yerlesen_orani_2024", "")
+                    ),
+                )
+                db.add(istat)
+                count += 1
+                
+                if count % 1000 == 0:
+                    db.flush()
+        
+        db.commit()
+    
+    # Then, update with 2025 data
+    csv_path_2025 = TERCIH_DIR_2025 / "istatistikleri.csv"
+    if csv_path_2025.exists():
+        updated_count = 0
+        with open(csv_path_2025, "r", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                yop_kodu = row.get("yop_kodu", "").split(".")[0]
+                if not yop_kodu:
+                    continue
+                
+                # Try to find existing record
+                istat = db.query(TercihIstatistikleri).filter_by(yop_kodu=yop_kodu).first()
+                
+                if istat:
+                    # Update existing record with 2025 data
+                    istat.bir_kontenjana_talip_olan_aday_sayisi_2025 = parse_turkish_number(
+                        row.get("bir_kontenjana_talip_olan_aday_sayisi_2025", "")
+                    )
+                    istat.ilk_uc_sirada_tercih_eden_sayisi_2025 = parse_float(
+                        row.get("ilk_uc_sirada_tercih_eden_sayisi_2025", "")
+                    )
+                    istat.ilk_uc_sirada_tercih_eden_orani_2025 = parse_turkish_number(
+                        row.get("ilk_uc_sirada_tercih_eden_orani_2025", "")
+                    )
+                    istat.ilk_uc_tercih_olarak_yerlesen_sayisi_2025 = parse_float(
+                        row.get("ilk_uc_tercih_olarak_yerlesen_sayisi_2025", "")
+                    )
+                    istat.ilk_uc_tercih_olarak_yerlesen_orani_2025 = parse_turkish_number(
+                        row.get("ilk_uc_tercih_olarak_yerlesen_orani_2025", "")
+                    )
+                    updated_count += 1
+                else:
+                    # Create new record for 2025-only programs
+                    istat = TercihIstatistikleri(
+                        yop_kodu=yop_kodu,
+                        bir_kontenjana_talip_olan_aday_sayisi_2025=parse_turkish_number(
+                            row.get("bir_kontenjana_talip_olan_aday_sayisi_2025", "")
+                        ),
+                        ilk_uc_sirada_tercih_eden_sayisi_2025=parse_float(
+                            row.get("ilk_uc_sirada_tercih_eden_sayisi_2025", "")
+                        ),
+                        ilk_uc_sirada_tercih_eden_orani_2025=parse_turkish_number(
+                            row.get("ilk_uc_sirada_tercih_eden_orani_2025", "")
+                        ),
+                        ilk_uc_tercih_olarak_yerlesen_sayisi_2025=parse_float(
+                            row.get("ilk_uc_tercih_olarak_yerlesen_sayisi_2025", "")
+                        ),
+                        ilk_uc_tercih_olarak_yerlesen_orani_2025=parse_turkish_number(
+                            row.get("ilk_uc_tercih_olarak_yerlesen_orani_2025", "")
+                        ),
+                    )
+                    db.add(istat)
+                    count += 1
+                
+                if updated_count % 1000 == 0:
+                    db.flush()
+        
+        db.commit()
+        print(f"Updated {updated_count} tercih istatistikleri with 2025 data")
+    
+    print(f"Seeded {count} tercih istatistikleri total")
     return count
 
 
-def seed_tercih_preferences(db: Session) -> int:
-    """Seed tercih preferences from consolidated CSV files for selected universities."""
+def _seed_preferences_from_dir(db: Session, preferences_dir: Path) -> int:
+    """Seed tercih preferences from a preferences directory."""
     count = 0
-    preferences_dir = TERCIH_DIR / "preferences"
     
     # Process city preferences from consolidated file
     cities_file = preferences_dir / "selected_universities_iller.csv"
@@ -225,6 +304,19 @@ def seed_tercih_preferences(db: Session) -> int:
     progs_file = preferences_dir / "selected_universities_programlar.csv"
     if progs_file.exists():
         count += _seed_consolidated_preference_file(db, progs_file, "program")
+    
+    return count
+
+
+def seed_tercih_preferences(db: Session) -> int:
+    """Seed tercih preferences from all year folders."""
+    count = 0
+    
+    # Seed from 2022-2024
+    count += _seed_preferences_from_dir(db, TERCIH_DIR_2022_2024 / "preferences")
+    
+    # Seed from 2025
+    count += _seed_preferences_from_dir(db, TERCIH_DIR_2025 / "preferences")
     
     db.commit()
     print(f"Seeded {count} tercih preferences")
