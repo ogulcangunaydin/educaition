@@ -1,6 +1,13 @@
 """
 Seeder for tercih statistics data.
 Loads data from CSV files into the database.
+
+File locations:
+- prices/2024-2025/prices_processed.csv
+- tercih/2022-2024/combined_stats.csv
+- tercih/2022-2024/istatistikleri.csv
+- tercih/2022-2024/kullanma_oranlari.csv
+- tercih/2022-2024/preferences/selected_universities_*.csv
 """
 
 import csv
@@ -17,7 +24,9 @@ from app.modules.tercih_stats.models import (
 )
 
 
-DATA_DIR = Path(__file__).parent.parent / "data" / "tercih"
+DATA_DIR = Path(__file__).parent.parent / "data"
+TERCIH_DIR = DATA_DIR / "tercih" / "2022-2024"
+PRICES_DIR = DATA_DIR / "prices" / "2024-2025"
 
 
 def parse_turkish_number(value: str) -> Optional[float]:
@@ -55,8 +64,8 @@ def parse_int(value: str) -> Optional[int]:
 
 
 def seed_program_prices(db: Session) -> int:
-    """Seed program prices from all_programs_prices_processed.csv."""
-    csv_path = DATA_DIR / "all_programs_prices_processed.csv"
+    """Seed program prices from prices/2024-2025/prices_processed.csv."""
+    csv_path = PRICES_DIR / "prices_processed.csv"
     if not csv_path.exists():
         print(f"Warning: {csv_path} not found, skipping program prices")
         return 0
@@ -90,8 +99,8 @@ def seed_program_prices(db: Session) -> int:
 
 
 def seed_tercih_stats(db: Session) -> int:
-    """Seed tercih stats from all_universities_combined_tercih_stats.csv."""
-    csv_path = DATA_DIR / "all_universities_combined_tercih_stats.csv"
+    """Seed tercih stats from tercih/2022-2024/combined_stats.csv."""
+    csv_path = TERCIH_DIR / "combined_stats.csv"
     if not csv_path.exists():
         print(f"Warning: {csv_path} not found, skipping tercih stats")
         return 0
@@ -124,8 +133,8 @@ def seed_tercih_stats(db: Session) -> int:
 
 
 def seed_tercih_istatistikleri(db: Session) -> int:
-    """Seed detailed tercih istatistikleri from all_universities_tercih_istatistikleri.csv."""
-    csv_path = DATA_DIR / "all_universities_tercih_istatistikleri.csv"
+    """Seed detailed tercih istatistikleri from tercih/2022-2024/istatistikleri.csv."""
+    csv_path = TERCIH_DIR / "istatistikleri.csv"
     if not csv_path.exists():
         print(f"Warning: {csv_path} not found, skipping tercih istatistikleri")
         return 0
@@ -198,21 +207,22 @@ def seed_tercih_istatistikleri(db: Session) -> int:
 
 
 def seed_tercih_preferences(db: Session) -> int:
-    """Seed tercih preferences from consolidated CSV files."""
+    """Seed tercih preferences from consolidated CSV files for selected universities."""
     count = 0
+    preferences_dir = TERCIH_DIR / "preferences"
     
     # Process city preferences from consolidated file
-    cities_file = DATA_DIR / "all_universities_tercih_edilen_iller.csv"
+    cities_file = preferences_dir / "selected_universities_iller.csv"
     if cities_file.exists():
         count += _seed_consolidated_preference_file(db, cities_file, "city")
     
     # Process university preferences from consolidated file
-    unis_file = DATA_DIR / "all_universities_tercih_edilen_universiteler.csv"
+    unis_file = preferences_dir / "selected_universities_universiteler.csv"
     if unis_file.exists():
         count += _seed_consolidated_preference_file(db, unis_file, "university")
     
     # Process program preferences from consolidated file
-    progs_file = DATA_DIR / "all_universities_tercih_edilen_programlar.csv"
+    progs_file = preferences_dir / "selected_universities_programlar.csv"
     if progs_file.exists():
         count += _seed_consolidated_preference_file(db, progs_file, "program")
     

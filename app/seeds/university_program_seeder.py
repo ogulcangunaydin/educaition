@@ -6,7 +6,9 @@ Reads the master CSV files and populates:
 - programs table  
 - program_yearly_stats table
 
-Source: all_universities_programs_master.csv (2024 and 2025 data)
+Source:
+- programs/2022-2024/programs_master.csv (2022, 2023, 2024 data)
+- programs/2025/programs_master.csv (2025 data)
 """
 
 import csv
@@ -24,8 +26,8 @@ class UniversityProgramSeeder:
 
     # Path to the backend data files (source of truth for seeding)
     DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
-    DATA_DIR_2024 = os.path.join(DATA_DIR, "2024")
-    DATA_DIR_2025 = os.path.join(DATA_DIR, "2025")
+    DATA_DIR_2022_2024 = os.path.join(DATA_DIR, "programs", "2022-2024")
+    DATA_DIR_2025 = os.path.join(DATA_DIR, "programs", "2025")
 
     def __init__(self, db: Session):
         self.db = db
@@ -49,7 +51,7 @@ class UniversityProgramSeeder:
 
     def seed_from_2025_csv(self):
         """Seed from the 2025 data file."""
-        csv_path = os.path.join(self.DATA_DIR_2025, "all_universities_programs_master.csv")
+        csv_path = os.path.join(self.DATA_DIR_2025, "programs_master.csv")
 
         if not os.path.exists(csv_path):
             logger.warning(f"2025 CSV not found: {csv_path}")
@@ -72,8 +74,8 @@ class UniversityProgramSeeder:
         logger.info(f"2025 data: processed {row_count} rows")
 
     def seed_from_2024_csv(self):
-        """Seed historical data from 2024 file (contains 2022, 2023, 2024 data)."""
-        csv_path = os.path.join(self.DATA_DIR_2024, "all_universities_programs_master.csv")
+        """Seed historical data from 2022-2024 file (contains 2022, 2023, 2024 data)."""
+        csv_path = os.path.join(self.DATA_DIR_2022_2024, "programs_master.csv")
 
         if not os.path.exists(csv_path):
             logger.warning(f"2024 CSV not found: {csv_path}")

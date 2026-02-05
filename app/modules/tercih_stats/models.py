@@ -35,7 +35,7 @@ class TercihStats(Base):
     yop_kodu = Column(String(20), ForeignKey("programs.yop_kodu"), index=True)
     year = Column(Integer, index=True)
     
-    # From all_universities_combined_tercih_stats.csv
+    # From tercih/2022-2024/combined_stats.csv
     ortalama_tercih_edilme_sirasi = Column(Float, nullable=True)  # Average preference order (A)
     ortalama_yerlesen_tercih_sirasi = Column(Float, nullable=True)  # Average placed preference order (B)
     marka_etkinlik_degeri = Column(Float, nullable=True)  # Brand effectiveness (A/B)
