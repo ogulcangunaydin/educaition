@@ -375,7 +375,7 @@ def get_suggested_programs(
     """
     # Step 1: Find top 3 matching jobs
     suggested_jobs = find_top_matching_jobs(
-        riasec_scores, top_n=3, db=db
+        riasec_scores, db=db, top_n=3
     )
 
     if not suggested_jobs:
