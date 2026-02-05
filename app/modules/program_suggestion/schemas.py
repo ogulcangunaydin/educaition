@@ -1,57 +1,141 @@
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict, field_serializer
+
+from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator
+
+from app.core.validators import FieldLimits, sanitize_string
+
 
 class ProgramSuggestionStudentBase(BaseModel):
-    name: str | None = None
-    birth_year: int | None = None
-    gender: str | None = None
-    class_year: str | None = None
+    name: str | None = Field(default=None, max_length=FieldLimits.NAME_MAX)
+    birth_year: int | None = Field(default=None, ge=1950, le=2025)
+    gender: str | None = Field(default=None, max_length=FieldLimits.CODE_FIELD_MAX)
+    class_year: str | None = Field(default=None, max_length=FieldLimits.CODE_FIELD_MAX)
     will_take_exam: bool | None = True
-    average_grade: float | None = None
-    area: str | None = None
+    average_grade: float | None = Field(default=None, ge=0, le=100)
+    area: str | None = Field(default=None, max_length=FieldLimits.CODE_FIELD_MAX)
     wants_foreign_language: bool | None = False
-    expected_score_min: float | None = None
-    expected_score_max: float | None = None
-    expected_score_distribution: str | None = None
-    alternative_area: str | None = None
-    alternative_score_min: float | None = None
-    alternative_score_max: float | None = None
-    alternative_score_distribution: str | None = None
-    preferred_language: str | None = None
-    desired_universities: list[str] | None = None
-    desired_cities: list[str] | None = None
+    expected_score_min: float | None = Field(default=None, ge=0, le=600)
+    expected_score_max: float | None = Field(default=None, ge=0, le=600)
+    expected_score_distribution: str | None = Field(
+        default=None, max_length=FieldLimits.CODE_FIELD_MAX
+    )
+    alternative_area: str | None = Field(
+        default=None, max_length=FieldLimits.CODE_FIELD_MAX
+    )
+    alternative_score_min: float | None = Field(default=None, ge=0, le=600)
+    alternative_score_max: float | None = Field(default=None, ge=0, le=600)
+    alternative_score_distribution: str | None = Field(
+        default=None, max_length=FieldLimits.CODE_FIELD_MAX
+    )
+    preferred_language: str | None = Field(
+        default=None, max_length=FieldLimits.CODE_FIELD_MAX
+    )
+    desired_universities: list[str] | None = Field(
+        default=None, max_length=FieldLimits.MAX_UNIVERSITIES
+    )
+    desired_cities: list[str] | None = Field(
+        default=None, max_length=FieldLimits.MAX_CITIES
+    )
+
+    @field_validator("name", "gender", "class_year", "area", "alternative_area", mode="before")
+    @classmethod
+    def sanitize_strings(cls, v: str | None) -> str | None:
+        return sanitize_string(v) if v else v
+
+    @field_validator("desired_universities", "desired_cities", mode="before")
+    @classmethod
+    def sanitize_list_items(cls, v: list[str] | None) -> list[str] | None:
+        if v is None:
+            return None
+        return [sanitize_string(item) or "" for item in v if item]
+
 
 class ProgramSuggestionStudentCreate(BaseModel):
     high_school_room_id: int
 
+
 class ProgramSuggestionStudentUpdateStep1(BaseModel):
-    name: str
-    birth_year: int
-    gender: str
+    name: str = Field(min_length=1, max_length=FieldLimits.NAME_MAX)
+    birth_year: int = Field(ge=1950, le=2025)
+    gender: str = Field(max_length=FieldLimits.CODE_FIELD_MAX)
+
+    @field_validator("name", "gender", mode="before")
+    @classmethod
+    def sanitize_strings(cls, v: str) -> str:
+        return sanitize_string(v) or ""
+
 
 class ProgramSuggestionStudentUpdateStep2(BaseModel):
-    class_year: str
+    class_year: str = Field(max_length=FieldLimits.CODE_FIELD_MAX)
     will_take_exam: bool
-    average_grade: float | None = None
-    area: str
+    average_grade: float | None = Field(default=None, ge=0, le=100)
+    area: str = Field(max_length=FieldLimits.CODE_FIELD_MAX)
     wants_foreign_language: bool
 
+    @field_validator("class_year", "area", mode="before")
+    @classmethod
+    def sanitize_strings(cls, v: str) -> str:
+        return sanitize_string(v) or ""
+
+
 class ProgramSuggestionStudentUpdateStep3(BaseModel):
-    expected_score_min: float
-    expected_score_max: float
-    expected_score_distribution: str
-    alternative_area: str | None = None
-    alternative_score_min: float | None = None
-    alternative_score_max: float | None = None
-    alternative_score_distribution: str | None = None
+    expected_score_min: float = Field(ge=0, le=600)
+    expected_score_max: float = Field(ge=0, le=600)
+    expected_score_distribution: str = Field(max_length=FieldLimits.CODE_FIELD_MAX)
+    alternative_area: str | None = Field(
+        default=None, max_length=FieldLimits.CODE_FIELD_MAX
+    )
+    alternative_score_min: float | None = Field(default=None, ge=0, le=600)
+    alternative_score_max: float | None = Field(default=None, ge=0, le=600)
+    alternative_score_distribution: str | None = Field(
+        default=None, max_length=FieldLimits.CODE_FIELD_MAX
+    )
+
+    @field_validator(
+        "expected_score_distribution",
+        "alternative_area",
+        "alternative_score_distribution",
+        mode="before",
+    )
+    @classmethod
+    def sanitize_strings(cls, v: str | None) -> str | None:
+        return sanitize_string(v) if v else v
+
 
 class ProgramSuggestionStudentUpdateStep4(BaseModel):
-    preferred_language: str
-    desired_universities: list[str] | None = None
-    desired_cities: list[str]
+    preferred_language: str = Field(max_length=FieldLimits.CODE_FIELD_MAX)
+    desired_universities: list[str] | None = Field(
+        default=None, max_length=FieldLimits.MAX_UNIVERSITIES
+    )
+    desired_cities: list[str] = Field(max_length=FieldLimits.MAX_CITIES)
+
+    @field_validator("preferred_language", mode="before")
+    @classmethod
+    def sanitize_language(cls, v: str) -> str:
+        return sanitize_string(v) or ""
+
+    @field_validator("desired_universities", "desired_cities", mode="before")
+    @classmethod
+    def sanitize_list_items(cls, v: list[str] | None) -> list[str] | None:
+        if v is None:
+            return None
+        return [sanitize_string(item) or "" for item in v if item]
+
 
 class ProgramSuggestionStudentUpdateRiasec(BaseModel):
     riasec_answers: dict[str, int]  # {question_id: score}
+
+    @field_validator("riasec_answers")
+    @classmethod
+    def validate_riasec_answers(cls, v: dict[str, int]) -> dict[str, int]:
+        if len(v) > 100:  # Reasonable limit for RIASEC questions
+            raise ValueError("Too many RIASEC answers")
+        for key, value in v.items():
+            if not isinstance(key, str) or len(key) > 50:
+                raise ValueError("Invalid question ID format")
+            if not isinstance(value, int) or value < 1 or value > 5:
+                raise ValueError("Score must be an integer between 1 and 5")
+        return v
 
 class ProgramSuggestionStudent(ProgramSuggestionStudentBase):
     model_config = ConfigDict(from_attributes=True)
