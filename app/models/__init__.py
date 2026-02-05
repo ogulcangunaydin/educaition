@@ -8,6 +8,12 @@ from app.modules.high_school_rooms.models import HighSchoolRoom
 from app.modules.program_suggestion.models import ProgramSuggestionStudent
 from app.modules.reference_data.models import RiasecJobScore, ScoreDistribution
 from app.modules.universities.models import University, Program, ProgramYearlyStats
+from app.modules.tercih_stats.models import (
+    ProgramPrice,
+    TercihStats,
+    TercihIstatistikleri,
+    TercihPreference,
+)
 
 __all__ = [
     "User",
@@ -27,4 +33,8 @@ __all__ = [
     "University",
     "Program",
     "ProgramYearlyStats",
+    "ProgramPrice",
+    "TercihStats",
+    "TercihIstatistikleri",
+    "TercihPreference",
 ]

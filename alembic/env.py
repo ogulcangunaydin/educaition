@@ -26,6 +26,10 @@ from app.models import (  # noqa: F401
     University,
     Program,
     ProgramYearlyStats,
+    ProgramPrice,
+    TercihStats,
+    TercihIstatistikleri,
+    TercihPreference,
 )
 
 # this is the Alembic Config object, which provides

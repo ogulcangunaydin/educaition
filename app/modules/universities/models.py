@@ -72,6 +72,10 @@ class Program(Base):
     # Relationships
     university = relationship("University", back_populates="programs")
     yearly_stats = relationship("ProgramYearlyStats", back_populates="program", lazy="dynamic")
+    prices = relationship("ProgramPrice", back_populates="program", lazy="dynamic")
+    tercih_stats = relationship("TercihStats", back_populates="program", lazy="dynamic")
+    tercih_istatistikleri = relationship("TercihIstatistikleri", back_populates="program", uselist=False)
+    tercih_preferences = relationship("TercihPreference", back_populates="program", lazy="dynamic")
 
     # Composite index for common queries
     __table_args__ = (
