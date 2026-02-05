@@ -11,7 +11,7 @@ class ProgramSuggestionStudent(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     high_school_room_id = Column(
-        Integer, ForeignKey("high_school_rooms.id"), nullable=False
+        Integer, ForeignKey("high_school_rooms.id"), nullable=False, index=True
     )
 
     # Step 1.1 - Personal Info

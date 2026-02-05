@@ -9,7 +9,7 @@ class HighSchoolRoom(Base):
     __tablename__ = "high_school_rooms"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     high_school_name = Column(String, nullable=False)
     high_school_code = Column(String, nullable=True)
     created_at = Column(

@@ -12,7 +12,7 @@ class Player(Base):
     player_tactic = Column(String)
     short_tactic = Column(String)
     player_code = Column(String)
-    room_id = Column(Integer, ForeignKey("rooms.id"))
+    room_id = Column(Integer, ForeignKey("rooms.id"), index=True)
     extroversion = Column(Float)
     agreeableness = Column(Float)
     conscientiousness = Column(Float)

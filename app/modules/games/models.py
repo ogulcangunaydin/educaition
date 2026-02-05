@@ -8,11 +8,11 @@ class Game(Base):
     __tablename__ = "games"
 
     id = Column(Integer, primary_key=True, index=True)
-    home_player_id = Column(Integer, ForeignKey("players.id"))
-    away_player_id = Column(Integer, ForeignKey("players.id"))
+    home_player_id = Column(Integer, ForeignKey("players.id"), index=True)
+    away_player_id = Column(Integer, ForeignKey("players.id"), index=True)
     home_player_score = Column(Integer, default=0)
     away_player_score = Column(Integer, default=0)
-    session_id = Column(Integer, ForeignKey("sessions.id"))
+    session_id = Column(Integer, ForeignKey("sessions.id"), index=True)
     created_at = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -30,7 +30,7 @@ class Round(Base):
     round_number = Column(Integer)
     home_choice = Column(String)
     away_choice = Column(String)
-    game_id = Column(Integer, ForeignKey("games.id"))
+    game_id = Column(Integer, ForeignKey("games.id"), index=True)
     created_at = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -42,7 +42,7 @@ class Session(Base):
     __tablename__ = "sessions"
 
     id = Column(Integer, primary_key=True, index=True)
-    room_id = Column(Integer, ForeignKey("rooms.id"))
+    room_id = Column(Integer, ForeignKey("rooms.id"), index=True)
     name = Column(String, nullable=True)
     status = Column(String, default="started")
     player_ids = Column(String, nullable=True)
