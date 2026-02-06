@@ -10,6 +10,8 @@ class DissonanceTestParticipant(Base, SoftDeleteMixin):
     __tablename__ = "dissonance_test_participants"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
+    full_name = Column(String(255), nullable=True)
+    student_number = Column(String(50), nullable=True)
     email = Column(String(255), nullable=True)
     age = Column(Integer, nullable=True)
     gender = Column(String(50), nullable=True)

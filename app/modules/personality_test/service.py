@@ -68,6 +68,8 @@ class PersonalityTestService:
             test_room_id=participant_data.test_room_id,
             user_id=room.created_by,
             student_user_id=participant_data.student_user_id,
+            full_name=bleach.clean(participant_data.full_name, strip=True) if participant_data.full_name else None,
+            student_number=bleach.clean(participant_data.student_number, strip=True) if participant_data.student_number else None,
             email=participant_data.email,
             age=participant_data.age,
             gender=bleach.clean(participant_data.gender, strip=True) if participant_data.gender else None,

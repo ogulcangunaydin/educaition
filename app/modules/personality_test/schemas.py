@@ -23,6 +23,8 @@ from app.core.validators import (
 class PersonalityTestParticipantBase(BaseModel):
     """Base schema with common participant fields."""
     
+    full_name: str | None = Field(default=None, max_length=FieldLimits.SHORT_TEXT_MAX)
+    student_number: str | None = Field(default=None, max_length=FieldLimits.CODE_FIELD_MAX)
     email: EmailStrOptional = Field(default=None, max_length=FieldLimits.EMAIL_MAX)
     age: int | None = Field(default=None, ge=1, le=150)
     gender: str | None = Field(default=None, max_length=FieldLimits.CODE_FIELD_MAX)
@@ -34,7 +36,7 @@ class PersonalityTestParticipantBase(BaseModel):
     career_start: int | None = Field(default=None, ge=1, le=10)
     flexibility: int | None = Field(default=None, ge=1, le=10)
 
-    @field_validator("gender", "education", "star_sign", "rising_sign", mode="before")
+    @field_validator("full_name", "gender", "education", "star_sign", "rising_sign", "student_number", mode="before")
     @classmethod
     def sanitize_strings(cls, v: str | None) -> str | None:
         return sanitize_string(v) if v else v

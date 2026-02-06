@@ -84,6 +84,8 @@ class PersonalityTestParticipant(Base, SoftDeleteMixin):
     )
     
     # Demographics
+    full_name = Column(String(255), nullable=True)
+    student_number = Column(String(50), nullable=True)
     email = Column(String(255), nullable=True)
     age = Column(Integer, nullable=True)
     gender = Column(String(50), nullable=True)
