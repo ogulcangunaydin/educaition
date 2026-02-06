@@ -53,6 +53,7 @@ def login_for_access_token(
 def refresh_token(
     refresh_token: str | None = Cookie(None),
     body_refresh_token: dict | None = Body(None),
+    db: Session = Depends(get_db),
 ):
     token = refresh_token
 
@@ -65,7 +66,7 @@ def refresh_token(
             content={"detail": "Refresh token required"},
         )
 
-    new_tokens = AuthService.refresh_access_token(token)
+    new_tokens = AuthService.refresh_access_token(token, db)
     return _create_auth_response(new_tokens)
 
 @auth_protected_router.post("/logout")

@@ -52,15 +52,20 @@ class AuthService:
         }
 
     @staticmethod
-    def refresh_access_token(refresh_token: str) -> dict:
+    def refresh_access_token(refresh_token: str, db: Session) -> dict:
         try:
             token_pair = refresh_tokens(refresh_token)
+
+            user = db.query(models.User).filter(models.User.id == token_pair.user_id).first()
+
             return {
                 "access_token": token_pair.access_token,
                 "refresh_token": token_pair.refresh_token,
                 "current_user_id": token_pair.user_id,
                 "token_type": "bearer",
                 "expires_in": token_pair.expires_in,
+                "role": user.role if user else None,
+                "university": user.university if user else None,
             }
         except TokenError as e:
             raise HTTPException(
