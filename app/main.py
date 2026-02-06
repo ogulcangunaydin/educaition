@@ -62,7 +62,12 @@ app = FastAPI(
 )
 
 if settings.is_development:
-    origins = ["*"]
+    origins = [
+        "http://localhost:8080",
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:5173",
+    ]
 else:
     origins = [
         "http://localhost:8080",
@@ -71,6 +76,8 @@ else:
         "http://educaition.com.tr",
         "https://educaition.com.tr",
     ]
+
+logger.info(f"CORS allowed origins: {origins}")
 
 app.add_middleware(
     CORSMiddleware,
