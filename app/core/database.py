@@ -32,6 +32,11 @@ def auto_filter_soft_deleted(query):
     if query._execution_options.get("include_deleted", False):
         return query
     
+    # Skip if already filtered for soft delete (to avoid double filtering and the limit/offset issue)
+    # We check by looking at the whereclause for any deleted_at condition
+    if hasattr(query, '_soft_delete_filtered') and query._soft_delete_filtered:
+        return query
+    
     # Get all entities being queried
     for desc in query.column_descriptions:
         entity = desc.get("entity")
@@ -46,7 +51,8 @@ def auto_filter_soft_deleted(query):
             
         # Check if model has deleted_at column (SoftDeleteMixin)
         if hasattr(mapper_class, "deleted_at"):
-            query = query.filter(entity.deleted_at.is_(None))
+            # Use enable_assertions=False to allow filter after limit/offset
+            query = query.enable_assertions(False).filter(entity.deleted_at.is_(None))
     
     return query
 

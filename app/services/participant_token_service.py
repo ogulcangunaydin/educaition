@@ -9,6 +9,7 @@ class ParticipantType(str, Enum):
     PLAYER = "player"  # Game room players
     DISSONANCE_TEST = "dissonance_test"  # Dissonance test participants
     PROGRAM_SUGGESTION = "program_suggestion"  # Program suggestion students
+    PERSONALITY_TEST = "personality_test"  # Standalone personality test participants
 
 
 class ParticipantTokenConfig:
@@ -16,6 +17,7 @@ class ParticipantTokenConfig:
         ParticipantType.PLAYER: 4,  # 4 hours for game players
         ParticipantType.DISSONANCE_TEST: 24,  # 24 hours for test
         ParticipantType.PROGRAM_SUGGESTION: 72,  # 3 days for program suggestion
+        ParticipantType.PERSONALITY_TEST: 24,  # 24 hours for personality test
     }
     ALGORITHM: str = settings.ALGORITHM
     SECRET_KEY: str = settings.SECRET_KEY

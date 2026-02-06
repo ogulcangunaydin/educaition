@@ -155,6 +155,40 @@ async def get_program_student(
             detail=e.message,
         )
 
+
+async def get_personality_test_participant(
+    request: Request,
+    token: str | None = Depends(_extract_participant_token),
+) -> ParticipantTokenPayload:
+    """Dependency for personality test participants."""
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Personality test session token required",
+        )
+
+    try:
+        payload = verify_participant_token(
+            token, expected_type=ParticipantType.PERSONALITY_TEST
+        )
+
+        request.state.participant_id = payload.participant_id
+        request.state.room_id = payload.room_id
+
+        return payload
+
+    except ParticipantTokenExpiredError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Session has expired. Please start a new test.",
+        )
+    except ParticipantTokenInvalidError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=e.message,
+        )
+
+
 CurrentParticipant = Annotated[
     ParticipantTokenPayload, Depends(get_current_participant)
 ]
@@ -163,6 +197,9 @@ CurrentTestParticipant = Annotated[
     ParticipantTokenPayload, Depends(get_test_participant)
 ]
 CurrentProgramStudent = Annotated[ParticipantTokenPayload, Depends(get_program_student)]
+CurrentPersonalityTestParticipant = Annotated[
+    ParticipantTokenPayload, Depends(get_personality_test_participant)
+]
 
 def verify_participant_ownership(
     token_participant_id: int,
@@ -180,9 +217,11 @@ __all__ = [
     "get_player",
     "get_test_participant",
     "get_program_student",
+    "get_personality_test_participant",
     "CurrentParticipant",
     "CurrentPlayer",
     "CurrentTestParticipant",
     "CurrentProgramStudent",
+    "CurrentPersonalityTestParticipant",
     "verify_participant_ownership",
 ]

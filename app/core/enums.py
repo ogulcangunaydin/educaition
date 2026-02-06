@@ -33,6 +33,15 @@ class UniversityKey(str, Enum):
     MAYIS = "mayis"
 
 
+class TestType(str, Enum):
+    """Test types for unified room management."""
+
+    PRISONERS_DILEMMA = "prisoners_dilemma"
+    DISSONANCE_TEST = "dissonance_test"
+    PROGRAM_SUGGESTION = "program_suggestion"
+    PERSONALITY_TEST = "personality_test"
+
+
 # =============================================================================
 # PROGRAM SUGGESTION ENUMS
 # =============================================================================

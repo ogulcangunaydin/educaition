@@ -20,6 +20,9 @@ from app.modules.lise.models import (
     LisePlacement2025,
     ScoreRankingDistribution,
 )
+from app.modules.device_tracking.models import DeviceTestCompletion
+from app.modules.test_rooms.models import TestRoom
+from app.modules.personality_test.models import PersonalityTestParticipant
 
 __all__ = [
     "User",
@@ -47,4 +50,7 @@ __all__ = [
     "LisePlacement",
     "LisePlacement2025",
     "ScoreRankingDistribution",
+    "DeviceTestCompletion",
+    "TestRoom",
+    "PersonalityTestParticipant",
 ]

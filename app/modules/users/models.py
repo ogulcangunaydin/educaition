@@ -35,3 +35,7 @@ class User(Base, SoftDeleteMixin):
         "DissonanceTestParticipant", back_populates="user"
     )
     high_school_rooms = relationship("HighSchoolRoom", back_populates="user")
+    test_rooms = relationship("TestRoom", back_populates="creator")
+    personality_test_participants = relationship(
+        "PersonalityTestParticipant", back_populates="user"
+    )

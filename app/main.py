@@ -23,6 +23,15 @@ from .modules.universities import router as universities_router, programs_router
 from .modules.tercih_stats import tercih_stats_router
 from .modules.lise.router import router as lise_router
 from .modules.enums.router import router as enums_router
+from .modules.device_tracking.router import router as device_tracking_router
+from .modules.test_rooms.router import (
+    router as test_rooms_router,
+    public_router as test_rooms_public_router,
+)
+from .modules.personality_test.router import (
+    router as personality_test_router,
+    personality_test_public_router,
+)
 from . import models
 
 log_level = logging.DEBUG if settings.DEBUG else logging.INFO
@@ -94,3 +103,8 @@ app.include_router(programs_router, prefix="/api", tags=["programs"])
 app.include_router(tercih_stats_router, prefix="/api", tags=["tercih_stats"])
 app.include_router(lise_router, prefix="/api", tags=["lise"])
 app.include_router(enums_router, prefix="/api", tags=["enums"])
+app.include_router(device_tracking_router, prefix="/api", tags=["device_tracking"])
+app.include_router(test_rooms_public_router, prefix="/api", tags=["test_rooms"])
+app.include_router(test_rooms_router, prefix="/api", tags=["test_rooms"])
+app.include_router(personality_test_public_router, prefix="/api", tags=["personality_test"])
+app.include_router(personality_test_router, prefix="/api", tags=["personality_test"])
