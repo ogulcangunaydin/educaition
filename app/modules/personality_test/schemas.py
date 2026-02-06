@@ -7,7 +7,7 @@ This module defines request/response schemas for the personality test API.
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_serializer, model_validator, field_validator
 
 from app.core.validators import (
     EmailStrOptional,
@@ -137,12 +137,10 @@ class PersonalityTestParticipantResponse(PersonalityTestParticipantBase):
     def serialize_created_at(self, created_at: datetime, _info):
         return created_at.isoformat()
 
-    @field_validator("has_completed", mode="before")
-    @classmethod
-    def set_completion_status(cls, v, info):
-        # Check if personality_test_answers exists in the data
-        data = info.data if hasattr(info, 'data') else {}
-        return data.get("extroversion") is not None
+    @model_validator(mode="after")
+    def set_completion_status(self):
+        self.has_completed = self.extroversion is not None
+        return self
 
 
 class PersonalityTestParticipantPublic(BaseModel):
