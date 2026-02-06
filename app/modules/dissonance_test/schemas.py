@@ -28,6 +28,10 @@ class DissonanceTestParticipantBase(BaseModel):
     star_sign: str | None = Field(default=None, max_length=FieldLimits.CODE_FIELD_MAX)
     rising_sign: str | None = Field(default=None, max_length=FieldLimits.CODE_FIELD_MAX)
     user_id: int
+    student_user_id: int | None = Field(
+        default=None,
+        description="The authenticated student user ID (from device-login or real login)"
+    )
 
     @field_validator("gender", "education", "star_sign", "rising_sign", mode="before")
     @classmethod

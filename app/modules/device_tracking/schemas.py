@@ -4,14 +4,14 @@ from pydantic import BaseModel, Field
 
 class DeviceCompletionCheck(BaseModel):
     """Request schema to check if a device has completed a test"""
-    device_id: str = Field(..., min_length=36, max_length=36, description="UUID of the device")
+    device_id: str = Field(..., min_length=16, max_length=64, description="Device fingerprint hash")
     test_type: str = Field(..., min_length=1, max_length=50, description="Type of test")
     room_id: int | None = Field(None, description="Optional room/session ID")
 
 
 class DeviceCompletionMark(BaseModel):
     """Request schema to mark a device as having completed a test"""
-    device_id: str = Field(..., min_length=36, max_length=36, description="UUID of the device")
+    device_id: str = Field(..., min_length=16, max_length=64, description="Device fingerprint hash")
     test_type: str = Field(..., min_length=1, max_length=50, description="Type of test")
     room_id: int | None = Field(None, description="Optional room/session ID")
 

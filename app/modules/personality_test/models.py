@@ -75,6 +75,13 @@ class PersonalityTestParticipant(Base, SoftDeleteMixin):
         nullable=False, 
         index=True,
     )
+    # The student (anonymous or real) who took the test
+    student_user_id = Column(
+        Integer,
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     
     # Demographics
     email = Column(String(255), nullable=True)
@@ -117,7 +124,8 @@ class PersonalityTestParticipant(Base, SoftDeleteMixin):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), nullable=True)
 
     # Relationships
-    user = relationship("User", back_populates="personality_test_participants")
+    user = relationship("User", back_populates="personality_test_participants", foreign_keys=[user_id])
+    student_user = relationship("User", foreign_keys=[student_user_id])
     test_room = relationship("TestRoom", back_populates="personality_test_participants")
 
     def has_completed_test(self) -> bool:

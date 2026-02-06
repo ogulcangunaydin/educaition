@@ -32,6 +32,13 @@ class DissonanceTestParticipant(Base, SoftDeleteMixin):
     )
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), nullable=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    # The student (anonymous or real) who took the test
+    student_user_id = Column(
+        Integer,
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     workload = Column(Integer, nullable=True)
     career_start = Column(Integer, nullable=True)
     flexibility = Column(Integer, nullable=True)
@@ -41,4 +48,5 @@ class DissonanceTestParticipant(Base, SoftDeleteMixin):
     comfort_question_displayed_average = Column(Float, nullable=True)
     fare_question_displayed_average = Column(Float, nullable=True)
 
-    user = relationship("User", back_populates="dissonance_test_participants")
+    user = relationship("User", back_populates="dissonance_test_participants", foreign_keys=[user_id])
+    student_user = relationship("User", foreign_keys=[student_user_id])

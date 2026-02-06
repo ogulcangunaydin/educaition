@@ -16,8 +16,8 @@ class DeviceTestCompletion(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     
-    # UUID generated and stored on the client device
-    device_id = Column(String(36), nullable=False, index=True)
+    # SHA-256 fingerprint hash generated from browser/device signals
+    device_id = Column(String(64), nullable=False, index=True)
     
     # Type of test completed (e.g., 'dissonance_test', 'program_suggestion', 'prisoners_dilemma')
     test_type = Column(String(50), nullable=False, index=True)

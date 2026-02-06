@@ -32,10 +32,14 @@ class User(Base, SoftDeleteMixin):
 
     rooms = relationship("Room", back_populates="user")
     dissonance_test_participants = relationship(
-        "DissonanceTestParticipant", back_populates="user"
+        "DissonanceTestParticipant",
+        back_populates="user",
+        foreign_keys="[DissonanceTestParticipant.user_id]",
     )
     high_school_rooms = relationship("HighSchoolRoom", back_populates="user")
     test_rooms = relationship("TestRoom", back_populates="creator")
     personality_test_participants = relationship(
-        "PersonalityTestParticipant", back_populates="user"
+        "PersonalityTestParticipant",
+        back_populates="user",
+        foreign_keys="[PersonalityTestParticipant.user_id]",
     )

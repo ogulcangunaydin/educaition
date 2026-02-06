@@ -48,6 +48,10 @@ class PersonalityTestParticipantCreate(PersonalityTestParticipantBase):
     """Schema for creating a new personality test participant."""
     
     test_room_id: int = Field(description="The test room ID")
+    student_user_id: int | None = Field(
+        default=None,
+        description="The authenticated student user ID (from device-login or real login)"
+    )
     device_fingerprint: str | None = Field(
         default=None, 
         max_length=255,

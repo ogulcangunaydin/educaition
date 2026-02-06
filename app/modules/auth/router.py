@@ -7,7 +7,7 @@ from app.dependencies.auth import get_current_active_user, get_db
 from app.modules.users.models import User
 from app.modules.users.schemas import User as UserSchema
 from app.services.token_service import TokenConfig
-from .schemas import PasswordRequirements
+from .schemas import DeviceLoginRequest, PasswordRequirements
 from .service import AuthService
 
 auth_public_router = APIRouter(tags=["auth"])
@@ -88,6 +88,21 @@ def logout(
     )
 
     return response
+
+@auth_public_router.post("/auth/device-login")
+def device_login(
+    request: DeviceLoginRequest,
+    db: Session = Depends(get_db),
+):
+    """
+    Authenticate (or register) an anonymous user by device fingerprint.
+
+    Finds or creates a student-role user tied to the device, then returns
+    a full JWT token pair identical to regular login.
+    """
+    token_data = AuthService.device_login_user(request.device_id, db)
+    return _create_auth_response(token_data)
+
 
 @auth_public_router.get("/password-requirements", response_model=PasswordRequirements)
 def get_password_requirements():

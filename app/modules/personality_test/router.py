@@ -14,6 +14,8 @@ from app.dependencies.participant import (
     CurrentPersonalityTestParticipant,
     verify_participant_ownership,
 )
+from app.modules.users.models import User
+from app.core.enums import UserRole
 from app.modules.test_rooms.service import TestRoomService
 from app.services.participant_token_service import (
     ParticipantType,
@@ -58,8 +60,16 @@ def create_participant(
     This endpoint is called when a participant starts the test via QR code.
     Returns a session token for subsequent requests.
     """
-    # Check if device has already completed the test
-    if participant_data.device_fingerprint:
+    # Determine if the student_user_id belongs to a privileged user (admin/teacher)
+    # who is allowed to retake tests without device restrictions.
+    is_privileged = False
+    if participant_data.student_user_id:
+        stu = db.query(User).filter(User.id == participant_data.student_user_id).first()
+        if stu and stu.role in (UserRole.ADMIN.value, UserRole.TEACHER.value):
+            is_privileged = True
+
+    # Check if device has already completed the test (skip for admin/teacher)
+    if participant_data.device_fingerprint and not is_privileged:
         has_completed = PersonalityTestService.check_device_completion(
             db,
             participant_data.test_room_id,
@@ -70,7 +80,45 @@ def create_participant(
                 status_code=409,
                 content={"detail": "Device has already completed this test"},
             )
-    
+
+        # Check for an existing in-progress participant (e.g. page reload)
+        existing = PersonalityTestService.find_in_progress_participant(
+            db,
+            participant_data.test_room_id,
+            participant_data.device_fingerprint,
+            participant_data.student_user_id,
+        )
+        if existing:
+            # Return the existing participant instead of creating a duplicate
+            token = create_participant_token(
+                participant_id=existing.id,
+                participant_type=ParticipantType.PERSONALITY_TEST,
+                room_id=existing.test_room_id,
+            )
+
+            response = JSONResponse(
+                status_code=200,
+                content={
+                    "participant": PersonalityTestParticipantResponse.model_validate(
+                        existing
+                    ).model_dump(mode="json"),
+                    "session_token": token,
+                    "expires_in": get_token_expiry_seconds(ParticipantType.PERSONALITY_TEST),
+                    "resumed": True,
+                },
+            )
+
+            response.set_cookie(
+                key="participant_token",
+                value=token,
+                httponly=True,
+                secure=not settings.is_development,
+                samesite="strict",
+                max_age=get_token_expiry_seconds(ParticipantType.PERSONALITY_TEST),
+            )
+
+            return response
+
     participant = PersonalityTestService.create_participant(db, participant_data)
     
     # Create session token

@@ -10,6 +10,10 @@ class Token(BaseModel):
     role: str
     university: str
 
+class DeviceLoginRequest(BaseModel):
+    device_id: str
+
+
 class TokenRefreshRequest(BaseModel):
     refresh_token: str
 

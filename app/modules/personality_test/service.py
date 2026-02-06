@@ -67,6 +67,7 @@ class PersonalityTestService:
         participant = PersonalityTestParticipant(
             test_room_id=participant_data.test_room_id,
             user_id=room.created_by,
+            student_user_id=participant_data.student_user_id,
             email=participant_data.email,
             age=participant_data.age,
             gender=bleach.clean(participant_data.gender, strip=True) if participant_data.gender else None,
@@ -303,6 +304,39 @@ class PersonalityTestService:
         ).first()
         
         return existing is not None
+
+    @staticmethod
+    def find_in_progress_participant(
+        db: Session,
+        room_id: int,
+        device_fingerprint: str,
+        student_user_id: int | None = None,
+    ) -> PersonalityTestParticipant | None:
+        """
+        Find an existing in-progress (not yet completed) participant
+        for the given device/student and room.
+        """
+        if not device_fingerprint and not student_user_id:
+            return None
+
+        query = db.query(PersonalityTestParticipant).filter(
+            PersonalityTestParticipant.test_room_id == room_id,
+            PersonalityTestParticipant.extroversion.is_(None),  # Not completed
+        )
+
+        # Prefer student_user_id match if available
+        if student_user_id:
+            query = query.filter(
+                PersonalityTestParticipant.student_user_id == student_user_id
+            )
+        elif device_fingerprint:
+            query = query.filter(
+                PersonalityTestParticipant.device_fingerprint == device_fingerprint
+            )
+
+        return query.order_by(
+            PersonalityTestParticipant.created_at.desc()
+        ).first()
 
     @staticmethod
     def get_room_statistics(db: Session, room_id: int) -> dict[str, Any]:

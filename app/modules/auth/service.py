@@ -2,7 +2,8 @@ from fastapi import HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from app import models
-from app.core.security import verify_password
+from app.core.enums import UserRole
+from app.core.security import get_password_hash, verify_password
 from app.services.token_service import (
     TokenError,
     create_token_pair,
@@ -82,3 +83,52 @@ class AuthService:
             revoke_token(refresh_token)
 
         return {"message": "Successfully logged out"}
+
+    @staticmethod
+    def device_login_user(device_id: str, db: Session) -> dict:
+        """
+        Find or create a student user identified by device fingerprint.
+
+        This allows anonymous test-takers to get a real user account so all
+        their test results are linked via foreign keys. The username is
+        derived from the device fingerprint to ensure the same device always
+        maps to the same user.
+        """
+        username = f"device_{device_id[:16]}"
+
+        user = (
+            db.query(models.User)
+            .filter(models.User.username == username)
+            .first()
+        )
+
+        if not user:
+            # Create a new student user with a random password
+            # (they never log in with credentials — only via device fingerprint)
+            import secrets
+
+            random_password = secrets.token_urlsafe(32)
+            user = models.User(
+                username=username,
+                email=None,
+                hashed_password=get_password_hash(
+                    random_password + "Aa1!"  # satisfy strength validator
+                ),
+                role=UserRole.STUDENT.value,
+                university="halic",
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+
+        token_pair = create_token_pair(user.username, user.id)
+
+        return {
+            "access_token": token_pair.access_token,
+            "refresh_token": token_pair.refresh_token,
+            "current_user_id": user.id,
+            "token_type": "bearer",
+            "expires_in": token_pair.expires_in,
+            "role": user.role,
+            "university": user.university,
+        }
