@@ -71,6 +71,7 @@ class TestRoomResponse(BaseModel):
     is_active: bool
     settings: dict[str, Any] | None
     created_by: int
+    legacy_room_id: int | None = None
     created_at: datetime
     updated_at: datetime | None
 
@@ -132,6 +133,7 @@ class TestRoomPublicInfo(BaseModel):
     name: str
     test_type: str
     is_active: bool
+    legacy_room_id: int | None = None
 
     class Config:
         from_attributes = True

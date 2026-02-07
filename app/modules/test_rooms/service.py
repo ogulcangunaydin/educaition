@@ -8,6 +8,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.core.enums import TestType
+from app.modules.rooms.models import Room as LegacyRoom
 from .models import TestRoom
 from .schemas import TestRoomCreate, TestRoomUpdate
 
@@ -53,6 +54,17 @@ class TestRoomService:
         )
         
         db.add(room)
+        db.flush()  # Get room.id before commit
+
+        # For Prisoner's Dilemma, also create a legacy Room
+        # because players/sessions still use the legacy rooms table.
+        if room_data.test_type == TestType.PRISONERS_DILEMMA:
+            legacy_room = LegacyRoom(user_id=user_id, name=clean_name)
+            db.add(legacy_room)
+            db.flush()
+            room.legacy_room_id = legacy_room.id
+            room.legacy_table = "rooms"
+
         db.commit()
         db.refresh(room)
         
@@ -62,6 +74,9 @@ class TestRoomService:
     def get_room(db: Session, room_id: int) -> TestRoom:
         """
         Get a single test room by ID.
+        
+        For PD rooms, ensures a legacy Room exists (auto-creates if missing)
+        so player/session operations can work.
         
         Args:
             db: Database session
@@ -80,7 +95,20 @@ class TestRoomService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Test room not found",
             )
-            
+
+        # Auto-create legacy Room for PD if it doesn't exist yet
+        if (
+            room.test_type == TestType.PRISONERS_DILEMMA.value
+            and room.legacy_room_id is None
+        ):
+            legacy_room = LegacyRoom(user_id=room.created_by, name=room.name)
+            db.add(legacy_room)
+            db.flush()
+            room.legacy_room_id = legacy_room.id
+            room.legacy_table = "rooms"
+            db.commit()
+            db.refresh(room)
+
         return room
 
     @staticmethod
@@ -88,6 +116,9 @@ class TestRoomService:
         """
         Get public room info (for anonymous access via QR).
         Only returns active rooms.
+        
+        For PD rooms, ensures a legacy Room exists (auto-creates if missing)
+        so player registration can work.
         
         Args:
             db: Database session
@@ -109,7 +140,20 @@ class TestRoomService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Test room not found or inactive",
             )
-            
+
+        # Auto-create legacy Room for PD if it doesn't exist yet
+        if (
+            room.test_type == TestType.PRISONERS_DILEMMA.value
+            and room.legacy_room_id is None
+        ):
+            legacy_room = LegacyRoom(user_id=room.created_by, name=room.name)
+            db.add(legacy_room)
+            db.flush()
+            room.legacy_room_id = legacy_room.id
+            room.legacy_table = "rooms"
+            db.commit()
+            db.refresh(room)
+
         return room
 
     @staticmethod

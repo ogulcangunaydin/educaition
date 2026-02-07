@@ -1,4 +1,5 @@
 import json
+import logging
 import bleach
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
@@ -11,6 +12,11 @@ from app.services.calculate_personality_traits import calculate_personality_trai
 from app.services.update_player_tactic_and_test_code import (
     update_player_tactic_and_test_code,
 )
+from app.services.tactic_analysis_service import (
+    generate_tactic_reasons,
+    generate_job_recommendation,
+)
+from app.modules.players.schemas import PlayerRegister
 
 def _create_player_function_name(clean_name: str) -> str:
     ascii_normalized_name = (
@@ -85,6 +91,78 @@ class PlayerService:
         return new_player
 
     @staticmethod
+    def register_player(db: Session, data: PlayerRegister, is_privileged: bool = False):
+        """
+        Standardized player registration used by TestRegistrationCard.
+        Resolves test_room_id → legacy_room_id for the players FK.
+        Handles duplicate device_fingerprint by returning 409 (skipped for admin/teacher).
+        """
+        # Resolve test_room_id → legacy_room_id (players FK to rooms.id)
+        test_room = (
+            db.query(models.TestRoom)
+            .filter(models.TestRoom.id == data.test_room_id)
+            .first()
+        )
+        if not test_room:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Test room not found",
+            )
+
+        if test_room.legacy_room_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Test room has no associated game room",
+            )
+
+        room_id = test_room.legacy_room_id
+        clean_name = bleach.clean(data.full_name, strip=True)
+
+        # Check for duplicate device_fingerprint in same room (skip for privileged users)
+        if data.device_fingerprint and not is_privileged:
+            existing = (
+                db.query(models.Player)
+                .filter(
+                    models.Player.device_fingerprint == data.device_fingerprint,
+                    models.Player.room_id == room_id,
+                )
+                .first()
+            )
+            if existing:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="Already registered from this device",
+                )
+
+        # Check for duplicate name in room
+        existing_name = (
+            db.query(models.Player)
+            .filter(
+                models.Player.player_name == clean_name,
+                models.Player.room_id == room_id,
+            )
+            .first()
+        )
+        if existing_name:
+            raise HTTPException(
+                status_code=400, detail="Player name already exists in the room."
+            )
+
+        player_function_name = _create_player_function_name(clean_name)
+        new_player = models.Player(
+            player_name=clean_name,
+            player_function_name=player_function_name,
+            student_number=data.student_number,
+            device_fingerprint=data.device_fingerprint,
+            student_user_id=data.student_user_id,
+            room_id=room_id,
+        )
+        db.add(new_player)
+        db.commit()
+        db.refresh(new_player)
+        return new_player
+
+    @staticmethod
     def update_player_tactic(db: Session, player_id: int, player_tactic: str):
         player = db.query(models.Player).filter(models.Player.id == player_id).first()
 
@@ -131,6 +209,58 @@ class PlayerService:
         player.open_mindedness = personality_scores["open_mindedness"]
 
         db.commit()
+        return player
+
+    @staticmethod
+    def get_tactic_reasons(db: Session, player_id: int, language: str = "tr") -> list[str]:
+        """Generate probable reasons for choosing the player's tactic via GPT."""
+        player = db.query(models.Player).filter(models.Player.id == player_id).first()
+
+        if player is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Player not found",
+            )
+
+        if not player.player_tactic:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Player has no tactic submitted yet",
+            )
+
+        reasons = generate_tactic_reasons(player.player_tactic, language)
+        return reasons
+
+    @staticmethod
+    def submit_tactic_reason(db: Session, player_id: int, reason: str, language: str = "tr"):
+        """Save the selected tactic reason and generate job recommendation via GPT."""
+        player = db.query(models.Player).filter(models.Player.id == player_id).first()
+
+        if player is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Player not found",
+            )
+
+        if not player.player_tactic:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Player has no tactic submitted yet",
+            )
+
+        cleaned_reason = bleach.clean(reason, strip=True)
+        player.tactic_reason = cleaned_reason
+
+        try:
+            job_rec = generate_job_recommendation(
+                player.player_tactic, cleaned_reason, language
+            )
+            player.job_recommendation = job_rec
+        except Exception as e:
+            logging.error(f"Failed to generate job recommendation for player {player_id}: {e}")
+
+        db.commit()
+        db.refresh(player)
         return player
 
     @staticmethod

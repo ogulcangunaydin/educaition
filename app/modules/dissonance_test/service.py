@@ -23,6 +23,60 @@ class DissonanceTestService:
         return db_participant
 
     @staticmethod
+    def check_device_completion(
+        db: Session,
+        test_room_id: int,
+        device_fingerprint: str,
+    ) -> bool:
+        """Check if a device has already completed the dissonance test for a room."""
+        if not device_fingerprint:
+            return False
+
+        existing = (
+            db.query(models.DissonanceTestParticipant)
+            .filter(
+                models.DissonanceTestParticipant.test_room_id == test_room_id,
+                models.DissonanceTestParticipant.device_fingerprint == device_fingerprint,
+                models.DissonanceTestParticipant.has_completed == 1,
+            )
+            .first()
+        )
+        return existing is not None
+
+    @staticmethod
+    def find_in_progress_participant(
+        db: Session,
+        test_room_id: int,
+        device_fingerprint: str,
+        student_user_id: int | None = None,
+    ):
+        """
+        Find an existing in-progress (not yet completed) participant
+        for the given device/student and room.
+        """
+        if not device_fingerprint and not student_user_id:
+            return None
+
+        query = db.query(models.DissonanceTestParticipant).filter(
+            models.DissonanceTestParticipant.test_room_id == test_room_id,
+            (models.DissonanceTestParticipant.has_completed == 0)
+            | (models.DissonanceTestParticipant.has_completed.is_(None)),
+        )
+
+        if student_user_id:
+            query = query.filter(
+                models.DissonanceTestParticipant.student_user_id == student_user_id
+            )
+        elif device_fingerprint:
+            query = query.filter(
+                models.DissonanceTestParticipant.device_fingerprint == device_fingerprint
+            )
+
+        return query.order_by(
+            models.DissonanceTestParticipant.created_at.desc()
+        ).first()
+
+    @staticmethod
     def update_participant_first_answers(
         db: Session,
         participant_id: int,

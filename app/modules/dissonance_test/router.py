@@ -13,6 +13,8 @@ from app.services.participant_token_service import (
     get_token_expiry_seconds,
 )
 from app.modules.test_rooms.service import TestRoomService
+from app.modules.users.models import User
+from app.core.enums import UserRole
 from .schemas import (
     DissonanceTestParticipant,
     DissonanceTestParticipantCreate,
@@ -38,6 +40,61 @@ def create_participant(
     participant: DissonanceTestParticipantCreate,
     db: Session = Depends(get_db),
 ):
+    # Determine if the student_user_id belongs to a privileged user (admin/teacher)
+    # who is allowed to retake tests without device restrictions.
+    is_privileged = False
+    if participant.student_user_id:
+        stu = db.query(User).filter(User.id == participant.student_user_id).first()
+        if stu and stu.role in (UserRole.ADMIN.value, UserRole.TEACHER.value):
+            is_privileged = True
+
+    # Check if device has already completed the test (skip for admin/teacher)
+    if participant.device_fingerprint and not is_privileged:
+        has_completed = DissonanceTestService.check_device_completion(
+            db,
+            participant.test_room_id,
+            participant.device_fingerprint,
+        )
+        if has_completed:
+            return JSONResponse(
+                status_code=409,
+                content={"detail": "Device has already completed this test"},
+            )
+
+        # Check for an existing in-progress participant (e.g. page reload)
+        existing = DissonanceTestService.find_in_progress_participant(
+            db,
+            participant.test_room_id,
+            participant.device_fingerprint,
+            participant.student_user_id,
+        )
+        if existing:
+            token = create_participant_token(
+                participant_id=existing.id,
+                participant_type=ParticipantType.DISSONANCE_TEST,
+                room_id=existing.user_id,
+            )
+            response = JSONResponse(
+                status_code=200,
+                content={
+                    "participant": DissonanceTestParticipant.model_validate(
+                        existing
+                    ).model_dump(mode="json"),
+                    "session_token": token,
+                    "expires_in": get_token_expiry_seconds(ParticipantType.DISSONANCE_TEST),
+                    "resumed": True,
+                },
+            )
+            response.set_cookie(
+                key="participant_token",
+                value=token,
+                httponly=True,
+                secure=not settings.is_development,
+                samesite="strict",
+                max_age=get_token_expiry_seconds(ParticipantType.DISSONANCE_TEST),
+            )
+            return response
+
     created_participant = DissonanceTestService.create_participant(db, participant)
     token = create_participant_token(
         participant_id=created_participant.id,
