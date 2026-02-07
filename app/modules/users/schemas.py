@@ -1,4 +1,6 @@
-from pydantic import BaseModel, Field, field_validator
+from datetime import datetime
+
+from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator
 
 from app.core.enums import UniversityKey, UserRole
 from app.core.validators import (
@@ -69,10 +71,16 @@ class UserUpdate(BaseModel):
 
 
 class User(UserBase):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     is_active: bool
     role: str
     university: str
+    created_at: datetime | None = None
 
-    class Config:
-        from_attributes = True
+    @field_serializer("created_at")
+    def serialize_created_at(self, value: datetime | None, _info) -> str | None:
+        if value is None:
+            return None
+        return value.strftime("%d/%m/%Y %H:%M:%S")
