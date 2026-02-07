@@ -9,9 +9,11 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.modules.tercih_stats.schemas import (
+    BatchStatsRequest,
+    BatchStatsResponse,
     ProgramPriceListResponse,
     ProgramPriceResponse,
-    TercihIstatistikleriResponse,
+    TercihDetailedStatsResponse,
     TercihPreferenceListResponse,
     TercihPreferenceResponse,
     TercihStatsListResponse,
@@ -58,7 +60,7 @@ def get_prices_by_yop_kodu(
 @router.get("/stats", response_model=TercihStatsListResponse)
 def get_all_stats(
     skip: int = Query(0, ge=0),
-    limit: int = Query(1000, ge=1, le=10000),
+    limit: int = Query(1000, ge=1, le=50000),
     service: TercihStatsService = Depends(get_service),
 ):
     """Get all tercih stats with pagination."""
@@ -87,28 +89,28 @@ def get_stats_by_year(
     return service.get_stats_by_year(year)
 
 
-# ===================== Tercih Istatistikleri =====================
+# ===================== Tercih Detailed Stats =====================
 
 
-@router.get("/istatistikleri", response_model=List[TercihIstatistikleriResponse])
-def get_all_istatistikleri(
+@router.get("/detailed-stats", response_model=List[TercihDetailedStatsResponse])
+def get_all_detailed_stats(
     skip: int = Query(0, ge=0),
-    limit: int = Query(1000, ge=1, le=10000),
+    limit: int = Query(1000, ge=1, le=20000),
     service: TercihStatsService = Depends(get_service),
 ):
-    """Get all detailed istatistikleri with pagination."""
-    return service.get_all_istatistikleri(skip=skip, limit=limit)
+    """Get all detailed stats with pagination."""
+    return service.get_all_detailed_stats(skip=skip, limit=limit)
 
 
-@router.get("/istatistikleri/{yop_kodu}", response_model=TercihIstatistikleriResponse)
-def get_istatistikleri_by_yop_kodu(
+@router.get("/detailed-stats/{yop_kodu}", response_model=TercihDetailedStatsResponse)
+def get_detailed_stats_by_yop_kodu(
     yop_kodu: str,
     service: TercihStatsService = Depends(get_service),
 ):
-    """Get detailed istatistikleri for a specific program by yop_kodu."""
-    istat = service.get_istatistikleri_by_yop_kodu(yop_kodu)
+    """Get detailed stats for a specific program by yop_kodu."""
+    istat = service.get_detailed_stats_by_yop_kodu(yop_kodu)
     if not istat:
-        raise HTTPException(status_code=404, detail="Istatistikleri not found")
+        raise HTTPException(status_code=404, detail="Detailed stats not found")
     return istat
 
 
@@ -172,3 +174,30 @@ def get_source_universities(service: TercihStatsService = Depends(get_service)):
 def get_available_years(service: TercihStatsService = Depends(get_service)):
     """Get list of available years for tercih stats."""
     return service.get_available_years()
+
+
+# ===================== Batch =====================
+
+
+@router.post("/batch", response_model=BatchStatsResponse)
+def get_batch_stats(
+    body: BatchStatsRequest,
+    service: TercihStatsService = Depends(get_service),
+):
+    """Fetch stats, prices, and/or detailed_stats for a list of yop_kodlari in one request.
+
+    This replaces the pattern of fetching ALL records and filtering client-side.
+    The frontend sends only the yop_kodlari it needs and gets back only those rows.
+    """
+    result = BatchStatsResponse()
+
+    if body.include_stats:
+        result.stats = service.get_stats_by_yop_kodlari(body.yop_kodlari, body.year)
+
+    if body.include_prices:
+        result.prices = service.get_prices_by_yop_kodlari(body.yop_kodlari)
+
+    if body.include_detailed_stats:
+        result.detailed_stats = service.get_detailed_stats_by_yop_kodlari(body.yop_kodlari)
+
+    return result

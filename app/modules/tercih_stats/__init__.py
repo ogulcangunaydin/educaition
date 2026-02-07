@@ -12,7 +12,7 @@ from app.modules.tercih_stats.router import router as tercih_stats_router
 from app.modules.tercih_stats.schemas import (
     ProgramPriceListResponse,
     ProgramPriceResponse,
-    TercihIstatistikleriResponse,
+    TercihDetailedStatsResponse,
     TercihPreferenceListResponse,
     TercihPreferenceResponse,
     TercihStatsListResponse,
@@ -33,7 +33,7 @@ __all__ = [
     # Schemas
     "ProgramPriceListResponse",
     "ProgramPriceResponse",
-    "TercihIstatistikleriResponse",
+    "TercihDetailedStatsResponse",
     "TercihPreferenceListResponse",
     "TercihPreferenceResponse",
     "TercihStatsListResponse",

@@ -57,21 +57,21 @@ class TercihStatsService:
         """Get total count of tercih stats."""
         return self.db.query(TercihStats).count()
 
-    # Tercih Istatistikleri
-    def get_istatistikleri_by_yop_kodu(self, yop_kodu: str) -> Optional[TercihIstatistikleri]:
-        """Get detailed istatistikleri for a program."""
+    # Tercih Detailed Stats
+    def get_detailed_stats_by_yop_kodu(self, yop_kodu: str) -> Optional[TercihIstatistikleri]:
+        """Get detailed stats for a program."""
         return self.db.query(TercihIstatistikleri).filter(
             TercihIstatistikleri.yop_kodu == yop_kodu
         ).first()
 
-    def get_all_istatistikleri(
+    def get_all_detailed_stats(
         self, skip: int = 0, limit: int = 1000
     ) -> List[TercihIstatistikleri]:
-        """Get all istatistikleri with pagination."""
+        """Get all detailed stats with pagination."""
         return self.db.query(TercihIstatistikleri).offset(skip).limit(limit).all()
 
-    def get_istatistikleri_count(self) -> int:
-        """Get total count of istatistikleri."""
+    def get_detailed_stats_count(self) -> int:
+        """Get total count of detailed stats."""
         return self.db.query(TercihIstatistikleri).count()
 
     # Tercih Preferences
@@ -138,3 +138,32 @@ class TercihStatsService:
             .all()
         )
         return [r[0] for r in result]
+
+    # ===================== Batch queries =====================
+
+    def get_stats_by_yop_kodlari(
+        self, yop_kodlari: List[str], year: Optional[int] = None
+    ) -> List[TercihStats]:
+        """Get tercih stats for multiple programs at once."""
+        query = self.db.query(TercihStats).filter(
+            TercihStats.yop_kodu.in_(yop_kodlari)
+        )
+        if year:
+            query = query.filter(TercihStats.year == year)
+        return query.all()
+
+    def get_prices_by_yop_kodlari(
+        self, yop_kodlari: List[str]
+    ) -> List[ProgramPrice]:
+        """Get prices for multiple programs at once."""
+        return self.db.query(ProgramPrice).filter(
+            ProgramPrice.yop_kodu.in_(yop_kodlari)
+        ).all()
+
+    def get_detailed_stats_by_yop_kodlari(
+        self, yop_kodlari: List[str]
+    ) -> List[TercihIstatistikleri]:
+        """Get detailed stats for multiple programs at once."""
+        return self.db.query(TercihIstatistikleri).filter(
+            TercihIstatistikleri.yop_kodu.in_(yop_kodlari)
+        ).all()

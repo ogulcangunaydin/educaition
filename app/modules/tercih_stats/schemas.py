@@ -41,8 +41,8 @@ class TercihStatsResponse(TercihStatsBase):
         from_attributes = True
 
 
-# Tercih Istatistikleri schemas
-class TercihIstatistikleriBase(BaseModel):
+# Tercih Detailed Stats schemas
+class TercihDetailedStatsBase(BaseModel):
     yop_kodu: str
     bir_kontenjana_talip_olan_aday_sayisi_2022: Optional[float] = None
     bir_kontenjana_talip_olan_aday_sayisi_2023: Optional[float] = None
@@ -66,7 +66,7 @@ class TercihIstatistikleriBase(BaseModel):
     ilk_uc_tercih_olarak_yerlesen_orani_2025: Optional[float] = None
 
 
-class TercihIstatistikleriResponse(TercihIstatistikleriBase):
+class TercihDetailedStatsResponse(TercihDetailedStatsBase):
     id: int
 
     class Config:
@@ -105,3 +105,20 @@ class TercihStatsListResponse(BaseModel):
 class TercihPreferenceListResponse(BaseModel):
     items: List[TercihPreferenceResponse]
     total: int
+
+
+# Batch request / response schemas
+class BatchStatsRequest(BaseModel):
+    """Request body for fetching stats/prices/detailed_stats for multiple programs at once."""
+    yop_kodlari: List[str]
+    year: Optional[int] = None
+    include_stats: bool = True
+    include_prices: bool = False
+    include_detailed_stats: bool = False
+
+
+class BatchStatsResponse(BaseModel):
+    """Combined batch response containing stats, prices, and detailed_stats."""
+    stats: List[TercihStatsResponse] = []
+    prices: List[ProgramPriceResponse] = []
+    detailed_stats: List[TercihDetailedStatsResponse] = []
