@@ -18,6 +18,7 @@ from .schemas import (
     DissonanceTestParticipantCreate,
     DissonanceTestParticipantList,
     DissonanceTestParticipantResult,
+    DissonanceTestParticipantUpdateFirst,
     DissonanceTestParticipantUpdateSecond,
 )
 from .service import DissonanceTestService
@@ -87,6 +88,22 @@ def update_participant_second_answers(
 ):
     verify_participant_ownership(participant.participant_id, participant_id)
     return DissonanceTestService.update_participant_second_answers(
+        db, participant_id, participant_data
+    )
+
+@dissonance_test_public_router.post(
+    "/{participant_id}/first-answers",
+    response_model=DissonanceTestParticipant,
+)
+def update_participant_first_answers(
+    participant_id: int,
+    participant_data: DissonanceTestParticipantUpdateFirst,
+    participant: CurrentTestParticipant,
+    db: Session = Depends(get_db),
+):
+    """Update demographics + first-round taxi answers after registration."""
+    verify_participant_ownership(participant.participant_id, participant_id)
+    return DissonanceTestService.update_participant_first_answers(
         db, participant_id, participant_data
     )
 

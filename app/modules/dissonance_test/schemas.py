@@ -54,6 +54,24 @@ class DissonanceTestParticipantUpdateSecond(BaseModel):
     comfort_question_displayed_average: float = Field(ge=0, le=10)
 
 
+class DissonanceTestParticipantUpdateFirst(BaseModel):
+    """Update demographics + first-round taxi answers after initial registration."""
+    gender: str | None = Field(default=None, max_length=FieldLimits.CODE_FIELD_MAX)
+    education: str | None = Field(default=None, max_length=FieldLimits.SHORT_TEXT_MAX)
+    comfort_question_first_answer: int | None = Field(default=None, ge=1, le=10)
+    fare_question_first_answer: int | None = Field(default=None, ge=1, le=10)
+    workload: int | None = Field(default=None, ge=1, le=10)
+    career_start: int | None = Field(default=None, ge=1, le=10)
+    flexibility: int | None = Field(default=None, ge=1, le=10)
+    star_sign: str | None = Field(default=None, max_length=FieldLimits.CODE_FIELD_MAX)
+    rising_sign: str | None = Field(default=None, max_length=FieldLimits.CODE_FIELD_MAX)
+
+    @field_validator("gender", "education", "star_sign", "rising_sign", mode="before")
+    @classmethod
+    def sanitize_strings(cls, v: str | None) -> str | None:
+        return sanitize_string(v) if v else v
+
+
 class DissonanceTestParticipantResult(BaseModel):
     compatibility_analysis: str | None = Field(
         default=None, max_length=FieldLimits.LONG_TEXT_MAX
@@ -73,6 +91,7 @@ class DissonanceTestParticipant(DissonanceTestParticipantBase):
     id: int
     created_at: datetime
     has_completed: int | None = None
+    job_recommendation: str | None = None
     extroversion: float | None = None
     agreeableness: float | None = None
     conscientiousness: float | None = None
