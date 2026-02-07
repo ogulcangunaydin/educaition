@@ -4,15 +4,7 @@ import os
 import requests
 
 
-def get_job_recommendation(
-    personality_scores: dict,
-    gender: str,
-    age: int,
-    education: str,
-    workload: int | None = None,
-    career_start: int | None = None,
-    flexibility: int | None = None,
-) -> str:
+def get_job_recommendation(personality_scores: dict) -> str:
     def send_request_to_gpt(prompt):
         headers = {
             "Content-Type": "application/json",
@@ -36,21 +28,14 @@ def get_job_recommendation(
             return None
 
     prompt = (
-        f"Aşağıdaki bilgilere dayanarak maddelenmiş bir şekilde uygun 5 meslek önerisi yap."
-        f"Her meslek önerisi için, ilgili kişilik özelliğinin sayısal değerine atıfta bulunarak sebep belirt."
-        f"Ayrıca, meslek önerisinin kişinin yaşına, mesleğine, cinsiyetine ve çalışma koşullarına nasıl uygun olduğunu da açıkla."
+        f"Aşağıdaki Big Five kişilik testi puanlarına dayanarak maddelenmiş bir şekilde uygun 5 meslek önerisi yap. "
+        f"Her meslek önerisi için, ilgili kişilik özelliğinin sayısal değerine atıfta bulunarak sebep belirt. "
         f"Yanıtları Markdown formatında ver:\n"
-        f"Cinsiyet: {gender}\n"
-        f"Yaş: {age}\n"
-        f"Eğitim Durumu: {education}\n"
-        f"Dışadönüklük: {personality_scores['extroversion']}\n"
-        f"Uyumluluk: {personality_scores['agreeableness']}\n"
-        f"Sorumluluk: {personality_scores['conscientiousness']}\n"
-        f"Olumsuz Duygusallık: {personality_scores['negative_emotionality']}\n"
-        f"Açık Fikirlilik: {personality_scores['open_mindedness']}\n"
-        f"Çalışma Yoğunluğu (1-10): {workload}\n"
-        f"Kariyer Başlangıcı (1-10): {career_start}\n"
-        f"İş Esnekliği (1-10): {flexibility}\n"
+        f"Dışadönüklük: {personality_scores['extroversion']:.1f}\n"
+        f"Uyumluluk: {personality_scores['agreeableness']:.1f}\n"
+        f"Sorumluluk: {personality_scores['conscientiousness']:.1f}\n"
+        f"Olumsuz Duygusallık: {personality_scores['negative_emotionality']:.1f}\n"
+        f"Açık Fikirlilik: {personality_scores['open_mindedness']:.1f}\n\n"
         f"Önerilen Meslekler:\n"
         f"1. **Meslek:** [Meslek Adı]\n"
         f"   **Sebep:** [Bu mesleğin neden uygun olduğunu ve hangi kişilik özelliklerine dayandığını açıklayın.]\n"

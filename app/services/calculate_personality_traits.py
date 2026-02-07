@@ -76,7 +76,7 @@ def calculate_personality_traits(parsed_answers):
             + (6 - answers[48])
         )
         * 25
-        / 13
+        / 12
     ) - 25
 
     open_mindedness = (

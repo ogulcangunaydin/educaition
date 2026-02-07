@@ -223,12 +223,7 @@ class PersonalityTestService:
         participant.open_mindedness = personality_scores["open_mindedness"]
         
         # Generate job recommendation
-        participant.job_recommendation = get_job_recommendation(
-            personality_scores,
-            participant.gender,
-            participant.age,
-            participant.education,
-        )
+        participant.job_recommendation = get_job_recommendation(personality_scores)
         
         # Generate compatibility analysis if astrological info is provided
         if participant.star_sign or participant.rising_sign:
