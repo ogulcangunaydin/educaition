@@ -33,6 +33,7 @@ from .modules.personality_test.router import (
     personality_test_public_router,
 )
 from .modules.test_completions.router import router as test_completions_router
+from .modules.university_comparison import university_comparison_router
 from . import models
 
 log_level = logging.DEBUG if settings.DEBUG else logging.INFO
@@ -117,3 +118,4 @@ app.include_router(test_rooms_router, prefix="/api", tags=["test_rooms"])
 app.include_router(personality_test_public_router, prefix="/api", tags=["personality_test"])
 app.include_router(personality_test_router, prefix="/api", tags=["personality_test"])
 app.include_router(test_completions_router, prefix="/api", tags=["test_completions"])
+app.include_router(university_comparison_router, prefix="/api", tags=["university_comparison"])
