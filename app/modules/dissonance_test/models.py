@@ -33,6 +33,12 @@ class DissonanceTestParticipant(Base, SoftDeleteMixin):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), nullable=True)
+    test_room_id = Column(
+        Integer,
+        ForeignKey("test_rooms.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     # The student (anonymous or real) who took the test
     student_user_id = Column(
@@ -49,6 +55,8 @@ class DissonanceTestParticipant(Base, SoftDeleteMixin):
     personality_test_answers = Column(JSONB, nullable=True)
     comfort_question_displayed_average = Column(Float, nullable=True)
     fare_question_displayed_average = Column(Float, nullable=True)
+    device_fingerprint = Column(String(255), nullable=True, index=True)
+    has_completed = Column(Integer, nullable=True, default=0)
 
     user = relationship("User", back_populates="dissonance_test_participants", foreign_keys=[user_id])
     student_user = relationship("User", foreign_keys=[student_user_id])

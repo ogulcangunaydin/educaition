@@ -30,6 +30,8 @@ class DissonanceTestParticipantBase(BaseModel):
     star_sign: str | None = Field(default=None, max_length=FieldLimits.CODE_FIELD_MAX)
     rising_sign: str | None = Field(default=None, max_length=FieldLimits.CODE_FIELD_MAX)
     user_id: int
+    test_room_id: int | None = Field(default=None)
+    device_fingerprint: str | None = Field(default=None, max_length=255)
     student_user_id: int | None = Field(
         default=None,
         description="The authenticated student user ID (from device-login or real login)"
@@ -70,6 +72,7 @@ class DissonanceTestParticipant(DissonanceTestParticipantBase):
 
     id: int
     created_at: datetime
+    has_completed: int | None = None
     extroversion: float | None = None
     agreeableness: float | None = None
     conscientiousness: float | None = None
@@ -80,3 +83,9 @@ class DissonanceTestParticipant(DissonanceTestParticipantBase):
     @field_serializer("created_at")
     def serialize_created_at(self, created_at: datetime, _info):
         return created_at.strftime("%d/%m/%Y  %H:%M:%S")
+
+
+class DissonanceTestParticipantList(BaseModel):
+    """Paginated list of dissonance test participants."""
+    items: list[DissonanceTestParticipant] = []
+    total: int = 0

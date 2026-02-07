@@ -12,9 +12,11 @@ from app.services.participant_token_service import (
     create_participant_token,
     get_token_expiry_seconds,
 )
+from app.modules.test_rooms.service import TestRoomService
 from .schemas import (
     DissonanceTestParticipant,
     DissonanceTestParticipantCreate,
+    DissonanceTestParticipantList,
     DissonanceTestParticipantResult,
     DissonanceTestParticipantUpdateSecond,
 )
@@ -110,6 +112,44 @@ def update_participant_personality_traits(
 def get_participants(current_user: TeacherOrAdmin, db: Session = Depends(get_db)):
     return DissonanceTestService.get_participants_by_user(db, current_user.id)
 
+
+@dissonance_test_protected_router.get(
+    "/rooms/{room_id}",
+    response_model=DissonanceTestParticipantList,
+)
+def get_room_participants(
+    room_id: int,
+    skip: int = 0,
+    limit: int = 100,
+    current_user: TeacherOrAdmin = None,
+    db: Session = Depends(get_db),
+):
+    """Get all participants for a specific dissonance test room."""
+    TestRoomService.verify_room_ownership(db, room_id, current_user.id)
+    participants, total = DissonanceTestService.get_participants_by_room(
+        db, room_id, skip, limit
+    )
+    return DissonanceTestParticipantList(
+        items=[
+            DissonanceTestParticipant.model_validate(p) for p in participants
+        ],
+        total=total,
+    )
+
+
+@dissonance_test_protected_router.delete(
+    "/participants/{participant_id}",
+    response_model=DissonanceTestParticipant,
+)
+def soft_delete_participant(
+    participant_id: int,
+    current_user: TeacherOrAdmin = None,
+    db: Session = Depends(get_db),
+):
+    """Delete a dissonance test participant (soft delete)."""
+    return DissonanceTestService.delete_participant(db, participant_id, current_user.id)
+
+
 @dissonance_test_protected_router.post(
     "/{participant_id}/delete",
     response_model=DissonanceTestParticipant,
@@ -119,6 +159,7 @@ def delete_participant(
     current_user: TeacherOrAdmin,
     db: Session = Depends(get_db),
 ):
+    """Legacy delete endpoint (POST). Use DELETE /participants/{id} instead."""
     return DissonanceTestService.delete_participant(db, participant_id, current_user.id)
 
 router = APIRouter()

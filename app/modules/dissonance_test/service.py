@@ -38,6 +38,26 @@ class DissonanceTestService:
         )
 
     @staticmethod
+    def get_participants_by_room(
+        db: Session,
+        room_id: int,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> tuple[list, int]:
+        """Get all participants for a specific test room."""
+        query = db.query(models.DissonanceTestParticipant).filter(
+            models.DissonanceTestParticipant.test_room_id == room_id
+        )
+        total = query.count()
+        participants = (
+            query.order_by(models.DissonanceTestParticipant.created_at.desc())
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
+        return participants, total
+
+    @staticmethod
     def update_participant_second_answers(
         db: Session,
         participant_id: int,
