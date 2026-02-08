@@ -51,16 +51,8 @@ class ProgramSuggestionStudentBase(BaseModel):
 
 
 class ProgramSuggestionStudentCreate(BaseModel):
-    high_school_room_id: int | None = None
-    test_room_id: int | None = None
-
-    @model_validator(mode="after")
-    def check_at_least_one_room_id(self):
-        if self.high_school_room_id is None and self.test_room_id is None:
-            raise ValueError(
-                "Either high_school_room_id or test_room_id must be provided"
-            )
-        return self
+    """Create a new program suggestion student. Uses test_room_id (unified system)."""
+    test_room_id: int = Field(..., description="The test room ID")
 
 
 class ProgramSuggestionStudentUpdateStep1(BaseModel):
@@ -150,7 +142,8 @@ class ProgramSuggestionStudent(ProgramSuggestionStudentBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    high_school_room_id: int
+    test_room_id: int | None = None
+    high_school_room_id: int | None = None  # Legacy field, kept for backward compatibility
     riasec_answers: dict[str, int] | None = None
     riasec_scores: dict[str, float] | None = None
     suggested_jobs: list[dict] | None = None

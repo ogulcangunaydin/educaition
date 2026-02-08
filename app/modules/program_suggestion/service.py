@@ -2,6 +2,7 @@ from datetime import datetime, timedelta, timezone
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from app import models
+from app.modules.test_rooms.models import TestRoom
 from app.services.program_suggestion_service import get_suggested_programs
 from app.services.riasec_service import calculate_riasec_scores
 from .schemas import (
@@ -14,21 +15,23 @@ from .schemas import (
 
 class ProgramSuggestionService:
     @staticmethod
-    def create_student(high_school_room_id: int, db: Session):
+    def create_student(test_room_id: int, db: Session):
+        """Create a new student for a test room."""
         room = (
-            db.query(models.HighSchoolRoom)
-            .filter(models.HighSchoolRoom.id == high_school_room_id)
+            db.query(TestRoom)
+            .filter(TestRoom.id == test_room_id, TestRoom.is_active == True)
             .first()
         )
         if room is None:
-            raise HTTPException(status_code=404, detail="High school room not found")
+            raise HTTPException(status_code=404, detail="Test room not found or inactive")
 
         five_seconds_ago = datetime.now(timezone.utc) - timedelta(seconds=5)
 
+        # Check for recently created student to prevent duplicates
         recent_started = (
             db.query(models.ProgramSuggestionStudent)
             .filter(
-                models.ProgramSuggestionStudent.high_school_room_id == high_school_room_id,
+                models.ProgramSuggestionStudent.test_room_id == test_room_id,
                 models.ProgramSuggestionStudent.status == "started",
                 models.ProgramSuggestionStudent.created_at >= five_seconds_ago,
             )
@@ -40,11 +43,36 @@ class ProgramSuggestionService:
             return recent_started[0]
 
         student = models.ProgramSuggestionStudent(
-            high_school_room_id=high_school_room_id, status="started"
+            test_room_id=test_room_id, status="started"
         )
         db.add(student)
         db.commit()
         db.refresh(student)
+        return student
+
+    @staticmethod
+    def get_participants(test_room_id: int, db: Session):
+        """Get all participants for a test room."""
+        room = db.query(TestRoom).filter(TestRoom.id == test_room_id).first()
+        if room is None:
+            raise HTTPException(status_code=404, detail="Test room not found")
+
+        students = (
+            db.query(models.ProgramSuggestionStudent)
+            .filter(
+                models.ProgramSuggestionStudent.test_room_id == test_room_id,
+            )
+            .order_by(models.ProgramSuggestionStudent.created_at.desc())
+            .all()
+        )
+        return students
+
+    @staticmethod
+    def delete_student(student_id: int, db: Session):
+        """Soft delete a student."""
+        student = ProgramSuggestionService.get_student(student_id, db)
+        student.soft_delete()
+        db.commit()
         return student
 
     @staticmethod

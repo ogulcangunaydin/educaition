@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from app.core import settings
-from app.dependencies.auth import AdminUser, get_current_active_user, get_db
+from app.dependencies.auth import AdminUser, TeacherOrAdmin, get_current_active_user, get_db
 from app.dependencies.participant import (
     CurrentProgramStudent,
     verify_participant_ownership,
@@ -26,78 +26,29 @@ from .schemas import (
 from .service import ProgramSuggestionService
 
 
-def _resolve_high_school_room_id(
-    student: ProgramSuggestionStudentCreate,
-    db: Session,
-) -> int:
-    """
-    Resolve a high_school_room_id from the request payload.
-
-    If ``high_school_room_id`` is given directly, use it.
-    Otherwise, look up the unified ``TestRoom`` by ``test_room_id`` and
-    auto-create a legacy ``HighSchoolRoom`` when one doesn't exist yet
-    (same pattern as Prisoner's Dilemma legacy room auto-creation).
-    """
-    from app.modules.high_school_rooms.models import HighSchoolRoom
-    from app.modules.test_rooms.models import TestRoom
-
-    if student.high_school_room_id is not None:
-        return student.high_school_room_id
-
-    # Resolve via TestRoom
-    test_room = (
-        db.query(TestRoom)
-        .filter(TestRoom.id == student.test_room_id, TestRoom.is_active == True)
-        .first()
-    )
-    if test_room is None:
-        raise HTTPException(status_code=404, detail="Test room not found or inactive")
-
-    # If legacy mapping already exists, use it
-    if test_room.legacy_room_id is not None:
-        return test_room.legacy_room_id
-
-    # Auto-create a HighSchoolRoom from the TestRoom data
-    legacy_room = HighSchoolRoom(
-        user_id=test_room.created_by,
-        high_school_name=test_room.name,
-        high_school_code=test_room.get_setting("high_school_code"),
-    )
-    db.add(legacy_room)
-    db.flush()
-
-    # Store the mapping so future requests skip creation
-    test_room.legacy_room_id = legacy_room.id
-    test_room.legacy_table = "high_school_rooms"
-    db.commit()
-    db.refresh(legacy_room)
-
-    return legacy_room.id
-
+# =============================================================================
+# PUBLIC ROUTER (No authentication - for students taking the test)
+# =============================================================================
 
 program_suggestion_public_router = APIRouter(
     prefix="/program-suggestion/students",
     tags=["program_suggestion"],
 )
-program_suggestion_protected_router = APIRouter(
-    prefix="/program-suggestion/students",
-    tags=["program_suggestion"],
-    dependencies=[Depends(get_current_active_user)],
-)
+
 
 @program_suggestion_public_router.post("/")
 def create_student(
     student: ProgramSuggestionStudentCreate,
     db: Session = Depends(get_db),
 ):
-    high_school_room_id = _resolve_high_school_room_id(student, db)
+    """Create a new student for a program suggestion test."""
     created_student = ProgramSuggestionService.create_student(
-        high_school_room_id, db
+        student.test_room_id, db
     )
     token = create_participant_token(
         participant_id=created_student.id,
         participant_type=ParticipantType.PROGRAM_SUGGESTION,
-        room_id=high_school_room_id,
+        room_id=student.test_room_id,
     )
     response = JSONResponse(
         content={
@@ -118,6 +69,7 @@ def create_student(
     )
 
     return response
+
 
 @program_suggestion_public_router.get(
     "/{student_id}",
@@ -215,14 +167,51 @@ def get_student_result(
     return ProgramSuggestionService.get_student_result(student_id, db)
 
 
+# =============================================================================
+# PROTECTED ROUTER (Authentication required - for teachers/admins)
+# =============================================================================
+
+program_suggestion_protected_router = APIRouter(
+    prefix="/program-suggestion",
+    tags=["program_suggestion"],
+    dependencies=[Depends(get_current_active_user)],
+)
+
+
 @program_suggestion_protected_router.get(
-    "/{student_id}/debug",
+    "/students/{student_id}/debug",
     response_model=ProgramSuggestionStudentDebug,
 )
 def get_student_debug(
     student_id: int, current_user: AdminUser, db: Session = Depends(get_db)
 ):
     return ProgramSuggestionService.get_student_debug(student_id, db)
+
+
+@program_suggestion_protected_router.get(
+    "/rooms/{room_id}/participants",
+    response_model=list[ProgramSuggestionStudent],
+)
+def get_room_participants(
+    room_id: int,
+    current_user: TeacherOrAdmin,
+    db: Session = Depends(get_db),
+):
+    """Get all participants for a program suggestion room."""
+    return ProgramSuggestionService.get_participants(room_id, db)
+
+
+@program_suggestion_protected_router.delete(
+    "/students/{student_id}",
+)
+def delete_student(
+    student_id: int,
+    current_user: TeacherOrAdmin,
+    db: Session = Depends(get_db),
+):
+    """Soft delete a program suggestion student."""
+    return ProgramSuggestionService.delete_student(student_id, db)
+
 
 router = APIRouter()
 router.include_router(program_suggestion_public_router)

@@ -11,8 +11,15 @@ class ProgramSuggestionStudent(Base, SoftDeleteMixin):
     __tablename__ = "program_suggestion_students"
 
     id = Column(Integer, primary_key=True, index=True)
+    
+    # New unified test room reference
+    test_room_id = Column(
+        Integer, ForeignKey("test_rooms.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    
+    # Legacy field - kept for backward compatibility, will be removed later
     high_school_room_id = Column(
-        Integer, ForeignKey("high_school_rooms.id"), nullable=False, index=True
+        Integer, ForeignKey("high_school_rooms.id"), nullable=True, index=True
     )
 
     # Step 1.1 - Personal Info
@@ -61,4 +68,6 @@ class ProgramSuggestionStudent(Base, SoftDeleteMixin):
     )
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), nullable=True)
 
+    # Relationships
+    test_room = relationship("TestRoom", backref="program_suggestion_students")
     high_school_room = relationship("HighSchoolRoom", back_populates="students")
