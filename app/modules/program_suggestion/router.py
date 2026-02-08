@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from app.core import settings
@@ -25,6 +25,56 @@ from .schemas import (
 )
 from .service import ProgramSuggestionService
 
+
+def _resolve_high_school_room_id(
+    student: ProgramSuggestionStudentCreate,
+    db: Session,
+) -> int:
+    """
+    Resolve a high_school_room_id from the request payload.
+
+    If ``high_school_room_id`` is given directly, use it.
+    Otherwise, look up the unified ``TestRoom`` by ``test_room_id`` and
+    auto-create a legacy ``HighSchoolRoom`` when one doesn't exist yet
+    (same pattern as Prisoner's Dilemma legacy room auto-creation).
+    """
+    from app.modules.high_school_rooms.models import HighSchoolRoom
+    from app.modules.test_rooms.models import TestRoom
+
+    if student.high_school_room_id is not None:
+        return student.high_school_room_id
+
+    # Resolve via TestRoom
+    test_room = (
+        db.query(TestRoom)
+        .filter(TestRoom.id == student.test_room_id, TestRoom.is_active == True)
+        .first()
+    )
+    if test_room is None:
+        raise HTTPException(status_code=404, detail="Test room not found or inactive")
+
+    # If legacy mapping already exists, use it
+    if test_room.legacy_room_id is not None:
+        return test_room.legacy_room_id
+
+    # Auto-create a HighSchoolRoom from the TestRoom data
+    legacy_room = HighSchoolRoom(
+        user_id=test_room.created_by,
+        high_school_name=test_room.name,
+        high_school_code=test_room.get_setting("high_school_code"),
+    )
+    db.add(legacy_room)
+    db.flush()
+
+    # Store the mapping so future requests skip creation
+    test_room.legacy_room_id = legacy_room.id
+    test_room.legacy_table = "high_school_rooms"
+    db.commit()
+    db.refresh(legacy_room)
+
+    return legacy_room.id
+
+
 program_suggestion_public_router = APIRouter(
     prefix="/program-suggestion/students",
     tags=["program_suggestion"],
@@ -40,13 +90,14 @@ def create_student(
     student: ProgramSuggestionStudentCreate,
     db: Session = Depends(get_db),
 ):
+    high_school_room_id = _resolve_high_school_room_id(student, db)
     created_student = ProgramSuggestionService.create_student(
-        student.high_school_room_id, db
+        high_school_room_id, db
     )
     token = create_participant_token(
         participant_id=created_student.id,
         participant_type=ParticipantType.PROGRAM_SUGGESTION,
-        room_id=student.high_school_room_id,
+        room_id=high_school_room_id,
     )
     response = JSONResponse(
         content={

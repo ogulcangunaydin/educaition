@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator, model_validator
 
 from app.core.validators import FieldLimits, sanitize_string
 
@@ -51,7 +51,16 @@ class ProgramSuggestionStudentBase(BaseModel):
 
 
 class ProgramSuggestionStudentCreate(BaseModel):
-    high_school_room_id: int
+    high_school_room_id: int | None = None
+    test_room_id: int | None = None
+
+    @model_validator(mode="after")
+    def check_at_least_one_room_id(self):
+        if self.high_school_room_id is None and self.test_room_id is None:
+            raise ValueError(
+                "Either high_school_room_id or test_room_id must be provided"
+            )
+        return self
 
 
 class ProgramSuggestionStudentUpdateStep1(BaseModel):
@@ -133,8 +142,8 @@ class ProgramSuggestionStudentUpdateRiasec(BaseModel):
         for key, value in v.items():
             if not isinstance(key, str) or len(key) > 50:
                 raise ValueError("Invalid question ID format")
-            if not isinstance(value, int) or value < 1 or value > 5:
-                raise ValueError("Score must be an integer between 1 and 5")
+            if not isinstance(value, int) or value < -2 or value > 2:
+                raise ValueError("Score must be an integer between -2 and 2")
         return v
 
 class ProgramSuggestionStudent(ProgramSuggestionStudentBase):
