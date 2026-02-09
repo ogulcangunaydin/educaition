@@ -379,8 +379,23 @@ def get_program_suggestions_from_gpt(
         return [], None, None
 
     programs_text = "\n".join(
-        [f"- {p}" for p in unique_programs[:150]]
+        [f"- {p}" for p in unique_programs[:200]]
     )  # Limit to avoid token limits
+
+    # Build job list dynamically based on number of jobs (up to 6)
+    job_list_text = "\n".join([f"{i+1}. {jobs[i]['job']}" for i in range(min(len(jobs), 6))])
+    
+    # Build expected JSON structure for all jobs
+    json_structure_parts = []
+    for i in range(min(len(jobs), 6)):
+        json_structure_parts.append(f'''  "job_{i+1}": {{
+    "job_name": "{jobs[i]['job']}",
+    "programs": [
+      {{"program": "Program Adı", "reason": "Bu program neden bu mesleğe uygun - kısa açıklama"}},
+      ...4 more programs...
+    ]
+  }}''')
+    json_structure = ",\n".join(json_structure_parts)
 
     prompt = f"""Sen bir kariyer danışmanısın. Aşağıdaki meslek önerileri ve mevcut üniversite program adları listesi verilmiştir.
 
@@ -389,33 +404,14 @@ def get_program_suggestions_from_gpt(
 Her meslek için, o mesleğe en uygun 5 program ADINI seç. Bu programlar o mesleğe götürebilecek veya o meslekle alakalı olmalıdır.
 
 MESLEK ÖNERİLERİ:
-1. {jobs[0]["job"]}
-2. {jobs[1]["job"]}
-3. {jobs[2]["job"]}
+{job_list_text}
 
 MEVCUT PROGRAM ADLARI:
 {programs_text}
 
 Yanıtını SADECE aşağıdaki JSON formatında ver, başka hiçbir açıklama ekleme:
 {{
-  "job_1": {{
-    "job_name": "{jobs[0]["job"]}",
-    "programs": [
-      {{"program": "Program Adı", "reason": "Bu program neden bu mesleğe uygun - kısa açıklama"}},
-      {{"program": "Program Adı", "reason": "..."}},
-      {{"program": "Program Adı", "reason": "..."}},
-      {{"program": "Program Adı", "reason": "..."}},
-      {{"program": "Program Adı", "reason": "..."}}
-    ]
-  }},
-  "job_2": {{
-    "job_name": "{jobs[1]["job"]}",
-    "programs": [...]
-  }},
-  "job_3": {{
-    "job_name": "{jobs[2]["job"]}",
-    "programs": [...]
-  }}
+{json_structure}
 }}
 """
 
@@ -507,6 +503,7 @@ Yanıtını SADECE aşağıdaki JSON formatında ver, başka hiçbir açıklama 
                                 and s["university"] == matched.get("university")
                             ]
                             if not existing:
+                                is_halic = "haliç" in matched.get("university", "").lower() or "halic" in matched.get("university", "").lower()
                                 suggestions.append(
                                     {
                                         "job": job["job"],
@@ -518,10 +515,14 @@ Yanıtını SADECE aşağıdaki JSON formatında ver, başka hiçbir açıklama 
                                         "taban_score": matched.get("taban_2025", ""),
                                         "scholarship": matched.get("scholarship", ""),
                                         "reason": reason,
+                                        "is_priority": is_halic,  # Mark Haliç as priority
                                     }
                                 )
 
-                return suggestions[:15], prompt, response  # Limit to 15 suggestions
+                # Sort: Haliç (priority) programs first, then by job order
+                suggestions.sort(key=lambda x: (not x.get("is_priority", False), x.get("job_distance", 1)))
+                
+                return suggestions[:200], prompt, response  # Limit to 200 suggestions
         except Exception as e:
             logging.error(f"Error parsing GPT response: {e}")
 

@@ -373,9 +373,9 @@ def get_suggested_programs(
             'gpt_response': ...
         }
     """
-    # Step 1: Find top 3 matching jobs
+    # Step 1: Find top 6 matching jobs
     suggested_jobs = find_top_matching_jobs(
-        riasec_scores, db=db, top_n=3
+        riasec_scores, db=db, top_n=6
     )
 
     if not suggested_jobs:
@@ -427,7 +427,7 @@ def get_suggested_programs(
         preferred_language=preferred_language,
         desired_universities=desired_universities,
         desired_cities=desired_cities,
-        min_programs=30,  # Ensure at least 30 programs for GPT
+        min_programs=100,  # Ensure at least 100 programs for more variety
     )
 
     if not filtered_programs:
@@ -446,11 +446,12 @@ def get_suggested_programs(
 
     # If GPT fails, fall back to simple selection
     if not suggested_programs:
-        # Simple fallback: return top 9 filtered programs
+        # Simple fallback: return top programs distributed across jobs
         suggested_programs = []
-        for i, program in enumerate(filtered_programs[:9]):
-            job_index = i // 3
+        for i, program in enumerate(filtered_programs[:36]):  # 6 jobs * 6 programs
+            job_index = i // 6
             if job_index < len(suggested_jobs):
+                is_halic = "haliç" in program.get("university", "").lower() or "halic" in program.get("university", "").lower()
                 suggested_programs.append(
                     {
                         "job": suggested_jobs[job_index]["job"],
@@ -462,15 +463,88 @@ def get_suggested_programs(
                         "taban_score": program.get("taban_2025", ""),
                         "scholarship": program.get("scholarship", ""),
                         "reason": "Puan aralığınıza uygun program",
+                        "is_priority": is_halic,
                     }
                 )
 
+    # Step 4: Add Haliç University programs by matching program names (no score filter)
+    # Get all suggested program names from GPT results
+    suggested_program_names = set()
+    for sp in suggested_programs:
+        prog_name = sp.get("program", "").lower().strip()
+        if prog_name:
+            suggested_program_names.add(prog_name)
+            # Also add partial matches (first 3 significant words)
+            words = [w for w in prog_name.split() if len(w) > 2]
+            if len(words) >= 2:
+                suggested_program_names.add(" ".join(words[:3]))
+
+    # Find matching Haliç programs from ALL programs (not just filtered)
+    halic_programs = []
+    for program in all_programs:
+        uni_name = program.get("university", "").lower()
+        if "haliç" in uni_name or "halic" in uni_name:
+            prog_name = program.get("program", "").lower().strip()
+            # Check if this program name matches any suggested program
+            is_match = False
+            for suggested_name in suggested_program_names:
+                if suggested_name in prog_name or prog_name in suggested_name:
+                    is_match = True
+                    break
+                # Also check word overlap
+                suggested_words = set(w for w in suggested_name.split() if len(w) > 3)
+                prog_words = set(w for w in prog_name.split() if len(w) > 3)
+                if len(suggested_words & prog_words) >= 2:
+                    is_match = True
+                    break
+            
+            if is_match:
+                # Find the most relevant job for this program
+                best_job = suggested_jobs[0] if suggested_jobs else {"job": "Genel", "distance": 0}
+                for sp in suggested_programs:
+                    if sp.get("program", "").lower() in prog_name or prog_name in sp.get("program", "").lower():
+                        best_job = {"job": sp.get("job"), "distance": sp.get("job_distance", 0)}
+                        break
+                
+                # Check if already in suggestions
+                already_exists = any(
+                    sp.get("program", "").lower() == prog_name 
+                    and sp.get("university", "").lower() == uni_name
+                    for sp in suggested_programs
+                )
+                
+                if not already_exists:
+                    halic_programs.append({
+                        "job": best_job["job"],
+                        "job_distance": best_job["distance"],
+                        "program": program.get("program", ""),
+                        "university": program.get("university", ""),
+                        "faculty": program.get("faculty", ""),
+                        "city": program.get("city", ""),
+                        "taban_score": program.get("taban_2025", ""),
+                        "scholarship": program.get("scholarship", ""),
+                        "reason": "Haliç Üniversitesi'nden önerilen program",
+                        "is_priority": True,
+                    })
+
+    # Combine: Haliç programs first, then other suggestions
+    combined_programs = halic_programs + suggested_programs
+    
+    # Remove duplicates while preserving order
+    seen = set()
+    unique_programs = []
+    for prog in combined_programs:
+        key = (prog.get("program", "").lower(), prog.get("university", "").lower())
+        if key not in seen:
+            seen.add(key)
+            unique_programs.append(prog)
+
     # Enrich program suggestions with additional data
     enriched_programs = []
-    for suggestion in suggested_programs:
-        # Find matching program in filtered list to get additional details
+    for suggestion in unique_programs[:200]:  # Limit to 200
+        # Find matching program in all programs to get additional details
         matching_program = None
-        for fp in filtered_programs:
+        for fp in all_programs:
             if (
                 suggestion.get("program", "").lower() in fp.get("program", "").lower()
                 and suggestion.get("university", "").lower()
@@ -490,6 +564,8 @@ def get_suggested_programs(
             enriched["university_type"] = matching_program.get("university_type", "")
 
         enriched_programs.append(enriched)
+
+    logging.info(f"Total programs: {len(enriched_programs)} (Haliç: {len(halic_programs)})")
 
     return {
         "riasec_scores": riasec_scores,
