@@ -23,7 +23,7 @@ class UserBase(BaseModel):
     username: UsernameStr = Field(
         min_length=FieldLimits.USERNAME_MIN,
         max_length=FieldLimits.USERNAME_MAX,
-        description="Username must start with a letter and contain only letters, numbers, and underscores",
+        description="Username must start with a letter and contain only letters, numbers, underscores, and dots",
     )
     email: EmailStrOptional = Field(default=None, max_length=FieldLimits.EMAIL_MAX)
 

@@ -167,9 +167,9 @@ def validate_username(value: str) -> str:
     if len(value) > FieldLimits.USERNAME_MAX:
         raise ValueError(f"Username must not exceed {FieldLimits.USERNAME_MAX} characters")
     
-    if not re.match(r"^[a-zA-Z][a-zA-Z0-9_]*$", value):
+    if not re.match(r"^[a-zA-Z][a-zA-Z0-9_.]*$", value):
         raise ValueError(
-            "Username must start with a letter and contain only letters, numbers, and underscores"
+            "Username must start with a letter and contain only letters, numbers, underscores, and dots"
         )
     
     return value
