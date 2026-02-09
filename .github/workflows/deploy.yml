@@ -1,0 +1,73 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches:
+      - master
+      - main
+  workflow_dispatch:
+
+env:
+  LIGHTSAIL_INSTANCE: educaition
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create deployment package
+        run: tar -czf backend.tar.gz app alembic alembic.ini requirements.txt ecosystem.config.js
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-central-1
+
+      - name: Get GitHub Runner IP
+        id: ip
+        run: echo "ipv4=$(curl -s https://api.ipify.org)" >> $GITHUB_OUTPUT
+
+      - name: Open SSH port for GitHub Actions
+        run: |
+          aws lightsail open-instance-public-ports \
+            --instance-name ${{ env.LIGHTSAIL_INSTANCE }} \
+            --port-info fromPort=22,toPort=22,protocol=TCP,cidrs=${{ steps.ip.outputs.ipv4 }}/32
+          echo "Opened SSH for IP: ${{ steps.ip.outputs.ipv4 }}"
+          sleep 5
+
+      - name: Setup SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H 63.179.49.61 >> ~/.ssh/known_hosts
+
+      - name: Deploy to server
+        run: |
+          scp backend.tar.gz ubuntu@63.179.49.61:/home/ubuntu/
+          ssh ubuntu@63.179.49.61 'set -e && cd /srv/app/educaition && rm -rf app alembic alembic.ini requirements.txt ecosystem.config.js && tar -xzf /home/ubuntu/backend.tar.gz -C /srv/app/educaition && python3.10 -m pip install -r requirements.txt && python3.10 -m alembic upgrade head && pm2 reload educaition && rm -f /home/ubuntu/backend.tar.gz && echo "Backend deployment completed!"'
+
+      - name: Close SSH port for GitHub Actions
+        if: always()
+        run: |
+          aws lightsail close-instance-public-ports \
+            --instance-name ${{ env.LIGHTSAIL_INSTANCE }} \
+            --port-info fromPort=22,toPort=22,protocol=TCP,cidrs=${{ steps.ip.outputs.ipv4 }}/32
+          echo "Closed SSH for IP: ${{ steps.ip.outputs.ipv4 }}"
+
+      - name: Health check
+        if: success()
+        continue-on-error: true
+        run: |
+          sleep 5
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://api.educaition.net.tr/ || echo "000")
+          if [ "$response" = "200" ] || [ "$response" = "404" ]; then
+            echo "Health check passed! Server is responding."
+          else
+            echo "Health check returned: $response (server may still be starting)"
+          fi
