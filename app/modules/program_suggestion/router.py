@@ -71,6 +71,17 @@ def create_student(
     return response
 
 
+@program_suggestion_public_router.get("/riasec-averages")
+def get_riasec_averages(db: Session = Depends(get_db)):
+    """
+    Get platform-wide average RIASEC scores.
+    
+    Returns average scores based on all completed tests on the platform,
+    along with the sample size used to calculate these averages.
+    """
+    return ProgramSuggestionService.get_riasec_averages(db)
+
+
 @program_suggestion_public_router.get(
     "/{student_id}",
     response_model=ProgramSuggestionStudent,

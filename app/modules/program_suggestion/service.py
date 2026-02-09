@@ -232,3 +232,52 @@ class ProgramSuggestionService:
             "gpt_prompt": student.gpt_prompt,
             "gpt_response": student.gpt_response,
         }
+
+    @staticmethod
+    def get_riasec_averages(db: Session):
+        """
+        Calculate platform-wide average RIASEC scores from all completed students.
+        
+        Returns:
+            dict with 'averages' (R, I, A, S, E, C scores) and 'sample_size'
+        """
+        # Get all students who have completed the RIASEC section
+        students = (
+            db.query(models.ProgramSuggestionStudent)
+            .filter(
+                models.ProgramSuggestionStudent.riasec_scores.isnot(None),
+                models.ProgramSuggestionStudent.status == "completed",
+            )
+            .all()
+        )
+
+        if not students:
+            return {
+                "averages": {"R": 0, "I": 0, "A": 0, "S": 0, "E": 0, "C": 0},
+                "sample_size": 0,
+            }
+
+        # Calculate averages for each dimension
+        totals = {"R": 0.0, "I": 0.0, "A": 0.0, "S": 0.0, "E": 0.0, "C": 0.0}
+        valid_counts = {"R": 0, "I": 0, "A": 0, "S": 0, "E": 0, "C": 0}
+
+        for student in students:
+            scores = student.riasec_scores
+            if not isinstance(scores, dict):
+                continue
+            for letter in totals:
+                if letter in scores and scores[letter] is not None:
+                    totals[letter] += float(scores[letter])
+                    valid_counts[letter] += 1
+
+        averages = {}
+        for letter in totals:
+            if valid_counts[letter] > 0:
+                averages[letter] = round(totals[letter] / valid_counts[letter], 2)
+            else:
+                averages[letter] = 0
+
+        return {
+            "averages": averages,
+            "sample_size": len(students),
+        }
