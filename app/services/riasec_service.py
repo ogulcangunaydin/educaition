@@ -379,20 +379,20 @@ def get_program_suggestions_from_gpt(
         return [], None, None
 
     programs_text = "\n".join(
-        [f"- {p}" for p in unique_programs[:200]]
-    )  # Limit to avoid token limits
+        [f"- {p}" for p in unique_programs[:300]]
+    )  # Send more program names to GPT
 
     # Build job list dynamically based on number of jobs (up to 6)
     job_list_text = "\n".join([f"{i+1}. {jobs[i]['job']}" for i in range(min(len(jobs), 6))])
     
-    # Build expected JSON structure for all jobs
+    # Build expected JSON structure for all jobs - ask for 10 programs per job
     json_structure_parts = []
     for i in range(min(len(jobs), 6)):
         json_structure_parts.append(f'''  "job_{i+1}": {{
     "job_name": "{jobs[i]['job']}",
     "programs": [
-      {{"program": "Program Adı", "reason": "Bu program neden bu mesleğe uygun - kısa açıklama"}},
-      ...4 more programs...
+      {{"program": "Program Adı", "reason": "Kısa açıklama"}},
+      ...9 more programs (toplam 10 program)...
     ]
   }}''')
     json_structure = ",\n".join(json_structure_parts)
@@ -401,7 +401,7 @@ def get_program_suggestions_from_gpt(
 
 ÖNEMLİ: Sadece program adları verilmiştir, üniversite isimleri yok. Sen sadece mesleğe uygun PROGRAM ADLARINI seçeceksin.
 
-Her meslek için, o mesleğe en uygun 5 program ADINI seç. Bu programlar o mesleğe götürebilecek veya o meslekle alakalı olmalıdır.
+Her meslek için, o mesleğe uygun EN AZ 10 program ADINI seç. Geniş düşün - doğrudan ilgili programların yanı sıra dolaylı olarak ilgili programları da ekle. Örneğin "Yazılım Mühendisi" için sadece "Bilgisayar Mühendisliği" değil, "Matematik", "Elektrik-Elektronik Mühendisliği", "Endüstri Mühendisliği" gibi ilgili programları da ekle.
 
 MESLEK ÖNERİLERİ:
 {job_list_text}
@@ -447,7 +447,7 @@ Yanıtını SADECE aşağıdaki JSON formatında ver, başka hiçbir açıklama 
                         if not program_name:
                             continue
 
-                        # Find matching actual programs (with universities)
+                        # Find matching actual programs (with universities) - RELAXED MATCHING
                         matching_programs = []
                         for p in available_programs:
                             actual_name = p.get("program", "").lower()
@@ -458,22 +458,25 @@ Yanıtını SADECE aşağıdaki JSON formatında ver, başka hiçbir açıklama 
                             ):
                                 matching_programs.append(p)
 
-                        if not matching_programs:
-                            # Try partial match
-                            program_words = program_name.split()
+                        # If not enough matches, try partial word matching (relaxed)
+                        if len(matching_programs) < 10:
+                            program_words = [w for w in program_name.split() if len(w) > 2]
                             for p in available_programs:
+                                if p in matching_programs:
+                                    continue
                                 actual_name = p.get("program", "").lower()
-                                # Match if at least 2 key words match
+                                # Match if at least 1 significant word matches (very relaxed)
                                 matches = sum(
                                     1
                                     for word in program_words
                                     if len(word) > 3 and word in actual_name
                                 )
-                                if matches >= 2:
+                                if matches >= 1:
                                     matching_programs.append(p)
 
-                        # Sort matching programs: preferred universities first, then by ranking
+                        # Sort matching programs: Haliç first, then preferred universities, then by ranking
                         def sort_key(p):
+                            is_halic = "haliç" in p.get("university", "").lower() or "halic" in p.get("university", "").lower()
                             uni_priority = 0
                             if desired_universities:
                                 program_uni = p.get("university", "").upper()
@@ -489,12 +492,13 @@ Yanıtını SADECE aşağıdaki JSON formatında ver, başka hiçbir açıklama 
                                 or parse_ranking(p.get("tbs_2025", ""))
                                 or 999999
                             )
-                            return (-uni_priority, tbs)
+                            # Haliç first (0), then by uni priority (descending), then by ranking
+                            return (0 if is_halic else 1, -uni_priority, tbs)
 
                         matching_programs.sort(key=sort_key)
 
-                        # Take top 2 university matches per program
-                        for matched in matching_programs[:2]:
+                        # Take up to 10 university matches per program name (increased from 2)
+                        for matched in matching_programs[:10]:
                             # Avoid duplicates
                             existing = [
                                 s

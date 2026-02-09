@@ -257,8 +257,10 @@ def filter_programs_by_ranking_and_area(
             filtered.append(filtered_program)
 
         # Sort: main area first, university priority, then by ranking distance
+        # Sort: Haliç first, then main area, then university priority, then ranking distance
         filtered.sort(
             key=lambda x: (
+                not ("haliç" in x.get("university", "").lower() or "halic" in x.get("university", "").lower()),
                 not x["is_main_area"],
                 -x["university_priority"],
                 x["ranking_distance"],
@@ -267,21 +269,14 @@ def filter_programs_by_ranking_and_area(
 
         return filtered
 
-    # Progressive relaxation strategy
+    # Progressive relaxation strategy - START with very relaxed filters to get 200+ programs
     relaxation_levels = [
         # (check_city, check_language, include_alt_area, max_expansion, description)
-        (True, True, True, 1.05, "All preferences, ±5%"),
-        (True, True, True, 1.10, "All preferences, ±10%"),
-        (True, True, True, 1.20, "All preferences, ±20%"),
-        (True, True, True, 1.30, "All preferences, ±30%"),
-        (True, True, True, 1.50, "All preferences, ±50%"),
-        (True, True, True, 1.75, "All preferences, ±75%"),
-        (True, True, True, 2.00, "All preferences, ±100%"),
-        (False, True, True, 2.00, "No city filter, ±100%"),
-        (False, False, True, 2.00, "No city/language filter, ±100%"),
-        (False, False, True, 3.00, "No city/language filter, ±200%"),
-        (False, False, True, 5.00, "No city/language filter, ±400%"),
-        (False, False, True, 10.00, "No city/language filter, ±900%"),
+        (False, False, True, 5.00, "No filters, ±400%"),  # Start very relaxed
+        (False, False, True, 10.00, "No filters, ±900%"),
+        (False, False, True, 20.00, "No filters, ±1900%"),
+        (False, False, True, 50.00, "No filters, ±4900%"),
+        (False, False, True, 100.00, "No filters, all rankings"),
     ]
 
     for check_city, check_lang, include_alt, max_exp, desc in relaxation_levels:
@@ -427,7 +422,7 @@ def get_suggested_programs(
         preferred_language=preferred_language,
         desired_universities=desired_universities,
         desired_cities=desired_cities,
-        min_programs=100,  # Ensure at least 100 programs for more variety
+        min_programs=200,  # Ensure at least 200 programs for maximum variety
     )
 
     if not filtered_programs:
@@ -467,53 +462,40 @@ def get_suggested_programs(
                     }
                 )
 
-    # Step 4: Add Haliç University programs by matching program names (no score filter)
-    # Get all suggested program names from GPT results
-    suggested_program_names = set()
-    for sp in suggested_programs:
-        prog_name = sp.get("program", "").lower().strip()
-        if prog_name:
-            suggested_program_names.add(prog_name)
-            # Also add partial matches (first 3 significant words)
-            words = [w for w in prog_name.split() if len(w) > 2]
-            if len(words) >= 2:
-                suggested_program_names.add(" ".join(words[:3]))
-
-    # Find matching Haliç programs from ALL programs (not just filtered)
+    # Step 4: Add ALL Haliç University programs in the student's area (no score filter)
+    # This ensures Haliç programs are always shown at the top
     halic_programs = []
+    area_map = {"say": "say", "ea": "ea", "söz": "söz", "dil": "dil"}
+    main_area_code = area_map.get(area.lower(), area) if area else None
+    alt_area_code = area_map.get(alternative_area.lower(), alternative_area) if alternative_area else None
+    
     for program in all_programs:
         uni_name = program.get("university", "").lower()
         if "haliç" in uni_name or "halic" in uni_name:
-            prog_name = program.get("program", "").lower().strip()
-            # Check if this program name matches any suggested program
-            is_match = False
-            for suggested_name in suggested_program_names:
-                if suggested_name in prog_name or prog_name in suggested_name:
-                    is_match = True
-                    break
-                # Also check word overlap
-                suggested_words = set(w for w in suggested_name.split() if len(w) > 3)
-                prog_words = set(w for w in prog_name.split() if len(w) > 3)
-                if len(suggested_words & prog_words) >= 2:
-                    is_match = True
-                    break
-            
-            if is_match:
-                # Find the most relevant job for this program
-                best_job = suggested_jobs[0] if suggested_jobs else {"job": "Genel", "distance": 0}
-                for sp in suggested_programs:
-                    if sp.get("program", "").lower() in prog_name or prog_name in sp.get("program", "").lower():
-                        best_job = {"job": sp.get("job"), "distance": sp.get("job_distance", 0)}
-                        break
+            puan_type = program.get("puan_type", "").lower()
+            # Include if it matches main or alternative area
+            if puan_type == main_area_code or puan_type == alt_area_code:
+                prog_name = program.get("program", "").lower().strip()
                 
                 # Check if already in suggestions
                 already_exists = any(
                     sp.get("program", "").lower() == prog_name 
-                    and sp.get("university", "").lower() == uni_name
+                    and "haliç" in sp.get("university", "").lower()
                     for sp in suggested_programs
                 )
                 
                 if not already_exists:
+                    # Find a relevant job for this program based on word matching
+                    best_job = suggested_jobs[0] if suggested_jobs else {"job": "Genel", "distance": 0}
+                    for sp in suggested_programs:
+                        sp_prog = sp.get("program", "").lower()
+                        # Check if any words match
+                        prog_words = set(w for w in prog_name.split() if len(w) > 3)
+                        sp_words = set(w for w in sp_prog.split() if len(w) > 3)
+                        if prog_words & sp_words:
+                            best_job = {"job": sp.get("job"), "distance": sp.get("job_distance", 0)}
+                            break
+                    
                     halic_programs.append({
                         "job": best_job["job"],
                         "job_distance": best_job["distance"],
@@ -526,6 +508,8 @@ def get_suggested_programs(
                         "reason": "Haliç Üniversitesi'nden önerilen program",
                         "is_priority": True,
                     })
+
+    logging.info(f"Found {len(halic_programs)} Haliç programs in area {area}")
 
     # Combine: Haliç programs first, then other suggestions
     combined_programs = halic_programs + suggested_programs
