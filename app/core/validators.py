@@ -26,7 +26,7 @@ class FieldLimits:
     USERNAME_MIN = 3
     USERNAME_MAX = 50
     EMAIL_MAX = 255
-    PASSWORD_MIN = 8
+    PASSWORD_MIN = 6
     PASSWORD_MAX = 128
     
     # Name fields

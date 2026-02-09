@@ -18,12 +18,12 @@ class PasswordValidationError(Exception):
 
 
 class PasswordConfig:
-    MIN_LENGTH: int = 8
+    MIN_LENGTH: int = 6
     MAX_LENGTH: int = 128
-    REQUIRE_UPPERCASE: bool = True
-    REQUIRE_LOWERCASE: bool = True
-    REQUIRE_DIGIT: bool = True
-    REQUIRE_SPECIAL: bool = True
+    REQUIRE_UPPERCASE: bool = False
+    REQUIRE_LOWERCASE: bool = False
+    REQUIRE_DIGIT: bool = False
+    REQUIRE_SPECIAL: bool = False
     SPECIAL_CHARACTERS: str = r"!@#$%^&*()_+-=[]{}|;:',.<>?/`~"
 
     # 12 rounds = ~250ms hashing time
