@@ -1,0 +1,5 @@
+# This file defines code owners for the repository
+# These owners will be automatically requested for review on PRs
+
+# Default owner for all files - requires ogulcangunaydin's approval
+* @ogulcangunaydin
