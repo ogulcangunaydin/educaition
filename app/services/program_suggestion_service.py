@@ -457,6 +457,7 @@ def get_suggested_programs(
                         "city": program.get("city", ""),
                         "taban_score": program.get("taban_2025", ""),
                         "scholarship": program.get("scholarship", ""),
+                        "university_type": program.get("university_type", ""),
                         "reason": "Puan aralığınıza uygun program",
                         "is_priority": is_halic,
                     }
@@ -505,6 +506,7 @@ def get_suggested_programs(
                         "city": program.get("city", ""),
                         "taban_score": program.get("taban_2025", ""),
                         "scholarship": program.get("scholarship", ""),
+                        "university_type": program.get("university_type", "Vakıf"),
                         "reason": "Haliç Üniversitesi'nden önerilen program",
                         "is_priority": True,
                     })
@@ -546,10 +548,23 @@ def get_suggested_programs(
             enriched["tavan_score"] = matching_program.get("tavan_2025", "")
             enriched["scholarship"] = matching_program.get("scholarship", "")
             enriched["university_type"] = matching_program.get("university_type", "")
+        else:
+            # Ensure university_type is set even when matching fails
+            if "university_type" not in enriched or not enriched["university_type"]:
+                enriched["university_type"] = suggestion.get("university_type", "")
 
         enriched_programs.append(enriched)
 
-    logging.info(f"Total programs: {len(enriched_programs)} (Haliç: {len(halic_programs)})")
+    # Final sort: Haliç programs ALWAYS first, then others in original order
+    def is_halic_program(prog):
+        uni = prog.get("university", "").lower()
+        return "haliç" in uni or "halic" in uni
+    
+    halic_enriched = [p for p in enriched_programs if is_halic_program(p)]
+    other_enriched = [p for p in enriched_programs if not is_halic_program(p)]
+    enriched_programs = halic_enriched + other_enriched
+
+    logging.info(f"Total programs: {len(enriched_programs)} (Haliç: {len(halic_enriched)})")
 
     return {
         "riasec_scores": riasec_scores,
