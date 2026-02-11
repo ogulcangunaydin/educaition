@@ -8,6 +8,8 @@ from app.core.database import SessionLocal
 from app.core.security import get_password_hash
 from app.seeds.reference_data_seeder import ReferenceDataSeeder
 from app.seeds.university_program_seeder import UniversityProgramSeeder
+from app.seeds.tercih_stats_seeder import seed_all_tercih_data
+from app.seeds.lise_seeder import seed_all_lise_data
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -145,6 +147,14 @@ def run_seeds(seeders: list[type] = None):
             logger.info(f"\nRunning {seeder_class.__name__}...")
             seeder = seeder_class(db)
             seeder.run()
+
+        # Run tercih stats seeder (uses function-based seeder)
+        logger.info("\nRunning TercihStatsSeeder...")
+        seed_all_tercih_data(db, clear_first=True)
+
+        # Run lise seeder (uses function-based seeder)
+        logger.info("\nRunning LiseSeeder...")
+        seed_all_lise_data(db)
 
         logger.info("\nDatabase seeding completed successfully!")
 
