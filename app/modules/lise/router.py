@@ -42,6 +42,23 @@ def get_lise_mapping(
     return LiseMappingResponse(mapping=mapping)
 
 
+@router.get("/mapping/search")
+def search_lise_mapping(
+    q: str = Query("", description="Search term for lise name or city"),
+    year_group: Optional[str] = Query(
+        None, description="Filter by year group: '2022-2024' or '2025'"
+    ),
+    limit: int = Query(50, ge=1, le=200),
+    service: LiseService = Depends(get_service),
+):
+    """
+    Search lise records by name or city.
+    Returns lightweight list for autocomplete usage.
+    """
+    results = service.search_lises(q, year_group, limit)
+    return {"results": results}
+
+
 # ===================== University Mapping =====================
 
 

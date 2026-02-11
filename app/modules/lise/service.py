@@ -2,7 +2,7 @@
 
 from typing import Dict, List, Optional
 
-from sqlalchemy import distinct, func
+from sqlalchemy import distinct, func, and_
 from sqlalchemy.orm import Session
 
 from app.modules.lise.models import (
@@ -47,6 +47,29 @@ class LiseService:
             query = query.filter(Lise.year_group == year_group)
         return query.offset(skip).limit(limit).all()
 
+    def search_lises(
+        self, query: str, year_group: Optional[str] = None, limit: int = 50
+    ) -> List[dict]:
+        """
+        Search lises by name or city. Returns lightweight list for autocomplete.
+        """
+        q = self.db.query(Lise)
+        if year_group:
+            q = q.filter(Lise.year_group == year_group)
+        if query and query.strip():
+            search_term = f"%{query.strip()}%"
+            q = q.filter(
+                (Lise.lise_adi.ilike(search_term)) | (Lise.sehir.ilike(search_term))
+            )
+        else:
+            # Without a search term, return nothing to avoid loading all records
+            return []
+        results = q.order_by(Lise.lise_adi).limit(limit).all()
+        return [
+            {"code": str(r.lise_id), "name": r.lise_adi, "city": r.sehir or ""}
+            for r in results
+        ]
+
     # ===================== University Mapping =====================
 
     def get_university_slugs(self, year_group: Optional[str] = None) -> Dict[str, str]:
@@ -83,39 +106,47 @@ class LiseService:
         limit: int = 10000,
     ) -> List[dict]:
         """
-        Get lise placements for given programs with lise info joined.
+        Get lise placements for given programs with lise info joined via SQL.
         Returns list of dicts with placement + lise info.
         """
-        # Determine year_group for lise mapping
         year_group = "2025" if year == 2025 else "2022-2024"
 
-        # Get placements
-        query = self.db.query(LisePlacement).filter(
-            LisePlacement.yop_kodu.in_(yop_kodlari)
+        query = (
+            self.db.query(
+                LisePlacement.yop_kodu,
+                LisePlacement.year,
+                LisePlacement.lise_id,
+                Lise.lise_adi,
+                Lise.sehir.label("lise_sehir"),
+                LisePlacement.yerlesen_sayisi,
+                LisePlacement.school_type,
+            )
+            .outerjoin(
+                Lise,
+                and_(
+                    LisePlacement.lise_id == Lise.lise_id,
+                    Lise.year_group == year_group,
+                ),
+            )
+            .filter(LisePlacement.yop_kodu.in_(yop_kodlari))
         )
         if year:
             query = query.filter(LisePlacement.year == year)
 
-        placements = query.offset(skip).limit(limit).all()
+        rows = query.offset(skip).limit(limit).all()
 
-        # Get lise mapping for lookup
-        lise_mapping = self.get_lise_mapping(year_group)
-
-        # Join with lise info
-        results = []
-        for p in placements:
-            lise_info = lise_mapping.get(str(p.lise_id), {})
-            results.append({
-                "yop_kodu": p.yop_kodu,
-                "year": p.year,
-                "lise_id": p.lise_id,
-                "lise_adi": lise_info.get("lise_adi", f"Lise ID: {p.lise_id}"),
-                "lise_sehir": lise_info.get("sehir", ""),
-                "yerlesen_sayisi": p.yerlesen_sayisi,
-                "school_type": p.school_type,
-            })
-
-        return results
+        return [
+            {
+                "yop_kodu": r.yop_kodu,
+                "year": r.year,
+                "lise_id": r.lise_id,
+                "lise_adi": r.lise_adi or f"Lise ID: {r.lise_id}",
+                "lise_sehir": r.lise_sehir or "",
+                "yerlesen_sayisi": r.yerlesen_sayisi,
+                "school_type": r.school_type,
+            }
+            for r in rows
+        ]
 
     def get_placements_by_university(
         self,
@@ -125,37 +156,47 @@ class LiseService:
         limit: int = 50000,
     ) -> List[dict]:
         """
-        Get lise placements for a specific university.
+        Get lise placements for a specific university via SQL JOIN.
         Returns list of dicts with placement + lise info.
         """
-        # Determine year_group for lise mapping
         year_group = "2025" if year == 2025 else "2022-2024"
 
-        query = self.db.query(LisePlacement).filter(
-            LisePlacement.university_slug == university_slug
+        query = (
+            self.db.query(
+                LisePlacement.yop_kodu,
+                LisePlacement.year,
+                LisePlacement.lise_id,
+                Lise.lise_adi,
+                Lise.sehir.label("lise_sehir"),
+                LisePlacement.yerlesen_sayisi,
+                LisePlacement.school_type,
+            )
+            .outerjoin(
+                Lise,
+                and_(
+                    LisePlacement.lise_id == Lise.lise_id,
+                    Lise.year_group == year_group,
+                ),
+            )
+            .filter(LisePlacement.university_slug == university_slug)
         )
         if year:
             query = query.filter(LisePlacement.year == year)
 
-        placements = query.offset(skip).limit(limit).all()
+        rows = query.offset(skip).limit(limit).all()
 
-        # Get lise mapping for lookup
-        lise_mapping = self.get_lise_mapping(year_group)
-
-        results = []
-        for p in placements:
-            lise_info = lise_mapping.get(str(p.lise_id), {})
-            results.append({
-                "yop_kodu": p.yop_kodu,
-                "year": p.year,
-                "lise_id": p.lise_id,
-                "lise_adi": lise_info.get("lise_adi", f"Lise ID: {p.lise_id}"),
-                "lise_sehir": lise_info.get("sehir", ""),
-                "yerlesen_sayisi": p.yerlesen_sayisi,
-                "school_type": p.school_type,
-            })
-
-        return results
+        return [
+            {
+                "yop_kodu": r.yop_kodu,
+                "year": r.year,
+                "lise_id": r.lise_id,
+                "lise_adi": r.lise_adi or f"Lise ID: {r.lise_id}",
+                "lise_sehir": r.lise_sehir or "",
+                "yerlesen_sayisi": r.yerlesen_sayisi,
+                "school_type": r.school_type,
+            }
+            for r in rows
+        ]
 
     def get_placements_count(
         self,
