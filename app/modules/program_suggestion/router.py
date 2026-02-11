@@ -13,6 +13,8 @@ from app.services.participant_token_service import (
     get_token_expiry_seconds,
 )
 from .schemas import (
+    ProgramInteractionLogCreate,
+    ProgramInteractionLogResponse,
     ProgramSuggestionStudent,
     ProgramSuggestionStudentCreate,
     ProgramSuggestionStudentDebug,
@@ -178,6 +180,21 @@ def get_student_result(
     return ProgramSuggestionService.get_student_result(student_id, db)
 
 
+@program_suggestion_public_router.post(
+    "/{student_id}/log-interaction",
+    response_model=ProgramInteractionLogResponse,
+)
+def log_interaction(
+    student_id: int,
+    data: ProgramInteractionLogCreate,
+    participant: CurrentProgramStudent,
+    db: Session = Depends(get_db),
+):
+    """Log a student's interaction with a suggested program (google search, add to basket)."""
+    verify_participant_ownership(participant.participant_id, student_id)
+    return ProgramSuggestionService.log_interaction(student_id, data, db)
+
+
 # =============================================================================
 # PROTECTED ROUTER (Authentication required - for teachers/admins)
 # =============================================================================
@@ -212,6 +229,19 @@ def get_room_participants(
     return ProgramSuggestionService.get_participants(room_id, db)
 
 
+@program_suggestion_protected_router.get(
+    "/students/{student_id}/admin-result",
+    response_model=ProgramSuggestionStudentResult,
+)
+def get_student_result_admin(
+    student_id: int,
+    current_user: TeacherOrAdmin,
+    db: Session = Depends(get_db),
+):
+    """Get student result (teacher/admin access)."""
+    return ProgramSuggestionService.get_student_result(student_id, db)
+
+
 @program_suggestion_protected_router.delete(
     "/students/{student_id}",
 )
@@ -222,6 +252,32 @@ def delete_student(
 ):
     """Soft delete a program suggestion student."""
     return ProgramSuggestionService.delete_student(student_id, db)
+
+
+@program_suggestion_protected_router.get(
+    "/students/{student_id}/interactions",
+    response_model=list[ProgramInteractionLogResponse],
+)
+def get_student_interactions(
+    student_id: int,
+    current_user: TeacherOrAdmin,
+    db: Session = Depends(get_db),
+):
+    """Get all interaction logs for a specific student."""
+    return ProgramSuggestionService.get_student_interactions(student_id, db)
+
+
+@program_suggestion_protected_router.get(
+    "/rooms/{room_id}/interactions",
+    response_model=list[ProgramInteractionLogResponse],
+)
+def get_room_interactions(
+    room_id: int,
+    current_user: TeacherOrAdmin,
+    db: Session = Depends(get_db),
+):
+    """Get all interaction logs for all students in a room."""
+    return ProgramSuggestionService.get_room_interactions(room_id, db)
 
 
 router = APIRouter()

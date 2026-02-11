@@ -5,7 +5,7 @@ from app.modules.players.models import Player
 from app.modules.games.models import Game, Round, Session
 from app.modules.dissonance_test.models import DissonanceTestParticipant
 from app.modules.high_school_rooms.models import HighSchoolRoom
-from app.modules.program_suggestion.models import ProgramSuggestionStudent
+from app.modules.program_suggestion.models import ProgramSuggestionStudent, ProgramInteractionLog
 from app.modules.reference_data.models import RiasecJobScore, ScoreDistribution
 from app.modules.universities.models import University, Program, ProgramYearlyStats
 from app.modules.tercih_stats.models import (
@@ -37,6 +37,7 @@ __all__ = [
     "DissonanceTestParticipant",
     "HighSchoolRoom",
     "ProgramSuggestionStudent",
+    "ProgramInteractionLog",
     "RiasecJobScore",
     "ScoreDistribution",
     "University",

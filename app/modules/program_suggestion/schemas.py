@@ -179,3 +179,40 @@ class ProgramSuggestionStudentDebug(BaseModel):
     suggested_jobs: list[dict] | None = None
     gpt_prompt: str | None = None
     gpt_response: str | None = None
+
+
+# =============================================================================
+# Program Interaction Log Schemas
+# =============================================================================
+
+class ProgramInteractionLogCreate(BaseModel):
+    action: str = Field(max_length=50)  # google_search, add_to_basket
+    program_name: str = Field(max_length=255)
+    university: str = Field(max_length=255)
+    scholarship: str | None = Field(default=None, max_length=100)
+    city: str | None = Field(default=None, max_length=100)
+
+    @field_validator("action")
+    @classmethod
+    def validate_action(cls, v: str) -> str:
+        allowed = {"google_search", "add_to_basket", "remove_from_basket", "view_details"}
+        if v not in allowed:
+            raise ValueError(f"Action must be one of: {', '.join(allowed)}")
+        return v
+
+
+class ProgramInteractionLogResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    student_id: int
+    action: str
+    program_name: str
+    university: str
+    scholarship: str | None = None
+    city: str | None = None
+    created_at: datetime
+
+    @field_serializer("created_at")
+    def serialize_created_at(self, created_at: datetime, _info):
+        return created_at.strftime("%d/%m/%Y %H:%M:%S")

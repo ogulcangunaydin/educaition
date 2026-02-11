@@ -21,6 +21,7 @@ from app.models import (  # noqa: F401
     DissonanceTestParticipant,
     HighSchoolRoom,
     ProgramSuggestionStudent,
+    ProgramInteractionLog,
     RiasecJobScore,
     ScoreDistribution,
     University,
@@ -34,6 +35,9 @@ from app.models import (  # noqa: F401
     LisePlacement,
     LisePlacement2025,
     ScoreRankingDistribution,
+    DeviceTestCompletion,
+    TestRoom,
+    PersonalityTestParticipant,
 )
 
 # this is the Alembic Config object, which provides

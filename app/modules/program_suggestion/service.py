@@ -2,10 +2,12 @@ from datetime import datetime, timedelta, timezone
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from app import models
+from app.modules.program_suggestion.models import ProgramInteractionLog
 from app.modules.test_rooms.models import TestRoom
 from app.services.program_suggestion_service import get_suggested_programs
 from app.services.riasec_service import calculate_riasec_scores
 from .schemas import (
+    ProgramInteractionLogCreate,
     ProgramSuggestionStudentUpdateRiasec,
     ProgramSuggestionStudentUpdateStep1,
     ProgramSuggestionStudentUpdateStep2,
@@ -284,3 +286,52 @@ class ProgramSuggestionService:
             "averages": averages,
             "sample_size": len(students),
         }
+
+    @staticmethod
+    def log_interaction(student_id: int, data: ProgramInteractionLogCreate, db: Session):
+        """Log a student's interaction with a suggested program."""
+        # Verify student exists
+        ProgramSuggestionService.get_student(student_id, db)
+
+        log = ProgramInteractionLog(
+            student_id=student_id,
+            action=data.action,
+            program_name=data.program_name,
+            university=data.university,
+            scholarship=data.scholarship,
+            city=data.city,
+        )
+        db.add(log)
+        db.commit()
+        db.refresh(log)
+        return log
+
+    @staticmethod
+    def get_student_interactions(student_id: int, db: Session):
+        """Get all interaction logs for a student."""
+        ProgramSuggestionService.get_student(student_id, db)
+
+        return (
+            db.query(ProgramInteractionLog)
+            .filter(ProgramInteractionLog.student_id == student_id)
+            .order_by(ProgramInteractionLog.created_at.desc())
+            .all()
+        )
+
+    @staticmethod
+    def get_room_interactions(test_room_id: int, db: Session):
+        """Get all interaction logs for all students in a room."""
+        room = db.query(TestRoom).filter(TestRoom.id == test_room_id).first()
+        if room is None:
+            raise HTTPException(status_code=404, detail="Test room not found")
+
+        return (
+            db.query(ProgramInteractionLog)
+            .join(
+                models.ProgramSuggestionStudent,
+                ProgramInteractionLog.student_id == models.ProgramSuggestionStudent.id,
+            )
+            .filter(models.ProgramSuggestionStudent.test_room_id == test_room_id)
+            .order_by(ProgramInteractionLog.created_at.desc())
+            .all()
+        )

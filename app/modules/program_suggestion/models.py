@@ -74,3 +74,31 @@ class ProgramSuggestionStudent(Base, SoftDeleteMixin):
     # Relationships
     test_room = relationship("TestRoom", backref="program_suggestion_students")
     high_school_room = relationship("HighSchoolRoom", back_populates="students")
+    interaction_logs = relationship(
+        "ProgramInteractionLog", back_populates="student", cascade="all, delete-orphan"
+    )
+
+
+class ProgramInteractionLog(Base):
+    """Tracks student interactions with suggested programs (google search, add to basket)."""
+
+    __tablename__ = "program_interaction_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    student_id = Column(
+        Integer,
+        ForeignKey("program_suggestion_students.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    action = Column(String(50), nullable=False)  # google_search, add_to_basket
+    program_name = Column(String(255), nullable=False)
+    university = Column(String(255), nullable=False)
+    scholarship = Column(String(100), nullable=True)
+    city = Column(String(100), nullable=True)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    # Relationships
+    student = relationship("ProgramSuggestionStudent", back_populates="interaction_logs")
