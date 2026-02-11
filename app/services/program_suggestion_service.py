@@ -14,6 +14,7 @@ New architecture:
 import json
 import logging
 import os
+import unicodedata
 from difflib import SequenceMatcher
 
 from sqlalchemy.orm import Session
@@ -118,16 +119,28 @@ AREA_MAP = {"say": "say", "ea": "ea", "söz": "söz", "dil": "dil"}
 MAX_SCORE_TURKEY = 500  # Approximate max YKS score
 
 
+def _normalize_turkish(text: str) -> str:
+    """Normalize Turkish text for safe comparison.
+    Turkish İ (U+0130) lowercases to 'i' + combining dot above (U+0307)
+    which breaks simple string matching. NFC normalization + stripping
+    the combining dot fixes this.
+    """
+    lowered = text.lower()
+    # NFC normalize, then strip combining dot above (U+0307)
+    normalized = unicodedata.normalize("NFC", lowered)
+    return normalized.replace("\u0307", "")
+
+
 def _is_halic(university_name: str) -> bool:
     """Check if a university is Haliç."""
-    uni = university_name.lower()
+    uni = _normalize_turkish(university_name)
     return "haliç" in uni or "halic" in uni
 
 
 def _name_similarity(a: str, b: str) -> float:
     """Simple name similarity using SequenceMatcher. Returns 0-1."""
-    a_clean = a.lower().strip()
-    b_clean = b.lower().strip()
+    a_clean = _normalize_turkish(a).strip()
+    b_clean = _normalize_turkish(b).strip()
     if a_clean == b_clean:
         return 1.0
     if a_clean in b_clean or b_clean in a_clean:
@@ -320,39 +333,45 @@ def _find_best_halic_program(
 ) -> dict | None:
     """
     Find the best Haliç program matching the given program name.
-    Picks the scholarship level closest to the student's expected score.
-    Returns None if no similar program exists at Haliç.
+    Always returns the best scholarship variant to promote Haliç,
+    even if the student's score is below the minimum threshold.
+    Scholarship priority: Burslu > %50 İndirimli > %25 İndirimli > Ücretli
     """
     best_match = None
     best_sim = 0.0
 
     for halic_name, variants in halic_programs_by_name.items():
         sim = _name_similarity(program_name, halic_name)
-        if sim > best_sim and sim >= 0.55:
+        if sim > best_sim and sim >= 0.45:
             best_sim = sim
             best_match = variants
 
     if not best_match:
         return None
 
+    # Scholarship priority: lower number = better scholarship
+    SCHOLARSHIP_PRIORITY = {
+        "burslu": 0,
+        "%50 indirimli": 1,
+        "%25 indirimli": 2,
+        "ucretli": 3, "ücretli": 3,
+    }
+
     best_variant = None
+    best_priority = 99
     best_diff = float("inf")
 
     for variant in best_match:
+        scholarship = (variant.get("scholarship", "") or "").strip()
+        priority = SCHOLARSHIP_PRIORITY.get(_normalize_turkish(scholarship), 5)
         taban = parse_score(variant.get("taban_2025"))
-        if taban is None:
-            if best_variant is None:
-                best_variant = variant
-            continue
+        diff = abs(expected_score - taban) if taban else 999999
 
-        diff = abs(expected_score - taban)
-        if taban <= expected_score + 20:
-            if diff < best_diff:
-                best_diff = diff
-                best_variant = variant
-        elif best_variant is None:
-            best_variant = variant
+        # Pick best scholarship first; among same tier, prefer closest score
+        if (priority < best_priority) or (priority == best_priority and diff < best_diff):
+            best_priority = priority
             best_diff = diff
+            best_variant = variant
 
     return best_variant
 
