@@ -54,7 +54,10 @@ class ProgramSuggestionStudent(Base, SoftDeleteMixin):
     suggested_jobs = Column(JSONB, nullable=True)
 
     # Final Results
-    suggested_programs = Column(JSONB, nullable=True)
+    suggested_programs = Column(JSONB, nullable=True)  # flat list (backward compat)
+    program_groups = Column(JSONB, nullable=True)  # NEW: grouped by program name
+    alternative_jobs = Column(JSONB, nullable=True)  # NEW: alt area jobs
+    alternative_program_groups = Column(JSONB, nullable=True)  # NEW: alt area groups
 
     # GPT Debug Info
     gpt_prompt = Column(Text, nullable=True)

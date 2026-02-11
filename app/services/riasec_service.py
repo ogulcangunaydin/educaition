@@ -335,7 +335,7 @@ def send_request_to_gpt(prompt: str) -> str:
         "model": "gpt-4o",
         "messages": [{"role": "user", "content": prompt}],
         "temperature": 0.5,
-        "max_tokens": 2000,
+        "max_tokens": 4000,
     }
     response = requests.post(os.getenv("OPENAI_ENDPOINT"), headers=headers, json=data)
     if response.status_code == 200:

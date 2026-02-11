@@ -184,9 +184,6 @@ class ProgramSuggestionService:
             area=student.area,
             alternative_score=alternative_score,
             alternative_area=student.alternative_area,
-            preferred_language=student.preferred_language,
-            desired_universities=student.desired_universities,
-            desired_cities=student.desired_cities,
             db=db,
         )
 
@@ -194,6 +191,9 @@ class ProgramSuggestionService:
         student.riasec_scores = result["riasec_scores"]
         student.suggested_jobs = result["suggested_jobs"]
         student.suggested_programs = result["suggested_programs"]
+        student.program_groups = result.get("program_groups")
+        student.alternative_jobs = result.get("alternative_jobs")
+        student.alternative_program_groups = result.get("alternative_program_groups")
         student.gpt_prompt = result.get("gpt_prompt")
         student.gpt_response = result.get("gpt_response")
         student.status = "completed"
@@ -217,6 +217,9 @@ class ProgramSuggestionService:
             "riasec_scores": student.riasec_scores,
             "suggested_jobs": student.suggested_jobs,
             "suggested_programs": student.suggested_programs,
+            "program_groups": student.program_groups,
+            "alternative_jobs": student.alternative_jobs,
+            "alternative_program_groups": student.alternative_program_groups,
             "area": student.area,
         }
 
