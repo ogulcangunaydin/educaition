@@ -58,8 +58,6 @@ class Gender(str, Enum):
 class ClassYear(str, Enum):
     """High school class years."""
 
-    GRADE_9 = "9"
-    GRADE_10 = "10"
     GRADE_11 = "11"
     GRADE_12 = "12"
     GRADUATE = "mezun"
@@ -264,8 +262,6 @@ def get_all_enums() -> dict[str, Any]:
         "classYears": enum_to_options(
             ClassYear,
             {
-                "9": "9. Sınıf",
-                "10": "10. Sınıf",
                 "11": "11. Sınıf",
                 "12": "12. Sınıf",
                 "mezun": "Mezun",
