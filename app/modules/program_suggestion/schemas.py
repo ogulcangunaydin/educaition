@@ -53,6 +53,10 @@ class ProgramSuggestionStudentBase(BaseModel):
 class ProgramSuggestionStudentCreate(BaseModel):
     """Create a new program suggestion student. Uses test_room_id (unified system)."""
     test_room_id: int = Field(..., description="The test room ID")
+    full_name: str | None = Field(default=None, max_length=100)
+    student_number: str | None = Field(default=None, max_length=50)
+    device_fingerprint: str | None = Field(default=None, max_length=255)
+    student_user_id: int | None = Field(default=None)
 
 
 class ProgramSuggestionStudentUpdateStep1(BaseModel):

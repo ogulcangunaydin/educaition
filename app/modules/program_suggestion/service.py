@@ -17,7 +17,67 @@ from .schemas import (
 
 class ProgramSuggestionService:
     @staticmethod
-    def create_student(test_room_id: int, db: Session):
+    def check_device_completion(
+        db: Session,
+        test_room_id: int,
+        device_fingerprint: str,
+    ) -> bool:
+        """Check if a device has already completed the test in this room."""
+        if not device_fingerprint:
+            return False
+
+        completed = (
+            db.query(models.ProgramSuggestionStudent)
+            .filter(
+                models.ProgramSuggestionStudent.test_room_id == test_room_id,
+                models.ProgramSuggestionStudent.device_fingerprint == device_fingerprint,
+                models.ProgramSuggestionStudent.status == "completed",
+                models.ProgramSuggestionStudent.deleted_at.is_(None),
+            )
+            .first()
+        )
+        return completed is not None
+
+    @staticmethod
+    def find_in_progress_participant(
+        db: Session,
+        test_room_id: int,
+        device_fingerprint: str,
+        student_user_id: int | None = None,
+    ):
+        """Find an existing in-progress student for this device/user."""
+        if not device_fingerprint and not student_user_id:
+            return None
+
+        query = db.query(models.ProgramSuggestionStudent).filter(
+            models.ProgramSuggestionStudent.test_room_id == test_room_id,
+            models.ProgramSuggestionStudent.status != "completed",
+            models.ProgramSuggestionStudent.deleted_at.is_(None),
+        )
+
+        if student_user_id:
+            # For logged-in users, match by user ID first
+            existing = query.filter(
+                models.ProgramSuggestionStudent.device_fingerprint == device_fingerprint
+            ).order_by(models.ProgramSuggestionStudent.created_at.desc()).first()
+            if existing:
+                return existing
+        elif device_fingerprint:
+            existing = query.filter(
+                models.ProgramSuggestionStudent.device_fingerprint == device_fingerprint
+            ).order_by(models.ProgramSuggestionStudent.created_at.desc()).first()
+            if existing:
+                return existing
+
+        return None
+
+    @staticmethod
+    def create_student(
+        test_room_id: int,
+        db: Session,
+        device_fingerprint: str | None = None,
+        name: str | None = None,
+    ):
         """Create a new student for a test room."""
         room = (
             db.query(TestRoom)
@@ -45,7 +105,10 @@ class ProgramSuggestionService:
             return recent_started[0]
 
         student = models.ProgramSuggestionStudent(
-            test_room_id=test_room_id, status="started"
+            test_room_id=test_room_id,
+            status="started",
+            device_fingerprint=device_fingerprint,
+            name=name,
         )
         db.add(student)
         db.commit()

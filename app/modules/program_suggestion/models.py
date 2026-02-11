@@ -22,6 +22,9 @@ class ProgramSuggestionStudent(Base, SoftDeleteMixin):
         Integer, ForeignKey("high_school_rooms.id"), nullable=True, index=True
     )
 
+    # Device tracking for duplicate prevention
+    device_fingerprint = Column(String(255), nullable=True, index=True)
+
     # Step 1.1 - Personal Info
     name = Column(String(100), nullable=True)
     birth_year = Column(Integer, nullable=True)

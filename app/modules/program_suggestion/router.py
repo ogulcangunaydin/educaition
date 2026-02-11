@@ -7,6 +7,8 @@ from app.dependencies.participant import (
     CurrentProgramStudent,
     verify_participant_ownership,
 )
+from app.modules.users.models import User
+from app.core.enums import UserRole
 from app.services.participant_token_service import (
     ParticipantType,
     create_participant_token,
@@ -44,8 +46,65 @@ def create_student(
     db: Session = Depends(get_db),
 ):
     """Create a new student for a program suggestion test."""
+    # Determine if the user is a privileged user (admin/teacher)
+    is_privileged = False
+    if student.student_user_id:
+        user = db.query(User).filter(User.id == student.student_user_id).first()
+        if user and user.role in (UserRole.ADMIN.value, UserRole.TEACHER.value):
+            is_privileged = True
+
+    # Check if device has already completed the test (skip for admin/teacher)
+    if student.device_fingerprint and not is_privileged:
+        has_completed = ProgramSuggestionService.check_device_completion(
+            db,
+            student.test_room_id,
+            student.device_fingerprint,
+        )
+        if has_completed:
+            return JSONResponse(
+                status_code=409,
+                content={"detail": "Device has already completed this test"},
+            )
+
+        # Check for an existing in-progress student (e.g. page reload)
+        existing = ProgramSuggestionService.find_in_progress_participant(
+            db,
+            student.test_room_id,
+            student.device_fingerprint,
+            student.student_user_id,
+        )
+        if existing:
+            token = create_participant_token(
+                participant_id=existing.id,
+                participant_type=ParticipantType.PROGRAM_SUGGESTION,
+                room_id=student.test_room_id,
+            )
+            response = JSONResponse(
+                status_code=200,
+                content={
+                    "student": ProgramSuggestionStudent.model_validate(
+                        existing
+                    ).model_dump(mode="json"),
+                    "session_token": token,
+                    "expires_in": get_token_expiry_seconds(ParticipantType.PROGRAM_SUGGESTION),
+                    "resumed": True,
+                },
+            )
+            response.set_cookie(
+                key="participant_token",
+                value=token,
+                httponly=True,
+                secure=not settings.is_development,
+                samesite="strict",
+                max_age=get_token_expiry_seconds(ParticipantType.PROGRAM_SUGGESTION),
+            )
+            return response
+
     created_student = ProgramSuggestionService.create_student(
-        student.test_room_id, db
+        student.test_room_id,
+        db,
+        device_fingerprint=student.device_fingerprint,
+        name=student.full_name,
     )
     token = create_participant_token(
         participant_id=created_student.id,
