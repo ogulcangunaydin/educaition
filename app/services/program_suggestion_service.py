@@ -548,7 +548,7 @@ def _process_area(
             )
             halic_program = None
             if halic_match:
-                halic_program = _build_program_dict(halic_match, job_name, "Haliç Üniversitesi programı")
+                halic_program = _build_program_dict(halic_match, job_name, reason)
 
             # Find other real programs
             real_programs_raw = _find_real_programs(
